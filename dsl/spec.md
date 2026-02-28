@@ -7,6 +7,29 @@
 - Comments are denoted with //
 - Errors stop the process. In the future errors will only break out of the current scope, logging a failure.
 
+## Variables
+Variables can be created by using the `var` keyword
+```
+var x = 1
+print(x) // Success. Prints "1"
+```
+
+### Global
+Variables can be made global by using the `global` keyword
+
+```
+if (true) {
+    var global y = 1
+    var x = 2
+
+    print(y) // Success. Prints "1"
+    print(x) // Success. Print "2"
+}
+
+print(y) // Success. Prints "1"
+print(x) // Failure. Throws a runtime error
+```
+
 ## Primitives
 ### Number
 Both integers and decimal values are supported. Decimals are "." separated.
@@ -34,29 +57,6 @@ TBD. `[]` with `,` separated values
 
 ### Map
 TBD. `{}` with Text keys and any value
-
-## Variables
-Variables can be created by using the `var` keyword
-```
-var x = 1
-print(x) // Success. Prints "1"
-```
-
-### Global
-Variables can be made global by using the `global` keyword
-
-```
-if (true) {
-    var global y = 1
-    var x = 2
-
-    print(y) // Success. Prints "1"
-    print(x) // Success. Print "2"
-}
-
-print(y) // Success. Prints "1"
-print(x) // Failure. Throws a runtime error
-```
 
 ## Functions
 Functions can be created with or without parameters. The body of the function is defined within a `{}` scope.
