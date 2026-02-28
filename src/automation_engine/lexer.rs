@@ -4,6 +4,7 @@ const LITERALS: [char; 2] = ['=', '"'];
 const BREAK_CHARS: [char; 3] = [' ', '\n', ';'];
 const KEYWORDS: [&str; 3] = ["var", "true", "false"];
 
+#[derive(PartialEq, Eq, Debug)]
 pub enum TokenType {
     Keyword,
     Literal,
