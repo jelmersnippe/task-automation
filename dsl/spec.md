@@ -2,7 +2,7 @@
 - Variables are set only
 - There are no types. It's up to the user to determine how they use variables
 - Whitespaces don't matter. (except around keywords)
-- There is no need to end lines with ;
+- There is no need to end lines with ;. Instead, ; can be used to end a statement without using a space
 - Scopes are contained inside { }
 - Comments are denoted with //
 - Errors stop the process. In the future errors will only break out of the current scope, logging a failure.

@@ -1,23 +1,8 @@
 use std::{fmt, fs::read_to_string};
 
-fn main() {
-    let dsl = read_to_string("./dsl/test.dsl").unwrap();
-    println!("Found DSL:\n{dsl}");
-
-    let tokens = lexer(dsl);
-
-    for Token {
-        token_type,
-        token_value,
-    } in tokens
-    {
-        println!("{token_type}: {token_value}")
-    }
-}
-
 const KEYWORDS: [&str; 3] = ["var", "true", "false"];
-const LITERALS: [char; 1] = ['='];
-const BREAK_CHARS: [char; 2] = [' ', '\n'];
+const LITERALS: [char; 2] = ['=', '"'];
+const BREAK_CHARS: [char; 3] = [' ', '\n', ';'];
 
 enum TokenType {
     Keyword,
@@ -38,6 +23,25 @@ impl fmt::Display for TokenType {
 struct Token {
     token_type: TokenType,
     token_value: String,
+}
+
+fn main() {
+    process_file("./dsl/variables.dsl");
+}
+
+fn process_file(path: &'static str) {
+    let dsl = read_to_string(path).unwrap();
+    println!("Found DSL:\n{dsl}");
+
+    let tokens = lexer(dsl);
+
+    for Token {
+        token_type,
+        token_value,
+    } in tokens
+    {
+        println!("{token_type}: {token_value}")
+    }
 }
 
 fn lexer(text: String) -> Vec<Token> {
