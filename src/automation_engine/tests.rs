@@ -1,6 +1,23 @@
 use crate::automation_engine::lexer::{self, Token, TokenKind};
 
 #[test]
+fn parses_if_statement() {
+    let result = lexer::lexer(String::from("if(x == 3)"));
+
+    assert_eq!(
+        result,
+        vec![
+            Token::new("if", TokenKind::If),
+            Token::new("(", TokenKind::LeftParenthesis),
+            Token::new("x", TokenKind::Identifier),
+            Token::new("==", TokenKind::Equal),
+            Token::new("3", TokenKind::Number),
+            Token::new(")", TokenKind::RightParenthesis),
+        ]
+    );
+}
+
+#[test]
 fn parses_function_call_without_arguments() {
     let result = lexer::lexer(String::from("greet()"));
 

@@ -3,28 +3,27 @@ use std::char;
 #[derive(PartialEq, Eq, Debug)]
 pub enum TokenKind {
     Identifier,
+    Assign,
 
     // Keywords
     Variable,
     Function,
     Return,
-
-    // Literals
     True,
     False,
+    If,
+
+    // Literals
     Number,
     String,
 
-    // Operators
-    Assign,
-
-    // Comparison
+    // Comparison Operators
     GreaterThan,
     LessThan,
     Equal,
     NotEqual,
 
-    // Arithmetic
+    // Arithmetic Operators
     Add,
     Subtract,
     Divide,
@@ -49,6 +48,7 @@ fn lookup_keyword(s: &String) -> Option<TokenKind> {
         "false" => Some(TokenKind::False),
         "fn" => Some(TokenKind::Function),
         "return" => Some(TokenKind::Return),
+        "if" => Some(TokenKind::If),
         _ => None,
     }
 }
