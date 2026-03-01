@@ -1,4 +1,4 @@
-use std::{char, default};
+use std::char;
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum TokenKind {
@@ -37,6 +37,7 @@ pub enum TokenKind {
     RightCurly,
     LeftBracket,
     RightBracket,
+    Comma,
 
     Illegal,
 }
@@ -46,6 +47,8 @@ fn lookup_keyword(s: &String) -> Option<TokenKind> {
         "var" => Some(TokenKind::Variable),
         "true" => Some(TokenKind::True),
         "false" => Some(TokenKind::False),
+        "fn" => Some(TokenKind::Function),
+        "return" => Some(TokenKind::Return),
         _ => None,
     }
 }
@@ -66,6 +69,7 @@ fn lookup_char(c: char) -> Option<TokenKind> {
         ']' => Some(TokenKind::RightBracket),
         '{' => Some(TokenKind::LeftCurly),
         '}' => Some(TokenKind::RightCurly),
+        ',' => Some(TokenKind::Comma),
         _ => None,
     }
 }
@@ -159,11 +163,6 @@ pub fn lexer(text: String) -> Vec<Token> {
     let mut chars = corrected_text.chars().into_iter().peekable();
 
     while let Some(char) = chars.next() {
-        if let Some(kind) = lookup_char(char) {
-            tokens.push(Token::new(char, kind));
-            continue;
-        }
-
         if is_digit(char) || is_letter(char) || char == '"' {
             current.push(char);
             continue;
@@ -175,6 +174,16 @@ pub fn lexer(text: String) -> Vec<Token> {
             && first_char == '"'
         {
             current.push(char);
+            continue;
+        }
+
+        if let Some(token) = text_to_token(&current) {
+            tokens.push(token);
+            current.clear();
+        }
+
+        if let Some(kind) = lookup_char(char) {
+            tokens.push(Token::new(char, kind));
             continue;
         }
 
@@ -207,10 +216,6 @@ pub fn lexer(text: String) -> Vec<Token> {
         }
 
         if is_break_char(char) {
-            if let Some(token) = text_to_token(&current) {
-                tokens.push(token);
-            }
-            current.clear();
             continue;
         }
 

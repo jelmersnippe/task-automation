@@ -1,6 +1,111 @@
 use crate::automation_engine::lexer::{self, Token, TokenKind};
 
 #[test]
+fn parses_function_call_without_arguments() {
+    let result = lexer::lexer(String::from("greet()"));
+
+    assert_eq!(
+        result,
+        vec![
+            Token::new("greet", TokenKind::Identifier),
+            Token::new("(", TokenKind::LeftParenthesis),
+            Token::new(")", TokenKind::RightParenthesis),
+        ]
+    );
+}
+
+#[test]
+fn parses_function_call_with_arguments() {
+    let result = lexer::lexer(String::from("greet(arg1, arg2)"));
+
+    assert_eq!(
+        result,
+        vec![
+            Token::new("greet", TokenKind::Identifier),
+            Token::new("(", TokenKind::LeftParenthesis),
+            Token::new("arg1", TokenKind::Identifier),
+            Token::new(",", TokenKind::Comma),
+            Token::new("arg2", TokenKind::Identifier),
+            Token::new(")", TokenKind::RightParenthesis),
+        ]
+    );
+}
+
+#[test]
+fn parses_function_definition_without_arguments() {
+    let result = lexer::lexer(String::from("fn greet() {}"));
+
+    assert_eq!(
+        result,
+        vec![
+            Token::new("fn", TokenKind::Function),
+            Token::new("greet", TokenKind::Identifier),
+            Token::new("(", TokenKind::LeftParenthesis),
+            Token::new(")", TokenKind::RightParenthesis),
+            Token::new("{", TokenKind::LeftCurly),
+            Token::new("}", TokenKind::RightCurly)
+        ]
+    );
+}
+
+#[test]
+fn parses_function_definition_with_return() {
+    let result = lexer::lexer(String::from("fn greet() {return 5}"));
+
+    assert_eq!(
+        result,
+        vec![
+            Token::new("fn", TokenKind::Function),
+            Token::new("greet", TokenKind::Identifier),
+            Token::new("(", TokenKind::LeftParenthesis),
+            Token::new(")", TokenKind::RightParenthesis),
+            Token::new("{", TokenKind::LeftCurly),
+            Token::new("return", TokenKind::Return),
+            Token::new("5", TokenKind::Number),
+            Token::new("}", TokenKind::RightCurly)
+        ]
+    );
+}
+
+#[test]
+fn parses_function_definition_with_single_argument() {
+    let result = lexer::lexer(String::from("fn greet(arg1) {}"));
+
+    assert_eq!(
+        result,
+        vec![
+            Token::new("fn", TokenKind::Function),
+            Token::new("greet", TokenKind::Identifier),
+            Token::new("(", TokenKind::LeftParenthesis),
+            Token::new("arg1", TokenKind::Identifier),
+            Token::new(")", TokenKind::RightParenthesis),
+            Token::new("{", TokenKind::LeftCurly),
+            Token::new("}", TokenKind::RightCurly)
+        ]
+    );
+}
+
+#[test]
+fn parses_function_definition_with_multiple_arguments() {
+    let result = lexer::lexer(String::from("fn greet(arg1, arg2) {}"));
+
+    assert_eq!(
+        result,
+        vec![
+            Token::new("fn", TokenKind::Function),
+            Token::new("greet", TokenKind::Identifier),
+            Token::new("(", TokenKind::LeftParenthesis),
+            Token::new("arg1", TokenKind::Identifier),
+            Token::new(",", TokenKind::Comma),
+            Token::new("arg2", TokenKind::Identifier),
+            Token::new(")", TokenKind::RightParenthesis),
+            Token::new("{", TokenKind::LeftCurly),
+            Token::new("}", TokenKind::RightCurly)
+        ]
+    );
+}
+
+#[test]
 fn parses_arithmetic_operators() {
     let result = lexer::lexer(String::from("+-/*"));
 
