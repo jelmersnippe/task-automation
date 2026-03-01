@@ -1,4 +1,4 @@
-use std::char;
+use std::{char, default};
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum TokenKind {
@@ -17,6 +17,18 @@ pub enum TokenKind {
 
     // Operators
     Assign,
+
+    // Comparison
+    GreaterThan,
+    LessThan,
+    Equal,
+    NotEqual,
+
+    // Arithmetic
+    Add,
+    Subtract,
+    Divide,
+    Multiply,
 
     // Separators / Punctuators
     LeftParenthesis,
@@ -39,8 +51,14 @@ fn lookup_keyword(s: &String) -> Option<TokenKind> {
 }
 fn lookup_char(c: char) -> Option<TokenKind> {
     match c {
-        // Operators
-        '=' => Some(TokenKind::Assign),
+        // Comparison Operators
+        '>' => Some(TokenKind::GreaterThan),
+        '<' => Some(TokenKind::LessThan),
+        // Arithmetic Operators
+        '+' => Some(TokenKind::Add),
+        '-' => Some(TokenKind::Subtract),
+        '/' => Some(TokenKind::Divide),
+        '*' => Some(TokenKind::Multiply),
         // Separators / Punctuators
         '(' => Some(TokenKind::LeftParenthesis),
         ')' => Some(TokenKind::RightParenthesis),
@@ -77,32 +95,6 @@ fn is_digit(c: char) -> bool {
 
 fn is_letter(c: char) -> bool {
     return c.is_ascii_alphabetic() || c == '_';
-}
-
-fn validate_identifier(c: char, current_token: &String) -> bool {
-    if !is_digit(c) && !is_letter(c) {
-        return false;
-    }
-
-    match current_token.chars().nth(0) {
-        Some(first_char) => {
-            if is_digit(first_char) {
-                return false;
-            }
-        }
-        None => {
-            if is_digit(c) {
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
-
-fn validate_number(c: char, current_token: &String) -> bool {
-    // Has to be a digit or '.' char. If c == '.' the last char can't also be '.'
-    return is_digit(c) && (c != '.' || current_token.chars().last() != Some('.'));
 }
 
 fn is_valid_number(text: &String) -> bool {
@@ -164,7 +156,9 @@ pub fn lexer(text: String) -> Vec<Token> {
 
     // Add a new line to ensure final char gets parsed
     let corrected_text = text.trim().to_string() + "\n";
-    for char in corrected_text.chars() {
+    let mut chars = corrected_text.chars().into_iter().peekable();
+
+    while let Some(char) = chars.next() {
         if let Some(kind) = lookup_char(char) {
             tokens.push(Token::new(char, kind));
             continue;
@@ -181,6 +175,34 @@ pub fn lexer(text: String) -> Vec<Token> {
             && first_char == '"'
         {
             current.push(char);
+            continue;
+        }
+
+        if char == '!'
+            && let Some(next_token) = chars.peek()
+            && *next_token == '='
+        {
+            tokens.push(Token::new("!=", TokenKind::NotEqual));
+            chars.next();
+            continue;
+        }
+
+        // Use lookahead for = char to process operators
+        if char == '=' {
+            let mut token = Token::new(char, TokenKind::Assign);
+
+            match chars.peek() {
+                Some(next_char) => match next_char {
+                    '=' => {
+                        token = Token::new("==", TokenKind::Equal);
+                        chars.next();
+                    }
+                    _ => {}
+                },
+                None => {}
+            };
+            tokens.push(token);
+
             continue;
         }
 

@@ -1,6 +1,63 @@
 use crate::automation_engine::lexer::{self, Token, TokenKind};
 
 #[test]
+fn parses_arithmetic_operators() {
+    let result = lexer::lexer(String::from("+-/*"));
+
+    assert_eq!(
+        result,
+        vec![
+            Token::new("+", TokenKind::Add),
+            Token::new("-", TokenKind::Subtract),
+            Token::new("/", TokenKind::Divide),
+            Token::new("*", TokenKind::Multiply)
+        ]
+    );
+}
+
+#[test]
+fn does_not_parse_inverted_not_equal() {
+    let result = lexer::lexer(String::from("=!"));
+
+    assert_eq!(
+        result,
+        vec![
+            Token::new("=", TokenKind::Assign),
+            Token::new("!", TokenKind::Illegal)
+        ]
+    );
+}
+
+#[test]
+fn parses_comparison_operators() {
+    let result = lexer::lexer(String::from("><==!="));
+
+    assert_eq!(
+        result,
+        vec![
+            Token::new(">", TokenKind::GreaterThan),
+            Token::new("<", TokenKind::LessThan),
+            Token::new("==", TokenKind::Equal),
+            Token::new("!=", TokenKind::NotEqual)
+        ]
+    );
+}
+
+#[test]
+fn parses_equal_and_assign() {
+    let result = lexer::lexer(String::from("= == ="));
+
+    assert_eq!(
+        result,
+        vec![
+            Token::new("=", TokenKind::Assign),
+            Token::new("==", TokenKind::Equal),
+            Token::new("=", TokenKind::Assign),
+        ]
+    );
+}
+
+#[test]
 fn parses_number_variable_assignment() {
     let result = lexer::lexer(String::from("var x = 5"));
 
