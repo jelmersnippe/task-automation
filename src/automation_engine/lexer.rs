@@ -32,6 +32,8 @@ pub enum TokenKind {
 fn lookup_keyword(s: &String) -> Option<TokenKind> {
     match s.as_str() {
         "var" => Some(TokenKind::Variable),
+        "true" => Some(TokenKind::True),
+        "false" => Some(TokenKind::False),
         _ => None,
     }
 }
@@ -109,6 +111,14 @@ fn is_valid_number(text: &String) -> bool {
     return decimal_separator_count <= 1 && text.chars().all(|x| is_digit(x));
 }
 
+fn is_valid_string(text: &String) -> bool {
+    if !text.starts_with('"') || !text.ends_with('"') {
+        return false;
+    }
+
+    return true;
+}
+
 fn is_valid_identifier(text: &String) -> bool {
     // First char has to be considered a letter
     if let Some(first_char) = text.chars().nth(0)
@@ -128,14 +138,22 @@ fn text_to_token(text: &String) -> Option<Token> {
     match lookup_keyword(&text) {
         Some(kind) => return Some(Token::new(text, kind)),
         None => {
+            let is_string = is_valid_string(&text);
+            let value = if is_string {
+                text.as_str()[1..text.len() - 1].to_string()
+            } else {
+                text.clone()
+            };
             let kind = if is_valid_number(&text) {
                 TokenKind::Number
             } else if is_valid_identifier(&text) {
                 TokenKind::Identifier
+            } else if is_valid_string(&text) {
+                TokenKind::String
             } else {
                 TokenKind::Illegal
             };
-            return Some(Token::new(text, kind));
+            return Some(Token::new(value, kind));
         }
     }
 }
@@ -152,7 +170,16 @@ pub fn lexer(text: String) -> Vec<Token> {
             continue;
         }
 
-        if is_digit(char) || is_letter(char) {
+        if is_digit(char) || is_letter(char) || char == '"' {
+            current.push(char);
+            continue;
+        }
+
+        // If char is a space and we are currently processing a likely string
+        if char == ' '
+            && let Some(first_char) = current.chars().nth(0)
+            && first_char == '"'
+        {
             current.push(char);
             continue;
         }

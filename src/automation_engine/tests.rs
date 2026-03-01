@@ -16,6 +16,40 @@ fn parses_number_variable_assignment() {
 }
 
 #[test]
+fn parses_boolean_variable_assignment() {
+    let result = lexer::lexer(String::from("var x = true; var y = false"));
+
+    assert_eq!(
+        result,
+        vec![
+            Token::new("var", TokenKind::Variable),
+            Token::new("x", TokenKind::Identifier),
+            Token::new("=", TokenKind::Assign),
+            Token::new("true", TokenKind::True),
+            Token::new("var", TokenKind::Variable),
+            Token::new("y", TokenKind::Identifier),
+            Token::new("=", TokenKind::Assign),
+            Token::new("false", TokenKind::False)
+        ]
+    );
+}
+
+#[test]
+fn parses_string_variable_assignment() {
+    let result = lexer::lexer(String::from("var x = \"Hello World\""));
+
+    assert_eq!(
+        result,
+        vec![
+            Token::new("var", TokenKind::Variable),
+            Token::new("x", TokenKind::Identifier),
+            Token::new("=", TokenKind::Assign),
+            Token::new("Hello World", TokenKind::String)
+        ]
+    );
+}
+
+#[test]
 fn parses_numbers() {
     let result = lexer::lexer(String::from("1 1.1 .1"));
 
