@@ -12,12 +12,14 @@ pub enum TokenKind {
     True,
     False,
     If,
+    Else,
 
     // Literals
     Number,
     String,
 
     // Comparison Operators
+    Bang,
     GreaterThan,
     LessThan,
     Equal,
@@ -49,6 +51,7 @@ fn lookup_keyword(s: &String) -> Option<TokenKind> {
         "fn" => Some(TokenKind::Function),
         "return" => Some(TokenKind::Return),
         "if" => Some(TokenKind::If),
+        "else" => Some(TokenKind::Else),
         _ => None,
     }
 }
@@ -187,12 +190,16 @@ pub fn lexer(text: String) -> Vec<Token> {
             continue;
         }
 
-        if char == '!'
-            && let Some(next_token) = chars.peek()
-            && *next_token == '='
-        {
-            tokens.push(Token::new("!=", TokenKind::NotEqual));
-            chars.next();
+        if char == '!' {
+            if let Some(next_token) = chars.peek()
+                && *next_token == '='
+            {
+                tokens.push(Token::new("!=", TokenKind::NotEqual));
+                chars.next();
+            } else {
+                tokens.push(Token::new("!", TokenKind::Bang));
+            }
+
             continue;
         }
 

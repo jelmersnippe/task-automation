@@ -1,8 +1,8 @@
 use crate::automation_engine::lexer::{self, Token, TokenKind};
 
 #[test]
-fn parses_if_statement() {
-    let result = lexer::lexer(String::from("if(x == 3)"));
+fn parses_if_else_statement() {
+    let result = lexer::lexer(String::from("if(x == 3) {} else {}"));
 
     assert_eq!(
         result,
@@ -13,6 +13,11 @@ fn parses_if_statement() {
             Token::new("==", TokenKind::Equal),
             Token::new("3", TokenKind::Number),
             Token::new(")", TokenKind::RightParenthesis),
+            Token::new("{", TokenKind::LeftCurly),
+            Token::new("}", TokenKind::RightCurly),
+            Token::new("else", TokenKind::Else),
+            Token::new("{", TokenKind::LeftCurly),
+            Token::new("}", TokenKind::RightCurly),
         ]
     );
 }
@@ -145,14 +150,14 @@ fn does_not_parse_inverted_not_equal() {
         result,
         vec![
             Token::new("=", TokenKind::Assign),
-            Token::new("!", TokenKind::Illegal)
+            Token::new("!", TokenKind::Bang)
         ]
     );
 }
 
 #[test]
 fn parses_comparison_operators() {
-    let result = lexer::lexer(String::from("><==!="));
+    let result = lexer::lexer(String::from("><==!=!"));
 
     assert_eq!(
         result,
@@ -160,7 +165,8 @@ fn parses_comparison_operators() {
             Token::new(">", TokenKind::GreaterThan),
             Token::new("<", TokenKind::LessThan),
             Token::new("==", TokenKind::Equal),
-            Token::new("!=", TokenKind::NotEqual)
+            Token::new("!=", TokenKind::NotEqual),
+            Token::new("!", TokenKind::Bang)
         ]
     );
 }
@@ -273,22 +279,25 @@ fn parses_identifiers() {
 
 #[test]
 fn parses_keywords() {
-    let result = lexer::lexer(String::from("var"));
+    let result = lexer::lexer(String::from("var fn return true false if else"));
 
-    assert_eq!(result, vec![Token::new("var", TokenKind::Variable)]);
+    assert_eq!(
+        result,
+        vec![
+            Token::new("var", TokenKind::Variable),
+            Token::new("fn", TokenKind::Function),
+            Token::new("return", TokenKind::Return),
+            Token::new("true", TokenKind::True),
+            Token::new("false", TokenKind::False),
+            Token::new("if", TokenKind::If),
+            Token::new("else", TokenKind::Else),
+        ]
+    );
 }
 
 #[test]
 fn parses_separators_and_punctuators() {
-    let result = lexer::lexer(String::from("()[]{}"));
-
-    let expected_token_count = 6;
-    assert_eq!(
-        result.len(),
-        expected_token_count,
-        "Should produce {} tokens",
-        expected_token_count
-    );
+    let result = lexer::lexer(String::from("()[]{},"));
 
     assert_eq!(
         result,
@@ -298,7 +307,8 @@ fn parses_separators_and_punctuators() {
             Token::new("[", TokenKind::LeftBracket),
             Token::new("]", TokenKind::RightBracket),
             Token::new("{", TokenKind::LeftCurly),
-            Token::new("}", TokenKind::RightCurly)
+            Token::new("}", TokenKind::RightCurly),
+            Token::new(",", TokenKind::Comma)
         ]
     );
 }
