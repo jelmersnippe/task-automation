@@ -11,12 +11,4 @@ fn process_file(path: &'static str) {
     println!("Found DSL:\n{dsl}");
 
     let tokens = automation_engine::lexer::lexer(dsl);
-
-    for automation_engine::lexer::Token {
-        token_type,
-        token_value,
-    } in tokens
-    {
-        println!("{token_type}: {token_value}")
-    }
 }

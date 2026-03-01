@@ -1,81 +1,177 @@
-use std::fmt;
-
-const LITERALS: [char; 2] = ['=', '"'];
-const BREAK_CHARS: [char; 3] = [' ', '\n', ';'];
-const KEYWORDS: [&str; 3] = ["var", "true", "false"];
+use std::char;
 
 #[derive(PartialEq, Eq, Debug)]
-pub enum TokenType {
-    Keyword,
-    Literal,
-    Value,
+pub enum TokenKind {
+    Identifier,
+
+    // Keywords
+    Variable,
+    Function,
+    Return,
+
+    // Literals
+    True,
+    False,
+    Number,
+    String,
+
+    // Operators
+    Assign,
+
+    // Separators / Punctuators
+    LeftParenthesis,
+    RightParenthesis,
+    LeftCurly,
+    RightCurly,
+    LeftBracket,
+    RightBracket,
+
+    Illegal,
 }
 
-impl fmt::Display for TokenType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            TokenType::Keyword => write!(f, "Keyword"),
-            TokenType::Literal => write!(f, "Literal"),
-            TokenType::Value => write!(f, "Value"),
+fn lookup_keyword(s: &String) -> Option<TokenKind> {
+    match s.as_str() {
+        "var" => Some(TokenKind::Variable),
+        _ => None,
+    }
+}
+fn lookup_char(c: char) -> Option<TokenKind> {
+    match c {
+        // Operators
+        '=' => Some(TokenKind::Assign),
+        // Separators / Punctuators
+        '(' => Some(TokenKind::LeftParenthesis),
+        ')' => Some(TokenKind::RightParenthesis),
+        '[' => Some(TokenKind::LeftBracket),
+        ']' => Some(TokenKind::RightBracket),
+        '{' => Some(TokenKind::LeftCurly),
+        '}' => Some(TokenKind::RightCurly),
+        _ => None,
+    }
+}
+
+fn is_break_char(c: char) -> bool {
+    return c.is_ascii_whitespace() || c == ';';
+}
+
+#[derive(PartialEq, Eq, Debug)]
+pub struct Token {
+    pub kind: TokenKind,
+    pub value: String,
+}
+
+impl Token {
+    pub fn new<V: Into<String>>(value: V, kind: TokenKind) -> Self {
+        Self {
+            value: value.into(),
+            kind,
         }
     }
 }
 
-pub struct Token {
-    pub token_type: TokenType,
-    pub token_value: String,
+fn is_digit(c: char) -> bool {
+    return c.is_ascii_digit() || c == '.';
+}
+
+fn is_letter(c: char) -> bool {
+    return c.is_ascii_alphabetic() || c == '_';
+}
+
+fn validate_identifier(c: char, current_token: &String) -> bool {
+    if !is_digit(c) && !is_letter(c) {
+        return false;
+    }
+
+    match current_token.chars().nth(0) {
+        Some(first_char) => {
+            if is_digit(first_char) {
+                return false;
+            }
+        }
+        None => {
+            if is_digit(c) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+fn validate_number(c: char, current_token: &String) -> bool {
+    // Has to be a digit or '.' char. If c == '.' the last char can't also be '.'
+    return is_digit(c) && (c != '.' || current_token.chars().last() != Some('.'));
+}
+
+fn is_valid_number(text: &String) -> bool {
+    let decimal_separator_count = text.chars().filter(|x| *x == '.').count();
+
+    return decimal_separator_count <= 1 && text.chars().all(|x| is_digit(x));
+}
+
+fn is_valid_identifier(text: &String) -> bool {
+    // First char has to be considered a letter
+    if let Some(first_char) = text.chars().nth(0)
+        && !is_letter(first_char)
+    {
+        return false;
+    }
+
+    return text.chars().all(|x| is_letter(x) || x.is_ascii_digit());
 }
 
 fn text_to_token(text: &String) -> Option<Token> {
-    if text.len() <= 0 {
+    if text.is_empty() {
         return None;
     }
 
-    let token = Token {
-        token_type: if KEYWORDS.contains(&text.as_str()) {
-            TokenType::Keyword
-        } else {
-            TokenType::Value
-        },
-        token_value: text.to_string(),
-    };
-
-    return Some(token);
+    match lookup_keyword(&text) {
+        Some(kind) => return Some(Token::new(text, kind)),
+        None => {
+            let kind = if is_valid_number(&text) {
+                TokenKind::Number
+            } else if is_valid_identifier(&text) {
+                TokenKind::Identifier
+            } else {
+                TokenKind::Illegal
+            };
+            return Some(Token::new(text, kind));
+        }
+    }
 }
 
 pub fn lexer(text: String) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::new();
     let mut current: String = String::new();
 
-    for char in text.trim().chars() {
-        if LITERALS.contains(&char) || BREAK_CHARS.contains(&char) {
-            match text_to_token(&current) {
-                None => current.clear(),
-                Some(token) => {
-                    tokens.push(token);
-                    current.clear()
-                }
-            }
-
-            if LITERALS.contains(&char) {
-                tokens.push(Token {
-                    token_type: TokenType::Literal,
-                    token_value: char.to_string(),
-                });
-            }
-
+    // Add a new line to ensure final char gets parsed
+    let corrected_text = text.trim().to_string() + "\n";
+    for char in corrected_text.chars() {
+        if let Some(kind) = lookup_char(char) {
+            tokens.push(Token::new(char, kind));
             continue;
         }
 
-        current.push(char);
-    }
-    match text_to_token(&current) {
-        None => current.clear(),
-        Some(token) => {
-            tokens.push(token);
-            current.clear()
+        if is_digit(char) || is_letter(char) {
+            current.push(char);
+            continue;
         }
+
+        if is_break_char(char) {
+            if let Some(token) = text_to_token(&current) {
+                tokens.push(token);
+            }
+            current.clear();
+            continue;
+        }
+
+        tokens.push(Token::new(char, TokenKind::Illegal));
+        current.clear();
     }
+
+    tokens
+        .iter()
+        .for_each(|x| println!("{:?}: {:}", x.kind, x.value));
 
     return tokens;
 }

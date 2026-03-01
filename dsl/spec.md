@@ -61,6 +61,7 @@ TBD. `{}` with Text keys and any value
 ## Functions
 Functions can be created with or without parameters. The body of the function is defined within a `{}` scope.
 Functions can be created with or without a name. Anonymous functions can be used as parameters for other functions.
+Functions can return values by using the `return` keyword.
 ```
 fn greet(name) {
     print("Hello " + name + "!")
@@ -77,7 +78,14 @@ fn runTask(task_name, task) {
 runTask("test", fn() {
     print("Testing stuff")
 }) // Prints "running task: test" and "Testing stuff"
+
+fn add(x, y) {
+    return x + y
+}
+
+let result = add(1, 2)
 ```
+print(result) // Prints 3
 
 ## Control flow
 ```
