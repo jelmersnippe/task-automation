@@ -1,7 +1,9 @@
 use crate::{
     lexer::lexer::{Token, TokenKind},
-    parser::parser::{
-        self, ExpressionType, LiteralType, StatementType, VariableDeclarationStatement,
+    parser::{
+        expressions::{ExpressionType, LiteralType},
+        parser,
+        statements::{StatementType, VariableDeclarationStatement},
     },
 };
 
