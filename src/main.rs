@@ -3,6 +3,11 @@ use std::{
     io::{self, Write, stdin},
 };
 
+use crate::automation_engine::{
+    lexer::{lexer, print_tokens},
+    parser::{parse, print_ast},
+};
+
 mod automation_engine;
 
 fn main() {
@@ -11,7 +16,13 @@ fn main() {
         print!("> ");
         let _ = io::stdout().flush();
         let _ = stdin().read_line(&mut input);
-        automation_engine::lexer::lexer(input);
+
+        let tokens = lexer(input);
+        print_tokens(&tokens);
+
+        let ast = parse(&tokens);
+        print_ast(&ast);
+
         println!();
     }
     // process_file("./dsl/variables.dsl");

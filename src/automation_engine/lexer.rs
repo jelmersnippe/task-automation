@@ -1,6 +1,6 @@
 use std::char;
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub enum TokenKind {
     Identifier,
     Assign,
@@ -230,9 +230,11 @@ pub fn lexer(text: String) -> Vec<Token> {
         current.clear();
     }
 
+    return tokens;
+}
+
+pub fn print_tokens(tokens: &Vec<Token>) {
     tokens
         .iter()
         .for_each(|x| println!("{:?}: {:}", x.kind, x.value));
-
-    return tokens;
 }

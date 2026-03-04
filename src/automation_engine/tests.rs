@@ -1,7 +1,40 @@
-use crate::automation_engine::lexer::{self, Token, TokenKind};
+use crate::automation_engine::{
+    lexer::{self, Token, TokenKind},
+    parser::{self, ExpressionType, LiteralType, StatementType, VariableDeclarationStatement},
+};
 
 #[test]
-fn parses_if_else_statement() {
+fn parses_number_variable_assignment() {
+    let result = parser::parse(&lexer::lexer(String::from("var x = 3")));
+
+    assert_eq!(
+        result,
+        vec![StatementType::VariableDeclaration(
+            VariableDeclarationStatement {
+                identifier: String::from("x"),
+                value: ExpressionType::Literal(LiteralType::Number(3 as f32))
+            }
+        )]
+    )
+}
+
+#[test]
+fn parses_string_variable_assignment() {
+    let result = parser::parse(&lexer::lexer(String::from("var x = \"Hello World\"")));
+
+    assert_eq!(
+        result,
+        vec![StatementType::VariableDeclaration(
+            VariableDeclarationStatement {
+                identifier: String::from("x"),
+                value: ExpressionType::Literal(LiteralType::String(String::from("Hello World")))
+            }
+        )]
+    )
+}
+
+#[test]
+fn tokenizes_if_else_statement() {
     let result = lexer::lexer(String::from("if(x == 3) {} else {}"));
 
     assert_eq!(
@@ -23,7 +56,7 @@ fn parses_if_else_statement() {
 }
 
 #[test]
-fn parses_function_call_without_arguments() {
+fn tokenizes_function_call_without_arguments() {
     let result = lexer::lexer(String::from("greet()"));
 
     assert_eq!(
@@ -37,7 +70,7 @@ fn parses_function_call_without_arguments() {
 }
 
 #[test]
-fn parses_function_call_with_arguments() {
+fn tokenizes_function_call_with_arguments() {
     let result = lexer::lexer(String::from("greet(arg1, arg2)"));
 
     assert_eq!(
@@ -54,7 +87,7 @@ fn parses_function_call_with_arguments() {
 }
 
 #[test]
-fn parses_function_definition_without_arguments() {
+fn tokenizes_function_definition_without_arguments() {
     let result = lexer::lexer(String::from("fn greet() {}"));
 
     assert_eq!(
@@ -71,7 +104,7 @@ fn parses_function_definition_without_arguments() {
 }
 
 #[test]
-fn parses_function_definition_with_return() {
+fn tokenizes_function_definition_with_return() {
     let result = lexer::lexer(String::from("fn greet() {return 5}"));
 
     assert_eq!(
@@ -90,7 +123,7 @@ fn parses_function_definition_with_return() {
 }
 
 #[test]
-fn parses_function_definition_with_single_argument() {
+fn tokenizes_function_definition_with_single_argument() {
     let result = lexer::lexer(String::from("fn greet(arg1) {}"));
 
     assert_eq!(
@@ -108,7 +141,7 @@ fn parses_function_definition_with_single_argument() {
 }
 
 #[test]
-fn parses_function_definition_with_multiple_arguments() {
+fn tokenizes_function_definition_with_multiple_arguments() {
     let result = lexer::lexer(String::from("fn greet(arg1, arg2) {}"));
 
     assert_eq!(
@@ -128,7 +161,7 @@ fn parses_function_definition_with_multiple_arguments() {
 }
 
 #[test]
-fn parses_arithmetic_operators() {
+fn tokenizes_arithmetic_operators() {
     let result = lexer::lexer(String::from("+-/*"));
 
     assert_eq!(
@@ -156,7 +189,7 @@ fn does_not_parse_inverted_not_equal() {
 }
 
 #[test]
-fn parses_comparison_operators() {
+fn tokenizes_comparison_operators() {
     let result = lexer::lexer(String::from("><==!=!"));
 
     assert_eq!(
@@ -172,7 +205,7 @@ fn parses_comparison_operators() {
 }
 
 #[test]
-fn parses_equal_and_assign() {
+fn tokenizes_equal_and_assign() {
     let result = lexer::lexer(String::from("= == ="));
 
     assert_eq!(
@@ -186,7 +219,7 @@ fn parses_equal_and_assign() {
 }
 
 #[test]
-fn parses_number_variable_assignment() {
+fn tokenizes_number_variable_assignment() {
     let result = lexer::lexer(String::from("var x = 5"));
 
     assert_eq!(
@@ -201,7 +234,7 @@ fn parses_number_variable_assignment() {
 }
 
 #[test]
-fn parses_boolean_variable_assignment() {
+fn tokenizes_boolean_variable_assignment() {
     let result = lexer::lexer(String::from("var x = true; var y = false"));
 
     assert_eq!(
@@ -220,7 +253,7 @@ fn parses_boolean_variable_assignment() {
 }
 
 #[test]
-fn parses_string_variable_assignment() {
+fn tokenizes_string_variable_assignment() {
     let result = lexer::lexer(String::from("var x = \"Hello World\""));
 
     assert_eq!(
@@ -235,7 +268,7 @@ fn parses_string_variable_assignment() {
 }
 
 #[test]
-fn parses_numbers() {
+fn tokenizes_numbers() {
     let result = lexer::lexer(String::from("1 1.1 .1"));
 
     assert_eq!(
@@ -263,7 +296,7 @@ fn does_not_parse_identifier_starting_with_number() {
 }
 
 #[test]
-fn parses_identifiers() {
+fn tokenizes_identifiers() {
     let result = lexer::lexer(String::from("foo _foo fo_o foo_"));
 
     assert_eq!(
@@ -278,7 +311,7 @@ fn parses_identifiers() {
 }
 
 #[test]
-fn parses_keywords() {
+fn tokenizes_keywords() {
     let result = lexer::lexer(String::from("var fn return true false if else"));
 
     assert_eq!(
@@ -296,7 +329,7 @@ fn parses_keywords() {
 }
 
 #[test]
-fn parses_separators_and_punctuators() {
+fn tokenizes_separators_and_punctuators() {
     let result = lexer::lexer(String::from("()[]{},"));
 
     assert_eq!(
