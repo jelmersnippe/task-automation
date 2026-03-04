@@ -3,8 +3,10 @@ use std::{
     io::{self, Write, stdin},
 };
 
-use crate::lexer::lexer::{lexer, print_tokens};
-use crate::parser::parser::{parse, print_ast};
+use crate::{
+    lexer::lexer::{lexer, print_tokens},
+    parser::{Parser, print_ast},
+};
 
 mod lexer;
 mod parser;
@@ -19,7 +21,8 @@ fn main() {
         let tokens = lexer(input);
         print_tokens(&tokens);
 
-        let ast = parse(&tokens);
+        let mut parser = Parser::new(tokens);
+        let ast = parser.parse();
         print_ast(&ast);
 
         println!();

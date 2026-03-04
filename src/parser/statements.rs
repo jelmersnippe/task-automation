@@ -1,9 +1,6 @@
-use std::iter::Peekable;
-
-use crate::{
-    lexer::lexer::{Token, TokenKind},
-    parser::expressions::{ExpressionType, parse_expression, print_expression},
-};
+use super::Parser;
+use super::expressions;
+use crate::lexer::lexer::TokenKind;
 
 #[derive(PartialEq, Debug)]
 pub enum StatementType {
@@ -18,28 +15,30 @@ pub struct Block {
 #[derive(PartialEq, Debug)]
 pub struct VariableDeclarationStatement {
     pub identifier: String,
-    pub value: ExpressionType,
+    pub value: expressions::ExpressionType,
 }
 
-pub fn parse_variable_statement(tokens: &mut Peekable<std::slice::Iter<Token>>) -> StatementType {
-    if let Some(identifier_token) = tokens.next()
-        && identifier_token.kind == TokenKind::Identifier
-    {
-        let identifier = identifier_token.value.clone();
-
-        if let Some(assign_token) = tokens.next()
-            && assign_token.kind == TokenKind::Assign
+impl Parser {
+    pub(crate) fn parse_variable_statement(&mut self) -> StatementType {
+        if let Some(identifier_token) = self.next()
+            && identifier_token.kind == TokenKind::Identifier
         {
-            let value = parse_expression(tokens);
+            let identifier = identifier_token.value.clone();
 
-            return StatementType::VariableDeclaration(VariableDeclarationStatement {
-                identifier,
-                value,
-            });
+            if let Some(assign_token) = self.next()
+                && assign_token.kind == TokenKind::Assign
+            {
+                let value = self.parse_expression();
+
+                return StatementType::VariableDeclaration(VariableDeclarationStatement {
+                    identifier,
+                    value,
+                });
+            }
         }
-    }
 
-    panic!("No identifier found for variable statement")
+        panic!("No identifier found for variable statement")
+    }
 }
 
 pub fn print_statement(statement: &StatementType) {
@@ -49,7 +48,7 @@ pub fn print_statement(statement: &StatementType) {
                 "Variable declaration with identifier {}",
                 variable_declaration_statement.identifier
             );
-            print_expression(&variable_declaration_statement.value);
+            expressions::print_expression(&variable_declaration_statement.value);
         }
     }
 }

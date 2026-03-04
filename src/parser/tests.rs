@@ -1,20 +1,21 @@
 use crate::{
     lexer::lexer::{Token, TokenKind},
     parser::{
+        Parser,
         expressions::{ExpressionType, LiteralType},
-        parser,
         statements::{StatementType, VariableDeclarationStatement},
     },
 };
 
 #[test]
 fn parses_number_variable_assignment() {
-    let result = parser::parse(&vec![
+    let result = Parser::new(vec![
         Token::new("var", TokenKind::Variable),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("5", TokenKind::Number),
-    ]);
+    ])
+    .parse();
 
     assert_eq!(
         result,
@@ -29,12 +30,13 @@ fn parses_number_variable_assignment() {
 
 #[test]
 fn parses_string_variable_assignment() {
-    let result = parser::parse(&vec![
+    let result = Parser::new(vec![
         Token::new("var", TokenKind::Variable),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("Hello World", TokenKind::String),
-    ]);
+    ])
+    .parse();
 
     assert_eq!(
         result,
