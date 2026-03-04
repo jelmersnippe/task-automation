@@ -1,6 +1,6 @@
 use std::iter::Peekable;
 
-use crate::automation_engine::lexer::{Token, TokenKind};
+use crate::lexer::lexer::{Token, TokenKind};
 
 #[derive(PartialEq, Debug)]
 pub enum StatementType {
@@ -108,4 +108,3 @@ fn print_expression(expression: &ExpressionType) {
         },
     }
 }
-

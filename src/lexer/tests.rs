@@ -1,37 +1,4 @@
-use crate::automation_engine::{
-    lexer::{self, Token, TokenKind},
-    parser::{self, ExpressionType, LiteralType, StatementType, VariableDeclarationStatement},
-};
-
-#[test]
-fn parses_number_variable_assignment() {
-    let result = parser::parse(&lexer::lexer(String::from("var x = 3")));
-
-    assert_eq!(
-        result,
-        vec![StatementType::VariableDeclaration(
-            VariableDeclarationStatement {
-                identifier: String::from("x"),
-                value: ExpressionType::Literal(LiteralType::Number(3 as f32))
-            }
-        )]
-    )
-}
-
-#[test]
-fn parses_string_variable_assignment() {
-    let result = parser::parse(&lexer::lexer(String::from("var x = \"Hello World\"")));
-
-    assert_eq!(
-        result,
-        vec![StatementType::VariableDeclaration(
-            VariableDeclarationStatement {
-                identifier: String::from("x"),
-                value: ExpressionType::Literal(LiteralType::String(String::from("Hello World")))
-            }
-        )]
-    )
-}
+use crate::lexer::lexer::{self, Token, TokenKind};
 
 #[test]
 fn tokenizes_if_else_statement() {

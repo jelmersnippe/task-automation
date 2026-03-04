@@ -3,12 +3,11 @@ use std::{
     io::{self, Write, stdin},
 };
 
-use crate::automation_engine::{
-    lexer::{lexer, print_tokens},
-    parser::{parse, print_ast},
-};
+use crate::lexer::lexer::{lexer, print_tokens};
+use crate::parser::parser::{parse, print_ast};
 
-mod automation_engine;
+mod lexer;
+mod parser;
 
 fn main() {
     loop {
