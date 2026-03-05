@@ -19,13 +19,8 @@ impl Parser {
     pub fn parse(&mut self) -> Vec<statements::StatementType> {
         let mut ast = Vec::<statements::StatementType>::new();
 
-        while let Some(token) = self.next() {
-            match token.kind {
-                TokenKind::Variable => {
-                    ast.push(self.parse_variable_statement());
-                }
-                _ => panic!("Unknown token type in root parse"),
-            }
+        while self.pos < self.tokens.len() {
+            ast.push(self.parse_statement())
         }
 
         return ast;
