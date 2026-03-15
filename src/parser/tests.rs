@@ -2,12 +2,78 @@ use crate::{
     lexer::lexer::{Token, TokenKind},
     parser::{
         Parser,
-        expressions::{ExpressionType, IdentifierExpression, LiteralType},
+        expressions::{ExpressionType, FunctionCallExpression, IdentifierExpression, LiteralType},
         statements::{
             Block, FunctionDeclarationStatement, StatementType, VariableDeclarationStatement,
         },
     },
 };
+
+#[test]
+fn parses_function_statement_without_arguments() {
+    let result = Parser::new(vec![
+        Token::new("greet", TokenKind::Identifier),
+        Token::new("(", TokenKind::LeftParenthesis),
+        Token::new(")", TokenKind::RightParenthesis),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![StatementType::FunctionCall(FunctionCallExpression {
+            name: String::from("greet"),
+            arguments: vec![]
+        })]
+    )
+}
+
+#[test]
+fn parses_function_statement_with_literal_arguments() {
+    let result = Parser::new(vec![
+        Token::new("greet", TokenKind::Identifier),
+        Token::new("(", TokenKind::LeftParenthesis),
+        Token::new("5", TokenKind::Number),
+        Token::new(",", TokenKind::Comma),
+        Token::new("Hello", TokenKind::String),
+        Token::new(",", TokenKind::Comma),
+        Token::new("true", TokenKind::True),
+        Token::new(")", TokenKind::RightParenthesis),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![StatementType::FunctionCall(FunctionCallExpression {
+            name: String::from("greet"),
+            arguments: vec![
+                ExpressionType::Literal(LiteralType::Number(5 as f32)),
+                ExpressionType::Literal(LiteralType::String(String::from("Hello"))),
+                ExpressionType::Literal(LiteralType::Boolean(true))
+            ]
+        })]
+    )
+}
+
+#[test]
+fn parses_function_statement_with_identifier_argument() {
+    let result = Parser::new(vec![
+        Token::new("greet", TokenKind::Identifier),
+        Token::new("(", TokenKind::LeftParenthesis),
+        Token::new("x", TokenKind::Identifier),
+        Token::new(")", TokenKind::RightParenthesis),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![StatementType::FunctionCall(FunctionCallExpression {
+            name: String::from("greet"),
+            arguments: vec![ExpressionType::Identifier(IdentifierExpression {
+                name: String::from("x")
+            })]
+        })]
+    )
+}
 
 #[test]
 fn parses_function_declaration_without_arguments() {

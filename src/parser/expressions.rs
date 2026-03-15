@@ -19,6 +19,12 @@ pub struct IdentifierExpression {
     pub name: String,
 }
 
+#[derive(PartialEq, Debug)]
+pub struct FunctionCallExpression {
+    pub name: String,
+    pub arguments: Vec<ExpressionType>,
+}
+
 impl Parser {
     pub(crate) fn parse_expression(&mut self) -> ExpressionType {
         if let Some(token) = self.next() {
