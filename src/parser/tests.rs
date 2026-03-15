@@ -188,3 +188,32 @@ fn parses_identifier_variable_assignment() {
         )]
     )
 }
+
+#[test]
+fn parses_boolean_variable_assignment() {
+    let result = Parser::new(vec![
+        Token::new("var", TokenKind::Variable),
+        Token::new("x", TokenKind::Identifier),
+        Token::new("=", TokenKind::Assign),
+        Token::new("true", TokenKind::True),
+        Token::new("var", TokenKind::Variable),
+        Token::new("y", TokenKind::Identifier),
+        Token::new("=", TokenKind::Assign),
+        Token::new("false", TokenKind::False),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![
+            StatementType::VariableDeclaration(VariableDeclarationStatement {
+                identifier: String::from("x"),
+                value: ExpressionType::Literal(LiteralType::Boolean(true))
+            }),
+            StatementType::VariableDeclaration(VariableDeclarationStatement {
+                identifier: String::from("y"),
+                value: ExpressionType::Literal(LiteralType::Boolean(false))
+            }),
+        ]
+    )
+}
