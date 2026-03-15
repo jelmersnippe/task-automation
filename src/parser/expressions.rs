@@ -59,13 +59,14 @@ impl Parser {
         return ExpressionType::Identifier(IdentifierExpression { name: token.value });
     }
 
-    pub(crate) fn parse_function_call_expression(&mut self) -> FunctionCallExpression {
-        let identifier = self.expect(TokenKind::Identifier);
-
+    pub(crate) fn parse_function_call_expression(
+        &mut self,
+        identifier_token: Token,
+    ) -> FunctionCallExpression {
         self.expect(TokenKind::LeftParenthesis);
 
         return FunctionCallExpression {
-            name: identifier.value,
+            name: identifier_token.value,
             arguments: self.parse_arguments(),
         };
     }

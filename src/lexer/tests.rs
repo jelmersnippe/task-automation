@@ -1,6 +1,21 @@
 use crate::lexer::lexer::{self, Token, TokenKind};
 
 #[test]
+fn tokenizes_built_in_print() {
+    let result = lexer::lexer(String::from("print(\"Hello world\")"));
+
+    assert_eq!(
+        result,
+        vec![
+            Token::new("print", TokenKind::Print),
+            Token::new("(", TokenKind::LeftParenthesis),
+            Token::new("Hello world", TokenKind::String),
+            Token::new(")", TokenKind::RightParenthesis),
+        ]
+    );
+}
+
+#[test]
 fn tokenizes_if_else_statement() {
     let result = lexer::lexer(String::from("if(x == 3) {} else {}"));
 

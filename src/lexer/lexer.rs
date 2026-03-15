@@ -40,6 +40,9 @@ pub enum TokenKind {
     RightBracket,
     Comma,
 
+    // Builtin
+    Print,
+
     Illegal,
 }
 
@@ -52,6 +55,7 @@ fn lookup_keyword(s: &String) -> Option<TokenKind> {
         "return" => Some(TokenKind::Return),
         "if" => Some(TokenKind::If),
         "else" => Some(TokenKind::Else),
+        "print" => Some(TokenKind::Print),
         _ => None,
     }
 }

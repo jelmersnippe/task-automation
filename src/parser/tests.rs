@@ -4,10 +4,33 @@ use crate::{
         Parser,
         expressions::{ExpressionType, FunctionCallExpression, IdentifierExpression, LiteralType},
         statements::{
-            Block, FunctionDeclarationStatement, StatementType, VariableDeclarationStatement,
+            Block, BuiltInStatement, FunctionDeclarationStatement, PrintStatement, StatementType,
+            VariableDeclarationStatement,
         },
     },
 };
+
+#[test]
+fn parses_built_in_print() {
+    let result = Parser::new(vec![
+        Token::new("print", TokenKind::Print),
+        Token::new("(", TokenKind::LeftParenthesis),
+        Token::new("x", TokenKind::Identifier),
+        Token::new(")", TokenKind::RightParenthesis),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![StatementType::BuiltIn(BuiltInStatement::Print(
+            PrintStatement {
+                argument: ExpressionType::Identifier(IdentifierExpression {
+                    name: String::from("x")
+                })
+            }
+        ))]
+    )
+}
 
 #[test]
 fn parses_function_call_expression_without_arguments() {

@@ -1,5 +1,6 @@
 use super::Parser;
 use super::expressions;
+use crate::lexer::lexer::Token;
 use crate::lexer::lexer::TokenKind;
 
 #[derive(PartialEq, Debug)]
@@ -8,6 +9,7 @@ pub enum StatementType {
     FunctionDeclaration(FunctionDeclarationStatement),
     Return(expressions::ExpressionType),
     FunctionCall(expressions::FunctionCallExpression),
+    BuiltIn(BuiltInStatement),
 }
 
 #[derive(PartialEq, Debug)]
@@ -28,14 +30,25 @@ pub struct FunctionDeclarationStatement {
     pub body: Block,
 }
 
+#[derive(PartialEq, Debug)]
+pub enum BuiltInStatement {
+    Print(PrintStatement),
+}
+
+#[derive(PartialEq, Debug)]
+pub struct PrintStatement {
+    pub argument: expressions::ExpressionType,
+}
+
 impl Parser {
     pub(crate) fn parse_statement(&mut self) -> StatementType {
-        if let Some(token) = self.peek() {
+        if let Some(token) = self.next() {
             return match token.kind {
                 TokenKind::Variable => self.parse_variable_declaration(),
                 TokenKind::Function => self.parse_function_declaration(),
                 TokenKind::Return => self.parse_return_statement(),
-                TokenKind::Identifier => self.parse_function_call_statement(),
+                TokenKind::Identifier => self.parse_function_call_statement(token),
+                TokenKind::Print => self.parse_print_statement(),
                 _ => panic!("Unknown token type in root parse: {:?}", token),
             };
         }
@@ -43,18 +56,23 @@ impl Parser {
         panic!("No more tokens to parse");
     }
 
-    fn parse_function_call_statement(&mut self) -> StatementType {
-        return StatementType::FunctionCall(self.parse_function_call_expression());
+    fn parse_print_statement(&mut self) -> StatementType {
+        self.expect(TokenKind::LeftParenthesis);
+        let argument = self.parse_expression();
+        self.expect(TokenKind::RightParenthesis);
+
+        return StatementType::BuiltIn(BuiltInStatement::Print(PrintStatement { argument }));
+    }
+
+    fn parse_function_call_statement(&mut self, identifier_token: Token) -> StatementType {
+        return StatementType::FunctionCall(self.parse_function_call_expression(identifier_token));
     }
 
     fn parse_return_statement(&mut self) -> StatementType {
-        self.expect(TokenKind::Return);
         return StatementType::Return(self.parse_expression());
     }
 
     fn parse_variable_declaration(&mut self) -> StatementType {
-        self.expect(TokenKind::Variable);
-
         let identifier = self.expect(TokenKind::Identifier).value;
         self.expect(TokenKind::Assign);
         let value = self.parse_expression();
@@ -66,8 +84,6 @@ impl Parser {
     }
 
     fn parse_function_declaration(&mut self) -> StatementType {
-        self.expect(TokenKind::Function);
-
         let identifier = self.expect(TokenKind::Identifier).value;
         let mut arguments: Vec<expressions::IdentifierExpression> = vec![];
 
@@ -143,6 +159,9 @@ pub fn statement_to_string(statement: &StatementType) -> String {
         ),
         StatementType::FunctionCall(function_call_expression) => {
             expressions::function_call_expression_to_string(function_call_expression)
+        }
+        StatementType::BuiltIn(built_in_statement) => {
+            format!("Builtin: {:?}", built_in_statement)
         }
     }
 }
