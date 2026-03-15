@@ -1,10 +1,11 @@
 use super::Parser;
-use crate::lexer::lexer::TokenKind;
+use crate::lexer::lexer::{Token, TokenKind};
 
 #[derive(PartialEq, Debug)]
 pub enum ExpressionType {
     Literal(LiteralType),
     Identifier(IdentifierExpression),
+    FunctionCall(FunctionCallExpression),
 }
 
 #[derive(PartialEq, Debug)]
@@ -32,19 +33,57 @@ impl Parser {
                 TokenKind::Number => ExpressionType::Literal(LiteralType::Number(
                     token.value.parse::<f32>().unwrap(),
                 )),
-                TokenKind::String => {
-                    ExpressionType::Literal(LiteralType::String(token.value.clone()))
-                }
-                TokenKind::True => return ExpressionType::Literal(LiteralType::Boolean(true)),
+                TokenKind::String => ExpressionType::Literal(LiteralType::String(token.value)),
+                TokenKind::True => ExpressionType::Literal(LiteralType::Boolean(true)),
                 TokenKind::False => ExpressionType::Literal(LiteralType::Boolean(false)),
-                TokenKind::Identifier => ExpressionType::Identifier(IdentifierExpression {
-                    name: token.value.clone(),
-                }),
+                TokenKind::Identifier => self.parse_identifier_expression(token),
                 _ => panic!("Unsupported expression type {:?}", token.kind),
             };
         }
 
         panic!("No next token in parse_expression");
+    }
+
+    fn parse_identifier_expression(&mut self, token: Token) -> ExpressionType {
+        if token.kind != TokenKind::Identifier {
+            panic!("Expected identifier token, found {:?}", token)
+        }
+
+        if self.r#match(TokenKind::LeftParenthesis) {
+            return ExpressionType::FunctionCall(FunctionCallExpression {
+                name: token.value,
+                arguments: self.parse_arguments(),
+            });
+        }
+
+        return ExpressionType::Identifier(IdentifierExpression { name: token.value });
+    }
+
+    pub(crate) fn parse_function_call_expression(&mut self) -> FunctionCallExpression {
+        let identifier = self.expect(TokenKind::Identifier);
+
+        self.expect(TokenKind::LeftParenthesis);
+
+        return FunctionCallExpression {
+            name: identifier.value,
+            arguments: self.parse_arguments(),
+        };
+    }
+
+    fn parse_arguments(&mut self) -> Vec<ExpressionType> {
+        let mut arguments: Vec<ExpressionType> = vec![];
+
+        if !self.r#match(TokenKind::RightParenthesis) {
+            arguments.push(self.parse_expression());
+
+            while self.r#match(TokenKind::Comma) {
+                arguments.push(self.parse_expression());
+            }
+
+            self.expect(TokenKind::RightParenthesis);
+        }
+
+        return arguments;
     }
 }
 
@@ -58,5 +97,19 @@ pub fn expression_to_string(expression: &ExpressionType) -> String {
         ExpressionType::Identifier(identifier_expression) => {
             format!("Identifier '{}'", identifier_expression.name)
         }
+        ExpressionType::FunctionCall(function_call_expression) => {
+            function_call_expression_to_string(function_call_expression)
+        }
     };
+}
+
+pub fn function_call_expression_to_string(expression: &FunctionCallExpression) -> String {
+    return format!(
+        "Function call\n\tName: '{}'\n\tArguments: {}",
+        expression.name,
+        expression
+            .arguments
+            .iter()
+            .fold(String::new(), |acc, cur| acc + &expression_to_string(cur))
+    );
 }

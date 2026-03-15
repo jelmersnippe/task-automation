@@ -32,10 +32,10 @@ impl Parser {
     pub(crate) fn parse_statement(&mut self) -> StatementType {
         if let Some(token) = self.peek() {
             return match token.kind {
-                TokenKind::Variable => self.parse_variable_statement(),
+                TokenKind::Variable => self.parse_variable_declaration(),
                 TokenKind::Function => self.parse_function_declaration(),
                 TokenKind::Return => self.parse_return_statement(),
-                TokenKind::Identifier => self.parse_function_call(),
+                TokenKind::Identifier => self.parse_function_call_statement(),
                 _ => panic!("Unknown token type in root parse: {:?}", token),
             };
         }
@@ -43,27 +43,8 @@ impl Parser {
         panic!("No more tokens to parse");
     }
 
-    fn parse_function_call(&mut self) -> StatementType {
-        let identifier = self.expect(TokenKind::Identifier).value.clone();
-
-        self.expect(TokenKind::LeftParenthesis);
-
-        let mut arguments: Vec<expressions::ExpressionType> = vec![];
-
-        if !self.r#match(TokenKind::RightParenthesis) {
-            arguments.push(self.parse_expression());
-
-            while self.r#match(TokenKind::Comma) {
-                arguments.push(self.parse_expression());
-            }
-
-            self.expect(TokenKind::RightParenthesis);
-        }
-
-        return StatementType::FunctionCall(expressions::FunctionCallExpression {
-            name: identifier,
-            arguments,
-        });
+    fn parse_function_call_statement(&mut self) -> StatementType {
+        return StatementType::FunctionCall(self.parse_function_call_expression());
     }
 
     fn parse_return_statement(&mut self) -> StatementType {
@@ -71,10 +52,10 @@ impl Parser {
         return StatementType::Return(self.parse_expression());
     }
 
-    fn parse_variable_statement(&mut self) -> StatementType {
+    fn parse_variable_declaration(&mut self) -> StatementType {
         self.expect(TokenKind::Variable);
 
-        let identifier = self.expect(TokenKind::Identifier).value.clone();
+        let identifier = self.expect(TokenKind::Identifier).value;
         self.expect(TokenKind::Assign);
         let value = self.parse_expression();
 
@@ -87,19 +68,19 @@ impl Parser {
     fn parse_function_declaration(&mut self) -> StatementType {
         self.expect(TokenKind::Function);
 
-        let identifier = self.expect(TokenKind::Identifier).value.clone();
+        let identifier = self.expect(TokenKind::Identifier).value;
         let mut arguments: Vec<expressions::IdentifierExpression> = vec![];
 
         self.expect(TokenKind::LeftParenthesis);
 
         if !self.r#match(TokenKind::RightParenthesis) {
             arguments.push(expressions::IdentifierExpression {
-                name: self.expect(TokenKind::Identifier).value.clone(),
+                name: self.expect(TokenKind::Identifier).value,
             });
 
             while self.r#match(TokenKind::Comma) {
                 arguments.push(expressions::IdentifierExpression {
-                    name: self.expect(TokenKind::Identifier).value.clone(),
+                    name: self.expect(TokenKind::Identifier).value,
                 });
             }
 
@@ -160,14 +141,8 @@ pub fn statement_to_string(statement: &StatementType) -> String {
             "Return statement with expression: {}",
             expressions::expression_to_string(expression_type)
         ),
-        StatementType::FunctionCall(function_call_expression) => format!(
-            "Function call\n\tName: '{}'\n\tArguments: {}",
-            function_call_expression.name,
-            function_call_expression
-                .arguments
-                .iter()
-                .fold(String::new(), |acc, cur| acc
-                    + &expressions::expression_to_string(cur))
-        ),
+        StatementType::FunctionCall(function_call_expression) => {
+            expressions::function_call_expression_to_string(function_call_expression)
+        }
     }
 }

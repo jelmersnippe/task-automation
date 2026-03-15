@@ -26,28 +26,28 @@ impl Parser {
         return ast;
     }
 
-    fn peek(&self) -> Option<&Token> {
+    fn peek(&self) -> Option<Token> {
         if self.pos >= self.tokens.len() {
             return None;
         }
 
-        return Some(&self.tokens[self.pos]);
+        return Some(self.tokens[self.pos].clone());
     }
 
-    fn next(&mut self) -> Option<&Token> {
+    fn next(&mut self) -> Option<Token> {
         if self.pos >= self.tokens.len() {
             return None;
         }
 
-        let token = Some(&self.tokens[self.pos]);
+        let token = Some(self.tokens[self.pos].clone());
         self.pos += 1;
         return token;
     }
 
-    fn expect(&mut self, kind: TokenKind) -> &Token {
+    fn expect(&mut self, kind: TokenKind) -> Token {
         if let Some(next_token) = self.next() {
             if next_token.kind == kind {
-                return next_token;
+                return next_token.clone();
             }
 
             panic!(

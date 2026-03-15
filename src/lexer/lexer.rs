@@ -81,7 +81,7 @@ fn is_break_char(c: char) -> bool {
     return c.is_ascii_whitespace() || c == ';';
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Token {
     pub kind: TokenKind,
     pub value: String,

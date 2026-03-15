@@ -10,7 +10,97 @@ use crate::{
 };
 
 #[test]
-fn parses_function_statement_without_arguments() {
+fn parses_function_call_expression_without_arguments() {
+    let result = Parser::new(vec![
+        Token::new("var", TokenKind::Variable),
+        Token::new("x", TokenKind::Identifier),
+        Token::new("=", TokenKind::Assign),
+        Token::new("greet", TokenKind::Identifier),
+        Token::new("(", TokenKind::LeftParenthesis),
+        Token::new(")", TokenKind::RightParenthesis),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![StatementType::VariableDeclaration(
+            VariableDeclarationStatement {
+                identifier: String::from("x"),
+                value: ExpressionType::FunctionCall(FunctionCallExpression {
+                    name: String::from("greet"),
+                    arguments: vec![]
+                })
+            }
+        )]
+    )
+}
+
+#[test]
+fn parses_function_call_expression_with_literal_arguments() {
+    let result = Parser::new(vec![
+        Token::new("var", TokenKind::Variable),
+        Token::new("x", TokenKind::Identifier),
+        Token::new("=", TokenKind::Assign),
+        Token::new("greet", TokenKind::Identifier),
+        Token::new("(", TokenKind::LeftParenthesis),
+        Token::new("5", TokenKind::Number),
+        Token::new(",", TokenKind::Comma),
+        Token::new("Hello", TokenKind::String),
+        Token::new(",", TokenKind::Comma),
+        Token::new("true", TokenKind::True),
+        Token::new(")", TokenKind::RightParenthesis),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![StatementType::VariableDeclaration(
+            VariableDeclarationStatement {
+                identifier: String::from("x"),
+                value: ExpressionType::FunctionCall(FunctionCallExpression {
+                    name: String::from("greet"),
+                    arguments: vec![
+                        ExpressionType::Literal(LiteralType::Number(5 as f32)),
+                        ExpressionType::Literal(LiteralType::String(String::from("Hello"))),
+                        ExpressionType::Literal(LiteralType::Boolean(true))
+                    ]
+                })
+            }
+        )]
+    )
+}
+
+#[test]
+fn parses_function_call_expression_with_identifier_argument() {
+    let result = Parser::new(vec![
+        Token::new("var", TokenKind::Variable),
+        Token::new("x", TokenKind::Identifier),
+        Token::new("=", TokenKind::Assign),
+        Token::new("greet", TokenKind::Identifier),
+        Token::new("(", TokenKind::LeftParenthesis),
+        Token::new("x", TokenKind::Identifier),
+        Token::new(")", TokenKind::RightParenthesis),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![StatementType::VariableDeclaration(
+            VariableDeclarationStatement {
+                identifier: String::from("x"),
+                value: ExpressionType::FunctionCall(FunctionCallExpression {
+                    name: String::from("greet"),
+                    arguments: vec![ExpressionType::Identifier(IdentifierExpression {
+                        name: String::from("x")
+                    })]
+                })
+            }
+        )]
+    )
+}
+
+#[test]
+fn parses_function_call_statement_without_arguments() {
     let result = Parser::new(vec![
         Token::new("greet", TokenKind::Identifier),
         Token::new("(", TokenKind::LeftParenthesis),
@@ -28,7 +118,7 @@ fn parses_function_statement_without_arguments() {
 }
 
 #[test]
-fn parses_function_statement_with_literal_arguments() {
+fn parses_function_call_statement_with_literal_arguments() {
     let result = Parser::new(vec![
         Token::new("greet", TokenKind::Identifier),
         Token::new("(", TokenKind::LeftParenthesis),
@@ -55,7 +145,7 @@ fn parses_function_statement_with_literal_arguments() {
 }
 
 #[test]
-fn parses_function_statement_with_identifier_argument() {
+fn parses_function_call_statement_with_identifier_argument() {
     let result = Parser::new(vec![
         Token::new("greet", TokenKind::Identifier),
         Token::new("(", TokenKind::LeftParenthesis),
