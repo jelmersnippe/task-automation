@@ -1,18 +1,12 @@
 use super::Parser;
-use crate::lexer::lexer::{Token, TokenKind};
+use crate::lexer::lexer::{LiteralType, Token, TokenKind};
 
 #[derive(PartialEq, Debug)]
 pub enum ExpressionType {
     Literal(LiteralType),
     Identifier(IdentifierExpression),
     FunctionCall(FunctionCallExpression),
-}
-
-#[derive(PartialEq, Debug)]
-pub enum LiteralType {
-    String(String),
-    Number(f32),
-    Boolean(bool),
+    BinaryOperation(BinaryOperationExpression),
 }
 
 #[derive(PartialEq, Debug)]
@@ -26,22 +20,40 @@ pub struct FunctionCallExpression {
     pub arguments: Vec<ExpressionType>,
 }
 
+#[derive(PartialEq, Debug)]
+pub enum BinaryOperator {
+    Add,
+    Subtract,
+    Divide,
+    Multiply,
+}
+
+#[derive(PartialEq, Debug)]
+pub struct BinaryOperationExpression {
+    pub left: Box<ExpressionType>,
+    pub operator: BinaryOperator,
+    pub right: Box<ExpressionType>,
+}
+
 impl Parser {
     pub(crate) fn parse_expression(&mut self) -> ExpressionType {
         if let Some(token) = self.next() {
             return match token.kind {
-                TokenKind::Number => ExpressionType::Literal(LiteralType::Number(
-                    token.value.parse::<f32>().unwrap(),
-                )),
-                TokenKind::String => ExpressionType::Literal(LiteralType::String(token.value)),
-                TokenKind::True => ExpressionType::Literal(LiteralType::Boolean(true)),
-                TokenKind::False => ExpressionType::Literal(LiteralType::Boolean(false)),
+                TokenKind::Literal(literal) => self.parse_literal(literal),
                 TokenKind::Identifier => self.parse_identifier_expression(token),
                 _ => panic!("Unsupported expression type {:?}", token.kind),
             };
         }
 
         panic!("No next token in parse_expression");
+    }
+
+    fn parse_literal(&mut self, literal: LiteralType) -> ExpressionType {
+        match literal {
+            LiteralType::Number(_) => ExpressionType::Literal(literal),
+            LiteralType::String(value) => ExpressionType::Literal(LiteralType::String(value)),
+            LiteralType::Boolean(_) => ExpressionType::Literal(literal),
+        }
     }
 
     fn parse_identifier_expression(&mut self, token: Token) -> ExpressionType {
@@ -101,6 +113,7 @@ pub fn expression_to_string(expression: &ExpressionType) -> String {
         ExpressionType::FunctionCall(function_call_expression) => {
             function_call_expression_to_string(function_call_expression)
         }
+        ExpressionType::BinaryOperation(binary_operation_expression) => todo!(),
     };
 }
 

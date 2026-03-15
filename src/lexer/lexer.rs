@@ -1,6 +1,6 @@
 use std::char;
 
-#[derive(PartialEq, Eq, Debug, Clone, Copy)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum TokenKind {
     Identifier,
     Assign,
@@ -9,14 +9,11 @@ pub enum TokenKind {
     Variable,
     Function,
     Return,
-    True,
-    False,
     If,
     Else,
 
     // Literals
-    Number,
-    String,
+    Literal(LiteralType),
 
     // Comparison Operators
     Bang,
@@ -46,11 +43,18 @@ pub enum TokenKind {
     Illegal,
 }
 
+#[derive(PartialEq, Debug, Clone)]
+pub enum LiteralType {
+    String(String),
+    Number(f32),
+    Boolean(bool),
+}
+
 fn lookup_keyword(s: &String) -> Option<TokenKind> {
     match s.as_str() {
         "var" => Some(TokenKind::Variable),
-        "true" => Some(TokenKind::True),
-        "false" => Some(TokenKind::False),
+        "true" => Some(TokenKind::Literal(LiteralType::Boolean(true))),
+        "false" => Some(TokenKind::Literal(LiteralType::Boolean(false))),
         "fn" => Some(TokenKind::Function),
         "return" => Some(TokenKind::Return),
         "if" => Some(TokenKind::If),
@@ -85,7 +89,7 @@ fn is_break_char(c: char) -> bool {
     return c.is_ascii_whitespace() || c == ';';
 }
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Token {
     pub kind: TokenKind,
     pub value: String,
@@ -133,7 +137,7 @@ fn is_valid_identifier(text: &String) -> bool {
     return text.chars().all(|x| is_letter(x) || x.is_ascii_digit());
 }
 
-fn text_to_token(text: &String) -> Option<Token> {
+fn text_to_token(text: String) -> Option<Token> {
     if text.is_empty() {
         return None;
     }
@@ -148,11 +152,14 @@ fn text_to_token(text: &String) -> Option<Token> {
                 text.clone()
             };
             let kind = if is_valid_number(&text) {
-                TokenKind::Number
+                TokenKind::Literal(LiteralType::Number(
+                    text.parse::<f32>()
+                        .expect("is_valid_number but f32 parse failed"),
+                ))
             } else if is_valid_identifier(&text) {
                 TokenKind::Identifier
             } else if is_valid_string(&text) {
-                TokenKind::String
+                TokenKind::Literal(LiteralType::String(String::from(text)))
             } else {
                 TokenKind::Illegal
             };
@@ -184,7 +191,7 @@ pub fn lexer(text: String) -> Vec<Token> {
             continue;
         }
 
-        if let Some(token) = text_to_token(&current) {
+        if let Some(token) = text_to_token(current.clone()) {
             tokens.push(token);
             current.clear();
         }

@@ -1,14 +1,36 @@
 use crate::{
-    lexer::lexer::{Token, TokenKind},
+    lexer::lexer::{LiteralType, Token, TokenKind},
     parser::{
         Parser,
-        expressions::{ExpressionType, FunctionCallExpression, IdentifierExpression, LiteralType},
+        expressions::{ExpressionType, FunctionCallExpression, IdentifierExpression},
         statements::{
             Block, BuiltInStatement, FunctionDeclarationStatement, PrintStatement, StatementType,
             VariableDeclarationStatement,
         },
     },
 };
+
+#[test]
+fn parses_binary_operation_expressions() {
+    let result = Parser::new(vec![
+        Token::new("print", TokenKind::Print),
+        Token::new("(", TokenKind::LeftParenthesis),
+        Token::new("x", TokenKind::Identifier),
+        Token::new(")", TokenKind::RightParenthesis),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![StatementType::BuiltIn(BuiltInStatement::Print(
+            PrintStatement {
+                argument: ExpressionType::Identifier(IdentifierExpression {
+                    name: String::from("x")
+                })
+            }
+        ))]
+    )
+}
 
 #[test]
 fn parses_built_in_print() {
@@ -66,11 +88,14 @@ fn parses_function_call_expression_with_literal_arguments() {
         Token::new("=", TokenKind::Assign),
         Token::new("greet", TokenKind::Identifier),
         Token::new("(", TokenKind::LeftParenthesis),
-        Token::new("5", TokenKind::Number),
+        Token::new("5", TokenKind::Literal(LiteralType::Number(5.0))),
         Token::new(",", TokenKind::Comma),
-        Token::new("Hello", TokenKind::String),
+        Token::new(
+            "Hello World",
+            TokenKind::Literal(LiteralType::String(String::from("Hello World"))),
+        ),
         Token::new(",", TokenKind::Comma),
-        Token::new("true", TokenKind::True),
+        Token::new("true", TokenKind::Literal(LiteralType::Boolean(true))),
         Token::new(")", TokenKind::RightParenthesis),
     ])
     .parse();
@@ -84,7 +109,7 @@ fn parses_function_call_expression_with_literal_arguments() {
                     name: String::from("greet"),
                     arguments: vec![
                         ExpressionType::Literal(LiteralType::Number(5 as f32)),
-                        ExpressionType::Literal(LiteralType::String(String::from("Hello"))),
+                        ExpressionType::Literal(LiteralType::String(String::from("Hello World"))),
                         ExpressionType::Literal(LiteralType::Boolean(true))
                     ]
                 })
@@ -145,11 +170,14 @@ fn parses_function_call_statement_with_literal_arguments() {
     let result = Parser::new(vec![
         Token::new("greet", TokenKind::Identifier),
         Token::new("(", TokenKind::LeftParenthesis),
-        Token::new("5", TokenKind::Number),
+        Token::new("5", TokenKind::Literal(LiteralType::Number(5.0))),
         Token::new(",", TokenKind::Comma),
-        Token::new("Hello", TokenKind::String),
+        Token::new(
+            "Hello World",
+            TokenKind::Literal(LiteralType::String(String::from("Hello World"))),
+        ),
         Token::new(",", TokenKind::Comma),
-        Token::new("true", TokenKind::True),
+        Token::new("true", TokenKind::Literal(LiteralType::Boolean(true))),
         Token::new(")", TokenKind::RightParenthesis),
     ])
     .parse();
@@ -160,7 +188,7 @@ fn parses_function_call_statement_with_literal_arguments() {
             name: String::from("greet"),
             arguments: vec![
                 ExpressionType::Literal(LiteralType::Number(5 as f32)),
-                ExpressionType::Literal(LiteralType::String(String::from("Hello"))),
+                ExpressionType::Literal(LiteralType::String(String::from("Hello World"))),
                 ExpressionType::Literal(LiteralType::Boolean(true))
             ]
         })]
@@ -221,7 +249,7 @@ fn parses_function_declaration_with_return() {
         Token::new(")", TokenKind::RightParenthesis),
         Token::new("{", TokenKind::LeftCurly),
         Token::new("return", TokenKind::Return),
-        Token::new("5", TokenKind::Number),
+        Token::new("5", TokenKind::Literal(LiteralType::Number(5.0))),
         Token::new("}", TokenKind::RightCurly),
     ])
     .parse();
@@ -309,7 +337,7 @@ fn parses_number_variable_assignment() {
         Token::new("var", TokenKind::Variable),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
-        Token::new("5", TokenKind::Number),
+        Token::new("5", TokenKind::Literal(LiteralType::Number(5.0))),
     ])
     .parse();
 
@@ -330,7 +358,10 @@ fn parses_string_variable_assignment() {
         Token::new("var", TokenKind::Variable),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
-        Token::new("Hello World", TokenKind::String),
+        Token::new(
+            "Hello World",
+            TokenKind::Literal(LiteralType::String(String::from("Hello World"))),
+        ),
     ])
     .parse();
 
@@ -374,11 +405,11 @@ fn parses_boolean_variable_assignment() {
         Token::new("var", TokenKind::Variable),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
-        Token::new("true", TokenKind::True),
+        Token::new("true", TokenKind::Literal(LiteralType::Boolean(true))),
         Token::new("var", TokenKind::Variable),
         Token::new("y", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
-        Token::new("false", TokenKind::False),
+        Token::new("false", TokenKind::Literal(LiteralType::Boolean(false))),
     ])
     .parse();
 
