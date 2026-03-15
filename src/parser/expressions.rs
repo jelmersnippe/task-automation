@@ -4,12 +4,18 @@ use crate::lexer::lexer::TokenKind;
 #[derive(PartialEq, Debug)]
 pub enum ExpressionType {
     Literal(LiteralType),
+    Identifier(IdentifierExpression),
 }
 
 #[derive(PartialEq, Debug)]
 pub enum LiteralType {
     String(String),
     Number(f32),
+}
+
+#[derive(PartialEq, Debug)]
+pub struct IdentifierExpression {
+    pub name: String,
 }
 
 impl Parser {
@@ -24,6 +30,11 @@ impl Parser {
                 TokenKind::String => {
                     return ExpressionType::Literal(LiteralType::String(token.value.clone()));
                 }
+                TokenKind::Identifier => {
+                    return ExpressionType::Identifier(IdentifierExpression {
+                        name: token.value.clone(),
+                    });
+                }
                 _ => panic!("Unsupported expression type {:?}", token.kind),
             }
         }
@@ -32,11 +43,14 @@ impl Parser {
     }
 }
 
-pub fn print_expression(expression: &ExpressionType) {
+pub fn expression_to_string(expression: &ExpressionType) -> String {
     match expression {
         ExpressionType::Literal(literal_type) => match literal_type {
-            LiteralType::String(value) => println!("String literal with value '{}'", value),
-            LiteralType::Number(value) => println!("Number literal with value {}", value),
+            LiteralType::String(value) => return format!("String literal with value '{}'", value),
+            LiteralType::Number(value) => return format!("Number literal with value {}", value),
         },
+        ExpressionType::Identifier(identifier_expression) => {
+            return format!("Identifier '{}'", identifier_expression.name);
+        }
     }
 }

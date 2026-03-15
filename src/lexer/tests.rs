@@ -54,7 +54,7 @@ fn tokenizes_function_call_with_arguments() {
 }
 
 #[test]
-fn tokenizes_function_definition_without_arguments() {
+fn tokenizes_function_declaration_without_arguments() {
     let result = lexer::lexer(String::from("fn greet() {}"));
 
     assert_eq!(
@@ -71,7 +71,7 @@ fn tokenizes_function_definition_without_arguments() {
 }
 
 #[test]
-fn tokenizes_function_definition_with_return() {
+fn tokenizes_function_declaration_with_return() {
     let result = lexer::lexer(String::from("fn greet() {return 5}"));
 
     assert_eq!(
@@ -90,7 +90,7 @@ fn tokenizes_function_definition_with_return() {
 }
 
 #[test]
-fn tokenizes_function_definition_with_single_argument() {
+fn tokenizes_function_declaration_with_single_argument() {
     let result = lexer::lexer(String::from("fn greet(arg1) {}"));
 
     assert_eq!(
@@ -108,7 +108,7 @@ fn tokenizes_function_definition_with_single_argument() {
 }
 
 #[test]
-fn tokenizes_function_definition_with_multiple_arguments() {
+fn tokenizes_function_declaration_with_multiple_arguments() {
     let result = lexer::lexer(String::from("fn greet(arg1, arg2) {}"));
 
     assert_eq!(

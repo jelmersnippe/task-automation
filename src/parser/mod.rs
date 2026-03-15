@@ -75,5 +75,6 @@ impl Parser {
 }
 
 pub fn print_ast(ast: &Vec<statements::StatementType>) {
-    ast.iter().for_each(|x| statements::print_statement(x));
+    ast.iter()
+        .for_each(|x| println!("{}", statements::statement_to_string(x)));
 }

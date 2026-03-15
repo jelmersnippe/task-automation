@@ -20,11 +20,11 @@ fn main() {
 
         let tokens = lexer(input);
         print_tokens(&tokens);
+        println!();
 
         let mut parser = Parser::new(tokens);
         let ast = parser.parse();
         print_ast(&ast);
-
         println!();
     }
     // process_file("./dsl/variables.dsl");

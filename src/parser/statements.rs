@@ -6,6 +6,7 @@ use crate::lexer::lexer::TokenKind;
 pub enum StatementType {
     VariableDeclaration(VariableDeclarationStatement),
     FunctionDeclaration(FunctionDeclarationStatement),
+    Return(expressions::ExpressionType),
 }
 
 #[derive(PartialEq, Debug)]
@@ -22,7 +23,7 @@ pub struct VariableDeclarationStatement {
 #[derive(PartialEq, Debug)]
 pub struct FunctionDeclarationStatement {
     pub identifier: String,
-    pub arguments: Vec<String>,
+    pub arguments: Vec<expressions::IdentifierExpression>,
     pub body: Block,
 }
 
@@ -32,11 +33,16 @@ impl Parser {
             return match token.kind {
                 TokenKind::Variable => self.parse_variable_statement(),
                 TokenKind::Function => self.parse_function_declaration(),
-                _ => panic!("Unknown token type in root parse"),
+                TokenKind::Return => self.parse_return_statement(),
+                _ => panic!("Unknown token type in root parse: {:?}", token),
             };
         }
 
         panic!("No more tokens to parse");
+    }
+
+    fn parse_return_statement(&mut self) -> StatementType {
+        return StatementType::Return(self.parse_expression());
     }
 
     fn parse_variable_statement(&mut self) -> StatementType {
@@ -53,12 +59,14 @@ impl Parser {
     fn parse_function_declaration(&mut self) -> StatementType {
         let identifier = self.expect(TokenKind::Identifier).value.clone();
         self.expect(TokenKind::LeftParenthesis);
-        let mut arguments: Vec<String> = vec![];
+        let mut arguments: Vec<expressions::IdentifierExpression> = vec![];
 
         if !self.r#match(TokenKind::RightParenthesis) {
             loop {
                 let identifier = self.expect(TokenKind::Identifier);
-                arguments.push(identifier.value.clone());
+                arguments.push(expressions::IdentifierExpression {
+                    name: identifier.value.clone(),
+                });
 
                 if self.r#match(TokenKind::RightParenthesis) {
                     break;
@@ -79,42 +87,50 @@ impl Parser {
 
     pub fn parse_block(&mut self) -> Block {
         self.expect(TokenKind::LeftCurly);
-        // TODO
-        self.expect(TokenKind::RightCurly);
-        return Block { statements: vec![] };
+        let mut statements: Vec<StatementType> = vec![];
+        while !self.r#match(TokenKind::RightCurly) {
+            statements.push(self.parse_statement())
+        }
+
+        return Block { statements };
     }
 }
 
-pub fn print_statement(statement: &StatementType) {
+pub fn statement_to_string(statement: &StatementType) -> String {
     match statement {
-        StatementType::VariableDeclaration(variable_declaration_statement) => {
-            println!(
-                "Variable declaration with identifier {}",
-                variable_declaration_statement.identifier
-            );
-            expressions::print_expression(&variable_declaration_statement.value);
-            println!();
-        }
-        StatementType::FunctionDeclaration(function_declaration_statement) => {
-            println!(
-                "Function definition with identifier {}",
-                function_declaration_statement.identifier
-            );
-            if function_declaration_statement.arguments.len() > 0 {
-                println!("Arguments:",);
-                function_declaration_statement
-                    .arguments
-                    .iter()
-                    .for_each(|x| println!("\t{}", x));
-            }
-            if function_declaration_statement.body.statements.len() > 0 {
-                println!("Body:");
-                function_declaration_statement
-                    .body
-                    .statements
-                    .iter()
-                    .for_each(|x| print!("\t,{:?}", print_statement(x)));
-            }
-        }
+        StatementType::VariableDeclaration(variable_declaration_statement) => format!(
+            "Variable declaration\n\tIdentifier: '{}'\n\tValue: {}",
+            variable_declaration_statement.identifier,
+            expressions::expression_to_string(&variable_declaration_statement.value)
+        ),
+
+        StatementType::FunctionDeclaration(function_declaration_statement) => format!(
+            "Function declaration\n\tIdentifier: '{}'\n\tArguments: {}\n\tBody:{}",
+            function_declaration_statement.identifier,
+            function_declaration_statement
+                .arguments
+                .iter()
+                .fold(String::new(), |acc, cur| {
+                    return acc
+                        + "\n\t\t"
+                        + &expressions::expression_to_string(
+                            &expressions::ExpressionType::Identifier(
+                                expressions::IdentifierExpression {
+                                    name: cur.name.clone(),
+                                },
+                            ),
+                        );
+                }),
+            function_declaration_statement.body.statements.iter().fold(
+                String::new(),
+                |acc, cur| {
+                    return acc + "\n\t\t" + &statement_to_string(cur);
+                }
+            )
+        ),
+        StatementType::Return(expression_type) => format!(
+            "Return statement with expression: {:?}",
+            expressions::expression_to_string(expression_type)
+        ),
     }
 }
