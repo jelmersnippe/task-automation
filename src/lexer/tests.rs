@@ -1,4 +1,4 @@
-use crate::lexer::lexer::{self, LiteralType, Token, TokenKind};
+use crate::lexer::lexer::{self, Token, TokenKind};
 
 #[test]
 fn tokenizes_built_in_print() {
@@ -9,10 +9,7 @@ fn tokenizes_built_in_print() {
         vec![
             Token::new("print", TokenKind::Print),
             Token::new("(", TokenKind::LeftParenthesis),
-            Token::new(
-                "Hello World",
-                TokenKind::Literal(LiteralType::String(String::from("\"Hello World\"")))
-            ),
+            Token::new("Hello World", TokenKind::String),
             Token::new(")", TokenKind::RightParenthesis),
         ]
     );
@@ -29,7 +26,7 @@ fn tokenizes_if_else_statement() {
             Token::new("(", TokenKind::LeftParenthesis),
             Token::new("x", TokenKind::Identifier),
             Token::new("==", TokenKind::Equal),
-            Token::new("5", TokenKind::Literal(LiteralType::Number(5.0))),
+            Token::new("5", TokenKind::Number),
             Token::new(")", TokenKind::RightParenthesis),
             Token::new("{", TokenKind::LeftCurly),
             Token::new("}", TokenKind::RightCurly),
@@ -101,7 +98,7 @@ fn tokenizes_function_declaration_with_return() {
             Token::new(")", TokenKind::RightParenthesis),
             Token::new("{", TokenKind::LeftCurly),
             Token::new("return", TokenKind::Return),
-            Token::new("5", TokenKind::Literal(LiteralType::Number(5.0))),
+            Token::new("5", TokenKind::Number),
             Token::new("}", TokenKind::RightCurly)
         ]
     );
@@ -213,7 +210,7 @@ fn tokenizes_number_variable_assignment() {
             Token::new("var", TokenKind::Variable),
             Token::new("x", TokenKind::Identifier),
             Token::new("=", TokenKind::Assign),
-            Token::new("5", TokenKind::Literal(LiteralType::Number(5.0))),
+            Token::new("5", TokenKind::Number),
         ]
     );
 }
@@ -228,11 +225,11 @@ fn tokenizes_boolean_variable_assignment() {
             Token::new("var", TokenKind::Variable),
             Token::new("x", TokenKind::Identifier),
             Token::new("=", TokenKind::Assign),
-            Token::new("true", TokenKind::Literal(LiteralType::Boolean(true))),
+            Token::new("true", TokenKind::True),
             Token::new("var", TokenKind::Variable),
             Token::new("y", TokenKind::Identifier),
             Token::new("=", TokenKind::Assign),
-            Token::new("false", TokenKind::Literal(LiteralType::Boolean(false))),
+            Token::new("false", TokenKind::False),
         ]
     );
 }
@@ -247,10 +244,7 @@ fn tokenizes_string_variable_assignment() {
             Token::new("var", TokenKind::Variable),
             Token::new("x", TokenKind::Identifier),
             Token::new("=", TokenKind::Assign),
-            Token::new(
-                "Hello World",
-                TokenKind::Literal(LiteralType::String(String::from("\"Hello World\"")))
-            ),
+            Token::new("Hello World", TokenKind::String),
         ]
     );
 }
@@ -262,9 +256,9 @@ fn tokenizes_numbers() {
     assert_eq!(
         result,
         vec![
-            Token::new("1", TokenKind::Literal(LiteralType::Number(1.0))),
-            Token::new("1.1", TokenKind::Literal(LiteralType::Number(1.1))),
-            Token::new(".1", TokenKind::Literal(LiteralType::Number(0.1)))
+            Token::new("1", TokenKind::Number),
+            Token::new("1.1", TokenKind::Number),
+            Token::new(".1", TokenKind::Number)
         ]
     );
 }
@@ -308,8 +302,8 @@ fn tokenizes_keywords() {
             Token::new("var", TokenKind::Variable),
             Token::new("fn", TokenKind::Function),
             Token::new("return", TokenKind::Return),
-            Token::new("true", TokenKind::Literal(LiteralType::Boolean(true))),
-            Token::new("false", TokenKind::Literal(LiteralType::Boolean(false))),
+            Token::new("true", TokenKind::True),
+            Token::new("false", TokenKind::False),
             Token::new("if", TokenKind::If),
             Token::new("else", TokenKind::Else),
         ]

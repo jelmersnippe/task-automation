@@ -13,7 +13,10 @@ pub enum TokenKind {
     Else,
 
     // Literals
-    Literal(LiteralType),
+    String,
+    Number,
+    True,
+    False,
 
     // Comparison Operators
     Bang,
@@ -43,18 +46,11 @@ pub enum TokenKind {
     Illegal,
 }
 
-#[derive(PartialEq, Debug, Clone)]
-pub enum LiteralType {
-    String(String),
-    Number(f32),
-    Boolean(bool),
-}
-
 fn lookup_keyword(s: &String) -> Option<TokenKind> {
     match s.as_str() {
         "var" => Some(TokenKind::Variable),
-        "true" => Some(TokenKind::Literal(LiteralType::Boolean(true))),
-        "false" => Some(TokenKind::Literal(LiteralType::Boolean(false))),
+        "true" => Some(TokenKind::True),
+        "false" => Some(TokenKind::False),
         "fn" => Some(TokenKind::Function),
         "return" => Some(TokenKind::Return),
         "if" => Some(TokenKind::If),
@@ -152,14 +148,11 @@ fn text_to_token(text: String) -> Option<Token> {
                 text.clone()
             };
             let kind = if is_valid_number(&text) {
-                TokenKind::Literal(LiteralType::Number(
-                    text.parse::<f32>()
-                        .expect("is_valid_number but f32 parse failed"),
-                ))
+                TokenKind::Number
             } else if is_valid_identifier(&text) {
                 TokenKind::Identifier
             } else if is_valid_string(&text) {
-                TokenKind::Literal(LiteralType::String(String::from(text)))
+                TokenKind::String
             } else {
                 TokenKind::Illegal
             };
