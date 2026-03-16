@@ -45,7 +45,8 @@ pub struct BinaryOperationExpression {
 impl Parser {
     pub(crate) fn parse_expression(&mut self) -> ExpressionType {
         if let Some(token) = self.next() {
-            return match token.kind {
+            let expression = match token.kind {
+                TokenKind::Minus => self.parse_negative_number(),
                 TokenKind::Number => ExpressionType::Literal(LiteralType::Number(
                     token
                         .value
@@ -56,12 +57,46 @@ impl Parser {
                 TokenKind::True => ExpressionType::Literal(LiteralType::Boolean(true)),
                 TokenKind::False => ExpressionType::Literal(LiteralType::Boolean(false)),
                 TokenKind::Identifier => self.parse_identifier_expression(token),
-                TokenKind::Subtract => self.parse_negative_number(),
                 _ => panic!("Unsupported expression type {:?}", token.kind),
             };
+
+            if let Some(binary_operator) = self.match_any(vec![
+                TokenKind::Plus,
+                TokenKind::Minus,
+                TokenKind::Times,
+                TokenKind::Divide,
+            ]) {
+                return match binary_operator.kind {
+                    TokenKind::Plus => self.parse_binary_operation(expression, BinaryOperator::Add),
+                    TokenKind::Minus => {
+                        self.parse_binary_operation(expression, BinaryOperator::Subtract)
+                    }
+                    TokenKind::Divide => {
+                        self.parse_binary_operation(expression, BinaryOperator::Divide)
+                    }
+                    TokenKind::Times => {
+                        self.parse_binary_operation(expression, BinaryOperator::Multiply)
+                    }
+                    _ => expression,
+                };
+            }
+
+            return expression;
         }
 
         panic!("No next token in parse_expression");
+    }
+
+    fn parse_binary_operation(
+        &mut self,
+        left: ExpressionType,
+        operator: BinaryOperator,
+    ) -> ExpressionType {
+        return ExpressionType::BinaryOperation(BinaryOperationExpression {
+            left: Box::new(left),
+            operator,
+            right: Box::new(self.parse_expression()),
+        });
     }
 
     fn parse_negative_number(&mut self) -> ExpressionType {

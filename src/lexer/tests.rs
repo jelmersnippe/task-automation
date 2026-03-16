@@ -149,10 +149,10 @@ fn tokenizes_arithmetic_operators() {
     assert_eq!(
         result,
         vec![
-            Token::new("+", TokenKind::Add),
-            Token::new("-", TokenKind::Subtract),
+            Token::new("+", TokenKind::Plus),
+            Token::new("-", TokenKind::Minus),
             Token::new("/", TokenKind::Divide),
-            Token::new("*", TokenKind::Multiply)
+            Token::new("*", TokenKind::Times)
         ]
     );
 }

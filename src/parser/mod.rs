@@ -72,6 +72,17 @@ impl Parser {
 
         return false;
     }
+
+    fn match_any(&mut self, kinds: Vec<TokenKind>) -> Option<Token> {
+        if let Some(next_token) = self.peek()
+            && kinds.contains(&next_token.kind)
+        {
+            self.pos += 1;
+            return Some(next_token.clone());
+        }
+
+        return None;
+    }
 }
 
 pub fn print_ast(ast: &Vec<statements::StatementType>) {

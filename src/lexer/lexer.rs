@@ -26,10 +26,10 @@ pub enum TokenKind {
     NotEqual,
 
     // Arithmetic Operators
-    Add,
-    Subtract,
+    Plus,
+    Minus,
     Divide,
-    Multiply,
+    Times,
 
     // Separators / Punctuators
     LeftParenthesis,
@@ -65,10 +65,10 @@ fn lookup_char(c: char) -> Option<TokenKind> {
         '>' => Some(TokenKind::GreaterThan),
         '<' => Some(TokenKind::LessThan),
         // Arithmetic Operators
-        '+' => Some(TokenKind::Add),
-        '-' => Some(TokenKind::Subtract),
+        '+' => Some(TokenKind::Plus),
+        '-' => Some(TokenKind::Minus),
         '/' => Some(TokenKind::Divide),
-        '*' => Some(TokenKind::Multiply),
+        '*' => Some(TokenKind::Times),
         // Separators / Punctuators
         '(' => Some(TokenKind::LeftParenthesis),
         ')' => Some(TokenKind::RightParenthesis),
