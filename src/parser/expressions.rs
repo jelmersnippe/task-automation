@@ -97,25 +97,13 @@ impl Parser {
         let right = self.parse_expression();
 
         let is_low_prio_operator =
-            vec![BinaryOperator::Add, BinaryOperator::Subtract].contains(&operator);
-        let left_is_binary_operation = matches!(left, ExpressionType::BinaryOperation { .. });
-        let right_is_binary_operation = matches!(right, ExpressionType::BinaryOperation { .. });
-
-        if is_low_prio_operator || (!left_is_binary_operation && !right_is_binary_operation) {
+            matches!(operator, BinaryOperator::Add | BinaryOperator::Subtract);
+        if is_low_prio_operator {
             return ExpressionType::BinaryOperation(BinaryOperationExpression {
                 left: Box::new(left),
                 operator,
                 right: Box::new(right),
             });
-        }
-
-        if left_is_binary_operation {
-            panic!(
-                "Multiply and divide should not have a binary operation as their left. Found:\nLeft: {}\nOperator: {:?}\nRight: {}",
-                expression_to_string(&left),
-                operator,
-                expression_to_string(&right)
-            )
         }
 
         if let ExpressionType::BinaryOperation(x) = right {
@@ -129,7 +117,11 @@ impl Parser {
                 right: x.right,
             });
         } else {
-            panic!("Unreachable code! Right can't be a binary expression at this point.")
+            return ExpressionType::BinaryOperation(BinaryOperationExpression {
+                left: Box::new(left),
+                operator,
+                right: Box::new(right),
+            });
         }
     }
 
