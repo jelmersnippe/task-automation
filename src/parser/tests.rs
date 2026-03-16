@@ -14,7 +14,7 @@ use crate::{
 };
 
 #[test]
-fn parses_complex_binary_operation_expressions() {
+fn parses_binary_operation_with_precedence() {
     let result = Parser::new(vec![
         Token::new("var", TokenKind::Variable),
         Token::new("a", TokenKind::Identifier),
@@ -67,7 +67,7 @@ fn parses_complex_binary_operation_expressions() {
 }
 
 #[test]
-fn parses_negative_binary_operation_expressions() {
+fn parses_binary_operation_with_negative_numbers() {
     let result = Parser::new(vec![
         Token::new("var", TokenKind::Variable),
         Token::new("a", TokenKind::Identifier),
@@ -110,7 +110,75 @@ fn parses_negative_binary_operation_expressions() {
 }
 
 #[test]
-fn parses_simple_binary_operation_expressions() {
+fn parses_binary_operation_with_function_calls() {
+    let result = Parser::new(vec![
+        Token::new("var", TokenKind::Variable),
+        Token::new("a", TokenKind::Identifier),
+        Token::new("=", TokenKind::Assign),
+        Token::new("foo", TokenKind::Identifier),
+        Token::new("(", TokenKind::LeftParenthesis),
+        Token::new(")", TokenKind::RightParenthesis),
+        Token::new("+", TokenKind::Plus),
+        Token::new("bar", TokenKind::Identifier),
+        Token::new("(", TokenKind::LeftParenthesis),
+        Token::new(")", TokenKind::RightParenthesis),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![StatementType::VariableDeclaration(
+            VariableDeclarationStatement {
+                identifier: String::from("a"),
+                value: ExpressionType::BinaryOperation(BinaryOperationExpression {
+                    left: Box::new(ExpressionType::FunctionCall(FunctionCallExpression {
+                        name: String::from("foo"),
+                        arguments: vec![]
+                    })),
+                    operator: BinaryOperator::Add,
+                    right: Box::new(ExpressionType::FunctionCall(FunctionCallExpression {
+                        name: String::from("bar"),
+                        arguments: vec![]
+                    })),
+                })
+            }
+        ),]
+    )
+}
+
+#[test]
+fn parses_binary_operation_with_identifiers() {
+    let result = Parser::new(vec![
+        Token::new("var", TokenKind::Variable),
+        Token::new("a", TokenKind::Identifier),
+        Token::new("=", TokenKind::Assign),
+        Token::new("foo", TokenKind::Identifier),
+        Token::new("+", TokenKind::Plus),
+        Token::new("bar", TokenKind::Identifier),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![StatementType::VariableDeclaration(
+            VariableDeclarationStatement {
+                identifier: String::from("a"),
+                value: ExpressionType::BinaryOperation(BinaryOperationExpression {
+                    left: Box::new(ExpressionType::Identifier(IdentifierExpression {
+                        name: String::from("foo")
+                    })),
+                    operator: BinaryOperator::Add,
+                    right: Box::new(ExpressionType::Identifier(IdentifierExpression {
+                        name: String::from("bar")
+                    })),
+                })
+            }
+        ),]
+    )
+}
+
+#[test]
+fn parses_binary_operation_with_numbers() {
     let result = Parser::new(vec![
         Token::new("var", TokenKind::Variable),
         Token::new("a", TokenKind::Identifier),
@@ -472,7 +540,7 @@ fn parses_function_declaration_with_multiple_arguments() {
 }
 
 #[test]
-fn parses_number_variable_assignment() {
+fn parses_variable_assignment_number() {
     let result = Parser::new(vec![
         Token::new("var", TokenKind::Variable),
         Token::new("x", TokenKind::Identifier),
@@ -502,7 +570,7 @@ fn parses_number_variable_assignment() {
 }
 
 #[test]
-fn parses_string_variable_assignment() {
+fn parses_variable_assignment_string() {
     let result = Parser::new(vec![
         Token::new("var", TokenKind::Variable),
         Token::new("x", TokenKind::Identifier),
@@ -523,7 +591,7 @@ fn parses_string_variable_assignment() {
 }
 
 #[test]
-fn parses_identifier_variable_assignment() {
+fn parses_variable_assignment_identifier() {
     let result = Parser::new(vec![
         Token::new("var", TokenKind::Variable),
         Token::new("x", TokenKind::Identifier),
@@ -546,7 +614,7 @@ fn parses_identifier_variable_assignment() {
 }
 
 #[test]
-fn parses_boolean_variable_assignment() {
+fn parses_variable_assignment_boolean() {
     let result = Parser::new(vec![
         Token::new("var", TokenKind::Variable),
         Token::new("x", TokenKind::Identifier),
