@@ -14,6 +14,73 @@ use crate::{
 };
 
 #[test]
+fn parses_binary_operation_with_nested_precedence() {
+    let result = Parser::new(vec![
+        Token::new("var", TokenKind::Variable),
+        Token::new("x", TokenKind::Identifier),
+        Token::new("=", TokenKind::Assign),
+        Token::new("1", TokenKind::Number),
+        Token::new("*", TokenKind::Times),
+        Token::new("2", TokenKind::Number),
+        Token::new("*", TokenKind::Times),
+        Token::new("3", TokenKind::Number),
+        Token::new("+", TokenKind::Plus),
+        Token::new("4", TokenKind::Number),
+        Token::new("/", TokenKind::Divide),
+        Token::new("5", TokenKind::Number),
+        Token::new("*", TokenKind::Times),
+        Token::new("6", TokenKind::Number),
+        Token::new("+", TokenKind::Plus),
+        Token::new("7", TokenKind::Number),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![StatementType::VariableDeclaration(
+            VariableDeclarationStatement {
+                identifier: String::from("x"),
+                value: ExpressionType::BinaryOperation(BinaryOperationExpression {
+                    left: Box::new(ExpressionType::BinaryOperation(BinaryOperationExpression {
+                        left: Box::new(ExpressionType::Literal(LiteralType::Number(1.0))),
+                        operator: BinaryOperator::Multiply,
+                        right: Box::new(ExpressionType::BinaryOperation(
+                            BinaryOperationExpression {
+                                left: Box::new(ExpressionType::Literal(LiteralType::Number(2.0))),
+                                operator: BinaryOperator::Multiply,
+                                right: Box::new(ExpressionType::Literal(LiteralType::Number(3.0))),
+                            }
+                        ))
+                    })),
+                    operator: BinaryOperator::Add,
+                    right: Box::new(ExpressionType::BinaryOperation(BinaryOperationExpression {
+                        left: Box::new(ExpressionType::BinaryOperation(
+                            BinaryOperationExpression {
+                                left: Box::new(ExpressionType::Literal(LiteralType::Number(4.0))),
+                                operator: BinaryOperator::Divide,
+                                right: Box::new(ExpressionType::BinaryOperation(
+                                    BinaryOperationExpression {
+                                        left: Box::new(ExpressionType::Literal(
+                                            LiteralType::Number(5.0)
+                                        )),
+                                        operator: BinaryOperator::Multiply,
+                                        right: Box::new(ExpressionType::Literal(
+                                            LiteralType::Number(6.0)
+                                        )),
+                                    }
+                                ))
+                            }
+                        )),
+                        operator: BinaryOperator::Add,
+                        right: Box::new(ExpressionType::Literal(LiteralType::Number(7.0))),
+                    }))
+                })
+            }
+        ),]
+    )
+}
+
+#[test]
 fn parses_binary_operation_with_precedence() {
     let result = Parser::new(vec![
         Token::new("var", TokenKind::Variable),
