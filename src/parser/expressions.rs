@@ -64,6 +64,25 @@ impl From<TokenKind> for BinaryOperator {
     }
 }
 
+impl BinaryOperator {
+    fn get_precedence(&self) -> i32 {
+        match self {
+            BinaryOperator::Add => 0,
+            BinaryOperator::Subtract => 0,
+            BinaryOperator::Divide => 1,
+            BinaryOperator::Multiply => 1,
+            BinaryOperator::Equal => 2,
+            BinaryOperator::NotEqual => 2,
+            BinaryOperator::GreaterThan => 2,
+            BinaryOperator::LessThan => 2,
+            BinaryOperator::GreaterOrEqual => 2,
+            BinaryOperator::LessOrEqual => 2,
+            BinaryOperator::And => 3,
+            BinaryOperator::Or => 3,
+        }
+    }
+}
+
 #[derive(PartialEq, Debug)]
 pub enum UnaryOperator {
     Minus,
@@ -143,33 +162,36 @@ impl Parser {
     ) -> ExpressionType {
         let right = self.parse_expression();
 
-        let is_low_prio_operator =
-            matches!(operator, BinaryOperator::Add | BinaryOperator::Subtract);
-        if is_low_prio_operator {
-            return ExpressionType::BinaryOperation(BinaryOperationExpression {
-                left: Box::new(left),
-                operator,
-                right: Box::new(right),
-            });
-        }
+        match &right {
+            ExpressionType::BinaryOperation(x) => {
+                // Reorder the expression if the left operator has higher precedence
+                if operator.get_precedence() > x.operator.get_precedence() {
+                    match right {
+                        ExpressionType::BinaryOperation(x) => {
+                            return ExpressionType::BinaryOperation(BinaryOperationExpression {
+                                left: Box::new(ExpressionType::BinaryOperation(
+                                    BinaryOperationExpression {
+                                        left: Box::new(left),
+                                        operator,
+                                        right: x.left,
+                                    },
+                                )),
+                                operator: x.operator,
+                                right: x.right,
+                            });
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            _ => {}
+        };
 
-        if let ExpressionType::BinaryOperation(x) = right {
-            return ExpressionType::BinaryOperation(BinaryOperationExpression {
-                left: Box::new(ExpressionType::BinaryOperation(BinaryOperationExpression {
-                    left: Box::new(left),
-                    operator,
-                    right: x.left,
-                })),
-                operator: x.operator,
-                right: x.right,
-            });
-        } else {
-            return ExpressionType::BinaryOperation(BinaryOperationExpression {
-                left: Box::new(left),
-                operator,
-                right: Box::new(right),
-            });
-        }
+        return ExpressionType::BinaryOperation(BinaryOperationExpression {
+            left: Box::new(left),
+            operator,
+            right: Box::new(right),
+        });
     }
 
     fn parse_identifier_expression(&mut self, token: Token) -> ExpressionType {
