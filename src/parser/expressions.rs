@@ -1,5 +1,3 @@
-use std::fmt::Binary;
-
 use super::Parser;
 use crate::lexer::lexer::{Token, TokenKind};
 
@@ -47,46 +45,58 @@ pub struct BinaryOperationExpression {
 impl Parser {
     pub(crate) fn parse_expression(&mut self) -> ExpressionType {
         if let Some(token) = self.next() {
-            let expression = match token.kind {
-                TokenKind::Minus => self.parse_negative_number(),
-                TokenKind::Number => ExpressionType::Literal(LiteralType::Number(
-                    token
-                        .value
-                        .parse::<f32>()
-                        .expect("f32 parse failed for expression with TokeKind::Number"),
-                )),
-                TokenKind::String => ExpressionType::Literal(LiteralType::String(token.value)),
-                TokenKind::True => ExpressionType::Literal(LiteralType::Boolean(true)),
-                TokenKind::False => ExpressionType::Literal(LiteralType::Boolean(false)),
-                TokenKind::Identifier => self.parse_identifier_expression(token),
-                _ => panic!("Unsupported expression type {:?}", token.kind),
-            };
+            let expression = self.parse_simple_expression(token);
 
-            if let Some(binary_operator) = self.match_any(vec![
-                TokenKind::Plus,
-                TokenKind::Minus,
-                TokenKind::Times,
-                TokenKind::Divide,
-            ]) {
-                return match binary_operator.kind {
-                    TokenKind::Plus => self.parse_binary_operation(expression, BinaryOperator::Add),
-                    TokenKind::Minus => {
-                        self.parse_binary_operation(expression, BinaryOperator::Subtract)
-                    }
-                    TokenKind::Divide => {
-                        self.parse_binary_operation(expression, BinaryOperator::Divide)
-                    }
-                    TokenKind::Times => {
-                        self.parse_binary_operation(expression, BinaryOperator::Multiply)
-                    }
-                    _ => expression,
-                };
-            }
-
-            return expression;
+            return self.parse_binary_expression(expression);
         }
 
         panic!("No next token in parse_expression");
+    }
+
+    fn parse_binary_expression(&mut self, expression: ExpressionType) -> ExpressionType {
+        if let Some(binary_operator) = self.match_any(&[
+            TokenKind::Plus,
+            TokenKind::Minus,
+            TokenKind::Times,
+            TokenKind::Divide,
+        ]) {
+            return match binary_operator.kind {
+                TokenKind::Plus => self.parse_binary_operation(expression, BinaryOperator::Add),
+                TokenKind::Minus => {
+                    self.parse_binary_operation(expression, BinaryOperator::Subtract)
+                }
+                TokenKind::Divide => {
+                    self.parse_binary_operation(expression, BinaryOperator::Divide)
+                }
+                TokenKind::Times => {
+                    self.parse_binary_operation(expression, BinaryOperator::Multiply)
+                }
+                _ => expression,
+            };
+        }
+
+        return expression;
+    }
+
+    fn parse_simple_expression(&mut self, token: Token) -> ExpressionType {
+        return match token.kind {
+            TokenKind::LeftParenthesis => {
+                let expression = self.parse_expression();
+
+                self.expect(TokenKind::RightParenthesis);
+
+                return expression;
+            }
+            TokenKind::Minus => self.parse_negative_number(),
+            TokenKind::Number => {
+                ExpressionType::Literal(LiteralType::Number(token.value.parse::<f32>().unwrap()))
+            }
+            TokenKind::String => ExpressionType::Literal(LiteralType::String(token.value)),
+            TokenKind::True => ExpressionType::Literal(LiteralType::Boolean(true)),
+            TokenKind::False => ExpressionType::Literal(LiteralType::Boolean(false)),
+            TokenKind::Identifier => self.parse_identifier_expression(token),
+            _ => panic!("Unsupported expression type {:?}", token.kind),
+        };
     }
 
     fn parse_binary_operation(

@@ -73,7 +73,7 @@ impl Parser {
         return false;
     }
 
-    fn match_any(&mut self, kinds: Vec<TokenKind>) -> Option<Token> {
+    fn match_any(&mut self, kinds: &[TokenKind]) -> Option<Token> {
         if let Some(next_token) = self.peek()
             && kinds.contains(&next_token.kind)
         {
