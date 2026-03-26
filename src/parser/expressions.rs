@@ -7,6 +7,7 @@ pub enum ExpressionType {
     Identifier(IdentifierExpression),
     FunctionCall(FunctionCallExpression),
     BinaryOperation(BinaryOperationExpression),
+    UnaryOperation(UnaryOperationExpression),
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -36,21 +37,29 @@ pub enum BinaryOperator {
 }
 
 #[derive(PartialEq, Debug)]
+pub enum UnaryOperator {
+    Minus,
+    Bang,
+}
+
+#[derive(PartialEq, Debug)]
 pub struct BinaryOperationExpression {
     pub left: Box<ExpressionType>,
     pub operator: BinaryOperator,
     pub right: Box<ExpressionType>,
 }
 
+#[derive(PartialEq, Debug)]
+pub struct UnaryOperationExpression {
+    pub operator: UnaryOperator,
+    pub expression: Box<ExpressionType>,
+}
+
 impl Parser {
     pub(crate) fn parse_expression(&mut self) -> ExpressionType {
-        if let Some(token) = self.next() {
-            let expression = self.parse_simple_expression(token);
+        let expression = self.parse_simple_expression();
 
-            return self.parse_binary_expression(expression);
-        }
-
-        panic!("No next token in parse_expression");
+        return self.parse_binary_expression(expression);
     }
 
     fn parse_binary_expression(&mut self, expression: ExpressionType) -> ExpressionType {
@@ -78,25 +87,36 @@ impl Parser {
         return expression;
     }
 
-    fn parse_simple_expression(&mut self, token: Token) -> ExpressionType {
-        return match token.kind {
-            TokenKind::LeftParenthesis => {
-                let expression = self.parse_expression();
+    fn parse_simple_expression(&mut self) -> ExpressionType {
+        if let Some(token) = self.next() {
+            return match token.kind {
+                TokenKind::LeftParenthesis => {
+                    let expression = self.parse_expression();
 
-                self.expect(TokenKind::RightParenthesis);
+                    self.expect(TokenKind::RightParenthesis);
 
-                return expression;
-            }
-            TokenKind::Minus => self.parse_negative_number(),
-            TokenKind::Number => {
-                ExpressionType::Literal(LiteralType::Number(token.value.parse::<f32>().unwrap()))
-            }
-            TokenKind::String => ExpressionType::Literal(LiteralType::String(token.value)),
-            TokenKind::True => ExpressionType::Literal(LiteralType::Boolean(true)),
-            TokenKind::False => ExpressionType::Literal(LiteralType::Boolean(false)),
-            TokenKind::Identifier => self.parse_identifier_expression(token),
-            _ => panic!("Unsupported expression type {:?}", token.kind),
-        };
+                    return expression;
+                }
+                TokenKind::Minus => ExpressionType::UnaryOperation(UnaryOperationExpression {
+                    operator: UnaryOperator::Minus,
+                    expression: Box::new(self.parse_simple_expression()),
+                }),
+                TokenKind::Bang => ExpressionType::UnaryOperation(UnaryOperationExpression {
+                    operator: UnaryOperator::Bang,
+                    expression: Box::new(self.parse_simple_expression()),
+                }),
+                TokenKind::Number => ExpressionType::Literal(LiteralType::Number(
+                    token.value.parse::<f32>().unwrap(),
+                )),
+                TokenKind::String => ExpressionType::Literal(LiteralType::String(token.value)),
+                TokenKind::True => ExpressionType::Literal(LiteralType::Boolean(true)),
+                TokenKind::False => ExpressionType::Literal(LiteralType::Boolean(false)),
+                TokenKind::Identifier => self.parse_identifier_expression(token),
+                _ => panic!("Unsupported expression type {:?}", token.kind),
+            };
+        }
+
+        panic!("No next token in parse_expression")
     }
 
     fn parse_binary_operation(
@@ -133,17 +153,6 @@ impl Parser {
                 right: Box::new(right),
             });
         }
-    }
-
-    fn parse_negative_number(&mut self) -> ExpressionType {
-        let number_token = self.expect(TokenKind::Number);
-
-        return ExpressionType::Literal(LiteralType::Number(
-            -number_token
-                .value
-                .parse::<f32>()
-                .expect("f32 parse failed for expression with TokeKind::Number"),
-        ));
     }
 
     fn parse_identifier_expression(&mut self, token: Token) -> ExpressionType {
@@ -204,6 +213,7 @@ pub fn expression_to_string(expression: &ExpressionType) -> String {
             function_call_expression_to_string(function_call_expression)
         }
         ExpressionType::BinaryOperation(binary_operation_expression) => todo!(),
+        ExpressionType::UnaryOperation(unary_operation_expression) => todo!(),
     };
 }
 

@@ -4,7 +4,7 @@ use crate::{
         Parser,
         expressions::{
             BinaryOperationExpression, BinaryOperator, ExpressionType, FunctionCallExpression,
-            IdentifierExpression, LiteralType,
+            IdentifierExpression, LiteralType, UnaryOperationExpression, UnaryOperator,
         },
         statements::{
             Block, BuiltInStatement, FunctionDeclarationStatement, PrintStatement, StatementType,
@@ -12,6 +12,42 @@ use crate::{
         },
     },
 };
+
+#[test]
+fn parses_unary_operation_with_parenthesis() {
+    // var x = -(1 + 2)
+    let result = Parser::new(vec![
+        Token::new("var", TokenKind::Variable),
+        Token::new("x", TokenKind::Identifier),
+        Token::new("=", TokenKind::Assign),
+        Token::new("-", TokenKind::Minus),
+        Token::new("(", TokenKind::LeftParenthesis),
+        Token::new("1", TokenKind::Number),
+        Token::new("+", TokenKind::Plus),
+        Token::new("2", TokenKind::Number),
+        Token::new(")", TokenKind::RightParenthesis),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![StatementType::VariableDeclaration(
+            VariableDeclarationStatement {
+                identifier: String::from("x"),
+                value: ExpressionType::UnaryOperation(UnaryOperationExpression {
+                    expression: Box::new(ExpressionType::BinaryOperation(
+                        BinaryOperationExpression {
+                            left: Box::new(ExpressionType::Literal(LiteralType::Number(1.0))),
+                            operator: BinaryOperator::Add,
+                            right: Box::new(ExpressionType::Literal(LiteralType::Number(2.0))),
+                        }
+                    )),
+                    operator: UnaryOperator::Minus
+                })
+            }
+        )]
+    )
+}
 
 #[test]
 fn parses_binary_operation_with_parenthesis() {
@@ -73,6 +109,7 @@ fn parses_binary_operation_with_parenthesis() {
 
 #[test]
 fn parses_binary_operation_with_nested_precedence() {
+    // var x = 1 * 2 * 3 + 4 / 5 * 6 + 7
     let result = Parser::new(vec![
         Token::new("var", TokenKind::Variable),
         Token::new("x", TokenKind::Identifier),
@@ -140,6 +177,7 @@ fn parses_binary_operation_with_nested_precedence() {
 
 #[test]
 fn parses_binary_operation_with_precedence() {
+    // var a = 2 + 2 * 2 var b = 2 * 2 + 2
     let result = Parser::new(vec![
         Token::new("var", TokenKind::Variable),
         Token::new("a", TokenKind::Identifier),
@@ -193,6 +231,7 @@ fn parses_binary_operation_with_precedence() {
 
 #[test]
 fn parses_binary_operation_with_negative_numbers() {
+    // var a = -2 + 2 var b = 2 - -2
     let result = Parser::new(vec![
         Token::new("var", TokenKind::Variable),
         Token::new("a", TokenKind::Identifier),
@@ -217,7 +256,10 @@ fn parses_binary_operation_with_negative_numbers() {
             StatementType::VariableDeclaration(VariableDeclarationStatement {
                 identifier: String::from("a"),
                 value: ExpressionType::BinaryOperation(BinaryOperationExpression {
-                    left: Box::new(ExpressionType::Literal(LiteralType::Number(-2.0))),
+                    left: Box::new(ExpressionType::UnaryOperation(UnaryOperationExpression {
+                        expression: Box::new(ExpressionType::Literal(LiteralType::Number(2.0))),
+                        operator: UnaryOperator::Minus
+                    })),
                     operator: BinaryOperator::Add,
                     right: Box::new(ExpressionType::Literal(LiteralType::Number(2.0))),
                 })
@@ -227,7 +269,10 @@ fn parses_binary_operation_with_negative_numbers() {
                 value: ExpressionType::BinaryOperation(BinaryOperationExpression {
                     left: Box::new(ExpressionType::Literal(LiteralType::Number(2.0))),
                     operator: BinaryOperator::Subtract,
-                    right: Box::new(ExpressionType::Literal(LiteralType::Number(-2.0))),
+                    right: Box::new(ExpressionType::UnaryOperation(UnaryOperationExpression {
+                        operator: UnaryOperator::Minus,
+                        expression: Box::new(ExpressionType::Literal(LiteralType::Number(2.0))),
+                    }))
                 })
             }),
         ]
@@ -688,7 +733,10 @@ fn parses_variable_assignment_number() {
             }),
             StatementType::VariableDeclaration(VariableDeclarationStatement {
                 identifier: String::from("y"),
-                value: ExpressionType::Literal(LiteralType::Number(-5 as f32))
+                value: ExpressionType::UnaryOperation(UnaryOperationExpression {
+                    expression: Box::new(ExpressionType::Literal(LiteralType::Number(5 as f32))),
+                    operator: UnaryOperator::Minus
+                })
             })
         ]
     )
