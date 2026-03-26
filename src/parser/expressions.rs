@@ -30,10 +30,38 @@ pub struct FunctionCallExpression {
 
 #[derive(PartialEq, Debug)]
 pub enum BinaryOperator {
+    // Arithmitic
     Add,
     Subtract,
     Divide,
     Multiply,
+
+    // Comparison
+    Equal,
+    NotEqual,
+    GreaterThan,
+    LessThan,
+    // TODO: Support in lexer
+    GreaterOrEqual,
+    LessOrEqual,
+    And,
+    Or,
+}
+
+impl From<TokenKind> for BinaryOperator {
+    fn from(kind: TokenKind) -> Self {
+        return match kind {
+            TokenKind::GreaterThan => BinaryOperator::GreaterThan,
+            TokenKind::LessThan => BinaryOperator::LessThan,
+            TokenKind::Equal => BinaryOperator::Equal,
+            TokenKind::NotEqual => BinaryOperator::NotEqual,
+            TokenKind::Plus => BinaryOperator::Add,
+            TokenKind::Minus => BinaryOperator::Subtract,
+            TokenKind::Divide => BinaryOperator::Divide,
+            TokenKind::Times => BinaryOperator::Multiply,
+            _ => panic!("Can't convert {:?} to BinaryOperator", kind),
+        };
+    }
 }
 
 #[derive(PartialEq, Debug)]
@@ -69,19 +97,8 @@ impl Parser {
             TokenKind::Times,
             TokenKind::Divide,
         ]) {
-            return match binary_operator.kind {
-                TokenKind::Plus => self.parse_binary_operation(expression, BinaryOperator::Add),
-                TokenKind::Minus => {
-                    self.parse_binary_operation(expression, BinaryOperator::Subtract)
-                }
-                TokenKind::Divide => {
-                    self.parse_binary_operation(expression, BinaryOperator::Divide)
-                }
-                TokenKind::Times => {
-                    self.parse_binary_operation(expression, BinaryOperator::Multiply)
-                }
-                _ => expression,
-            };
+            return self
+                .parse_binary_operation(expression, BinaryOperator::from(binary_operator.kind));
         }
 
         return expression;
