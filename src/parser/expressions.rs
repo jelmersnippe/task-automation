@@ -41,9 +41,10 @@ pub enum BinaryOperator {
     NotEqual,
     GreaterThan,
     LessThan,
-    // TODO: Support in lexer
     GreaterOrEqual,
     LessOrEqual,
+
+    // Logical
     And,
     Or,
 }
@@ -106,10 +107,6 @@ impl Parser {
     pub(crate) fn parse_expression(&mut self) -> ExpressionType {
         let expression = self.parse_simple_expression();
 
-        return self.parse_binary_expression(expression);
-    }
-
-    fn parse_binary_expression(&mut self, expression: ExpressionType) -> ExpressionType {
         if let Some(binary_operator) = self.match_any(&[
             TokenKind::Plus,
             TokenKind::Minus,

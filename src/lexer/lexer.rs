@@ -24,6 +24,12 @@ pub enum TokenKind {
     LessThan,
     Equal,
     NotEqual,
+    GreaterOrEqual,
+    LessOrEqual,
+
+    // Logical Operators
+    And,
+    Or,
 
     // Arithmetic Operators
     Plus,
@@ -61,9 +67,6 @@ fn lookup_keyword(s: &String) -> Option<TokenKind> {
 }
 fn lookup_char(c: char) -> Option<TokenKind> {
     match c {
-        // Comparison Operators
-        '>' => Some(TokenKind::GreaterThan),
-        '<' => Some(TokenKind::LessThan),
         // Arithmetic Operators
         '+' => Some(TokenKind::Plus),
         '-' => Some(TokenKind::Minus),
@@ -203,6 +206,55 @@ pub fn lexer(text: String) -> Vec<Token> {
             } else {
                 tokens.push(Token::new("!", TokenKind::Bang));
             }
+
+            continue;
+        }
+
+        if char == '&' || char == '|' {
+            if let Some(next_token) = chars.peek()
+                && *next_token == char
+            {
+                let token = if char == '&' {
+                    Token::new("&&", TokenKind::And)
+                } else {
+                    Token::new("||", TokenKind::Or)
+                };
+                tokens.push(token);
+                chars.next();
+            } else {
+                panic!(
+                    "Invalid logical operator. Found '{}', expected '{}{}'",
+                    char, char, char
+                );
+            }
+
+            continue;
+        }
+
+        // Use lookahead for > and < char to process operators
+        if char == '>' || char == '<' {
+            let token_kind = if char == '>' {
+                TokenKind::GreaterThan
+            } else {
+                TokenKind::LessThan
+            };
+            let mut token = Token::new(char, token_kind);
+
+            match chars.peek() {
+                Some(next_char) => match next_char {
+                    '=' => {
+                        token = if char == '>' {
+                            Token::new(">=", TokenKind::GreaterOrEqual)
+                        } else {
+                            Token::new("<=", TokenKind::LessOrEqual)
+                        };
+                        chars.next();
+                    }
+                    _ => {}
+                },
+                None => {}
+            };
+            tokens.push(token);
 
             continue;
         }

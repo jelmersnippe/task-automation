@@ -171,17 +171,32 @@ fn does_not_parse_inverted_not_equal() {
 }
 
 #[test]
-fn tokenizes_comparison_operators() {
-    let result = lexer::lexer(String::from("><==!=!"));
+fn tokenizes_logical_operators() {
+    let result = lexer::lexer(String::from("&&||"));
 
     assert_eq!(
         result,
         vec![
+            Token::new("&&", TokenKind::And),
+            Token::new("||", TokenKind::Or),
+        ]
+    );
+}
+
+#[test]
+fn tokenizes_comparison_operators() {
+    let result = lexer::lexer(String::from("==><!=!>=<="));
+
+    assert_eq!(
+        result,
+        vec![
+            Token::new("==", TokenKind::Equal),
             Token::new(">", TokenKind::GreaterThan),
             Token::new("<", TokenKind::LessThan),
-            Token::new("==", TokenKind::Equal),
             Token::new("!=", TokenKind::NotEqual),
-            Token::new("!", TokenKind::Bang)
+            Token::new("!", TokenKind::Bang),
+            Token::new(">=", TokenKind::GreaterOrEqual),
+            Token::new("<=", TokenKind::LessOrEqual)
         ]
     );
 }
