@@ -28,7 +28,7 @@ pub struct FunctionCallExpression {
     pub arguments: Vec<ExpressionType>,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub enum BinaryOperator {
     // Arithmitic
     Add,
@@ -53,9 +53,13 @@ impl From<TokenKind> for BinaryOperator {
     fn from(kind: TokenKind) -> Self {
         return match kind {
             TokenKind::GreaterThan => BinaryOperator::GreaterThan,
+            TokenKind::GreaterOrEqual => BinaryOperator::GreaterOrEqual,
             TokenKind::LessThan => BinaryOperator::LessThan,
+            TokenKind::LessOrEqual => BinaryOperator::LessOrEqual,
             TokenKind::Equal => BinaryOperator::Equal,
             TokenKind::NotEqual => BinaryOperator::NotEqual,
+            TokenKind::And => BinaryOperator::And,
+            TokenKind::Or => BinaryOperator::Or,
             TokenKind::Plus => BinaryOperator::Add,
             TokenKind::Minus => BinaryOperator::Subtract,
             TokenKind::Divide => BinaryOperator::Divide,
@@ -68,18 +72,18 @@ impl From<TokenKind> for BinaryOperator {
 impl BinaryOperator {
     fn get_precedence(&self) -> i32 {
         match self {
-            BinaryOperator::Add => 0,
-            BinaryOperator::Subtract => 0,
-            BinaryOperator::Divide => 1,
-            BinaryOperator::Multiply => 1,
+            BinaryOperator::Or => 0,
+            BinaryOperator::And => 1,
             BinaryOperator::Equal => 2,
             BinaryOperator::NotEqual => 2,
             BinaryOperator::GreaterThan => 2,
             BinaryOperator::LessThan => 2,
             BinaryOperator::GreaterOrEqual => 2,
             BinaryOperator::LessOrEqual => 2,
-            BinaryOperator::And => 3,
-            BinaryOperator::Or => 3,
+            BinaryOperator::Add => 3,
+            BinaryOperator::Subtract => 3,
+            BinaryOperator::Divide => 4,
+            BinaryOperator::Multiply => 4,
         }
     }
 }
@@ -97,27 +101,125 @@ pub struct BinaryOperationExpression {
     pub right: Box<ExpressionType>,
 }
 
+impl BinaryOperationExpression {
+    pub fn new(left: ExpressionType, operator: BinaryOperator, right: ExpressionType) -> Self {
+        return BinaryOperationExpression {
+            left: Box::new(left),
+            operator,
+            right: Box::new(right),
+        };
+    }
+
+    pub fn insert_new_right(self, operator: BinaryOperator, right: ExpressionType) -> Self {
+        if operator.get_precedence() > self.operator.get_precedence() {
+            return BinaryOperationExpression::new(
+                *self.left,
+                self.operator,
+                ExpressionType::BinaryOperation(BinaryOperationExpression::new(
+                    *self.right,
+                    operator,
+                    right,
+                )),
+            );
+        } else {
+            return match *self.right {
+                ExpressionType::BinaryOperation(binary_operation_expression) => {
+                    BinaryOperationExpression::new(
+                        *self.left,
+                        self.operator,
+                        ExpressionType::BinaryOperation(
+                            binary_operation_expression.insert_new_right(operator, right),
+                        ),
+                    )
+                }
+                _ => BinaryOperationExpression::new(
+                    ExpressionType::BinaryOperation(self),
+                    operator,
+                    right,
+                ),
+            };
+        };
+    }
+}
+
 #[derive(PartialEq, Debug)]
 pub struct UnaryOperationExpression {
     pub operator: UnaryOperator,
     pub expression: Box<ExpressionType>,
 }
 
+impl UnaryOperationExpression {
+    pub fn new(operator: UnaryOperator, expression: ExpressionType) -> Self {
+        return UnaryOperationExpression {
+            operator,
+            expression: Box::new(expression),
+        };
+    }
+}
+
 impl Parser {
     pub(crate) fn parse_expression(&mut self) -> ExpressionType {
-        let expression = self.parse_simple_expression();
+        let mut left = self.parse_simple_expression();
+        let mut operator: Option<BinaryOperator> = None;
+        let mut right: Option<ExpressionType> = None;
 
-        if let Some(binary_operator) = self.match_any(&[
+        while let Some(binary_operator) = self.match_any(&[
             TokenKind::Plus,
             TokenKind::Minus,
             TokenKind::Times,
             TokenKind::Divide,
+            TokenKind::Equal,
+            TokenKind::NotEqual,
+            TokenKind::LessThan,
+            TokenKind::LessOrEqual,
+            TokenKind::GreaterThan,
+            TokenKind::GreaterOrEqual,
+            TokenKind::And,
+            TokenKind::Or,
         ]) {
-            return self
-                .parse_binary_operation(expression, BinaryOperator::from(binary_operator.kind));
+            let new_operator = BinaryOperator::from(binary_operator.kind);
+            let new_right = self.parse_simple_expression();
+
+            // Create binary operation
+            if let Some(r) = right
+                && let Some(op) = operator
+            {
+                if new_operator.get_precedence() > op.get_precedence() {
+                    // Create right associative binary operation
+                    operator = Some(op);
+                    right = match r {
+                        ExpressionType::BinaryOperation(binary_operation_expression) => {
+                            Some(ExpressionType::BinaryOperation(
+                                binary_operation_expression
+                                    .insert_new_right(new_operator, new_right),
+                            ))
+                        }
+                        _ => Some(ExpressionType::BinaryOperation(
+                            BinaryOperationExpression::new(r, new_operator, new_right),
+                        )),
+                    };
+                } else {
+                    // Create left associative binary operation
+                    left = ExpressionType::BinaryOperation(BinaryOperationExpression::new(
+                        left, op, r,
+                    ));
+                    operator = Some(new_operator);
+                    right = Some(new_right);
+                }
+            // Set initial values for operator and right
+            } else {
+                operator = Some(new_operator);
+                right = Some(new_right);
+            }
         }
 
-        return expression;
+        if let Some(r) = right
+            && let Some(op) = operator
+        {
+            return ExpressionType::BinaryOperation(BinaryOperationExpression::new(left, op, r));
+        }
+
+        return left;
     }
 
     fn parse_simple_expression(&mut self) -> ExpressionType {
@@ -130,10 +232,10 @@ impl Parser {
 
                     return expression;
                 }
-                TokenKind::Minus => ExpressionType::UnaryOperation(UnaryOperationExpression {
-                    operator: UnaryOperator::Minus,
-                    expression: Box::new(self.parse_simple_expression()),
-                }),
+                TokenKind::Minus => ExpressionType::UnaryOperation(UnaryOperationExpression::new(
+                    UnaryOperator::Minus,
+                    self.parse_simple_expression(),
+                )),
                 TokenKind::Bang => ExpressionType::UnaryOperation(UnaryOperationExpression {
                     operator: UnaryOperator::Bang,
                     expression: Box::new(self.parse_simple_expression()),
@@ -150,45 +252,6 @@ impl Parser {
         }
 
         panic!("No next token in parse_expression")
-    }
-
-    fn parse_binary_operation(
-        &mut self,
-        left: ExpressionType,
-        operator: BinaryOperator,
-    ) -> ExpressionType {
-        let right = self.parse_expression();
-
-        match &right {
-            ExpressionType::BinaryOperation(x) => {
-                // Reorder the expression if the left operator has higher precedence
-                if operator.get_precedence() > x.operator.get_precedence() {
-                    match right {
-                        ExpressionType::BinaryOperation(x) => {
-                            return ExpressionType::BinaryOperation(BinaryOperationExpression {
-                                left: Box::new(ExpressionType::BinaryOperation(
-                                    BinaryOperationExpression {
-                                        left: Box::new(left),
-                                        operator,
-                                        right: x.left,
-                                    },
-                                )),
-                                operator: x.operator,
-                                right: x.right,
-                            });
-                        }
-                        _ => {}
-                    }
-                }
-            }
-            _ => {}
-        };
-
-        return ExpressionType::BinaryOperation(BinaryOperationExpression {
-            left: Box::new(left),
-            operator,
-            right: Box::new(right),
-        });
     }
 
     fn parse_identifier_expression(&mut self, token: Token) -> ExpressionType {
