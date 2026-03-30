@@ -247,7 +247,10 @@ impl Parser {
                 TokenKind::True => ExpressionType::Literal(LiteralType::Boolean(true)),
                 TokenKind::False => ExpressionType::Literal(LiteralType::Boolean(false)),
                 TokenKind::Identifier => self.parse_identifier_expression(token),
-                _ => panic!("Unsupported expression type {:?}", token.kind),
+                _ => panic!(
+                    "Unsupported token type for simple expression {:?}",
+                    token.kind
+                ),
             };
         }
 

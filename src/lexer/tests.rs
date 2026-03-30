@@ -250,6 +250,19 @@ fn tokenizes_boolean_variable_assignment() {
 }
 
 #[test]
+fn tokenizes_strings() {
+    let result = lexer::lexer(String::from("\"Hello \" \"Running: \""));
+
+    assert_eq!(
+        result,
+        vec![
+            Token::new("Hello ", TokenKind::String),
+            Token::new("Running: ", TokenKind::String),
+        ]
+    );
+}
+
+#[test]
 fn tokenizes_string_variable_assignment() {
     let result = lexer::lexer(String::from("var x = \"Hello World\""));
 

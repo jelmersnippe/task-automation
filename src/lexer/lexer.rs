@@ -173,6 +173,22 @@ pub fn lexer(text: String) -> Vec<Token> {
     let mut chars = corrected_text.chars().into_iter().peekable();
 
     while let Some(char) = chars.next() {
+        // We are processing a likely string
+        if let Some(first_char) = current.chars().nth(0)
+            && first_char == '"'
+        {
+            current.push(char);
+
+            if char == '"'
+                && let Some(token) = text_to_token(current.clone())
+            {
+                tokens.push(token);
+                current.clear();
+            }
+
+            continue;
+        }
+
         if is_digit(char) || is_letter(char) || char == '"' {
             current.push(char);
             continue;
