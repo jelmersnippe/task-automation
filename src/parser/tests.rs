@@ -3,7 +3,7 @@ use crate::{
     parser::{
         Parser,
         expressions::{
-            BinaryOperationExpression, BinaryOperator, ExpressionType, FunctionCallExpression,
+            ExpressionType, FunctionCallExpression, FunctionDeclarationExpression,
             IdentifierExpression, LiteralType, UnaryOperationExpression, UnaryOperator,
         },
         statements::{
@@ -12,6 +12,34 @@ use crate::{
         },
     },
 };
+
+#[test]
+fn parses_function_declaration_as_argument() {
+    let result = Parser::new(vec![
+        Token::new("inlineFunctionCall", TokenKind::Identifier),
+        Token::new("(", TokenKind::LeftParenthesis),
+        Token::new("fn", TokenKind::Function),
+        Token::new("(", TokenKind::LeftParenthesis),
+        Token::new(")", TokenKind::RightParenthesis),
+        Token::new("{", TokenKind::LeftCurly),
+        Token::new("}", TokenKind::RightCurly),
+        Token::new(")", TokenKind::RightParenthesis),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![StatementType::FunctionCall(FunctionCallExpression {
+            name: String::from("inlineFunctionCall"),
+            arguments: vec![ExpressionType::FunctionDeclaration(
+                FunctionDeclarationExpression {
+                    arguments: vec![],
+                    body: Block { statements: vec![] }
+                }
+            )]
+        })]
+    )
+}
 
 #[test]
 fn parses_built_in_print() {

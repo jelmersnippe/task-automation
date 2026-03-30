@@ -1,11 +1,15 @@
 use super::Parser;
-use crate::lexer::lexer::{Token, TokenKind};
+use crate::{
+    lexer::lexer::{Token, TokenKind},
+    parser::statements::{self, Block},
+};
 
 #[derive(PartialEq, Debug)]
 pub enum ExpressionType {
     Literal(LiteralType),
     Identifier(IdentifierExpression),
     FunctionCall(FunctionCallExpression),
+    FunctionDeclaration(FunctionDeclarationExpression),
     BinaryOperation(BinaryOperationExpression),
     UnaryOperation(UnaryOperationExpression),
 }
@@ -26,6 +30,12 @@ pub struct IdentifierExpression {
 pub struct FunctionCallExpression {
     pub name: String,
     pub arguments: Vec<ExpressionType>,
+}
+
+#[derive(PartialEq, Debug)]
+pub struct FunctionDeclarationExpression {
+    pub arguments: Vec<ExpressionType>,
+    pub body: Block,
 }
 
 #[derive(PartialEq, Debug, Clone, Copy)]
@@ -247,6 +257,7 @@ impl Parser {
                 TokenKind::True => ExpressionType::Literal(LiteralType::Boolean(true)),
                 TokenKind::False => ExpressionType::Literal(LiteralType::Boolean(false)),
                 TokenKind::Identifier => self.parse_identifier_expression(token),
+                TokenKind::Function => self.parse_function_expression(token),
                 _ => panic!(
                     "Unsupported token type for simple expression {:?}",
                     token.kind
@@ -272,16 +283,21 @@ impl Parser {
         return ExpressionType::Identifier(IdentifierExpression { name: token.value });
     }
 
-    pub(crate) fn parse_function_call_expression(
-        &mut self,
-        identifier_token: Token,
-    ) -> FunctionCallExpression {
+    pub(crate) fn parse_function_expression(&mut self, identifier_token: Token) -> ExpressionType {
         self.expect(TokenKind::LeftParenthesis);
+        let arguments = self.parse_arguments();
 
-        return FunctionCallExpression {
+        if self.r#match(TokenKind::LeftCurly) {
+            return ExpressionType::FunctionDeclaration(FunctionDeclarationExpression {
+                arguments: arguments,
+                body: self.parse_block(),
+            });
+        }
+
+        return ExpressionType::FunctionCall(FunctionCallExpression {
             name: identifier_token.value,
-            arguments: self.parse_arguments(),
-        };
+            arguments: arguments,
+        });
     }
 
     fn parse_arguments(&mut self) -> Vec<ExpressionType> {
@@ -314,8 +330,33 @@ pub fn expression_to_string(expression: &ExpressionType) -> String {
         ExpressionType::FunctionCall(function_call_expression) => {
             function_call_expression_to_string(function_call_expression)
         }
-        ExpressionType::BinaryOperation(binary_operation_expression) => todo!(),
-        ExpressionType::UnaryOperation(unary_operation_expression) => todo!(),
+        ExpressionType::BinaryOperation(binary_operation_expression) => format!(
+            "Binary expression:\n\tLeft: {}\n\tOperator: {:?}\n\tRight: {}",
+            expression_to_string(&*binary_operation_expression.left),
+            binary_operation_expression.operator,
+            expression_to_string(&*binary_operation_expression.right)
+        ),
+        ExpressionType::UnaryOperation(unary_operation_expression) => format!(
+            "Unary expression:\n\tOperator: {:?}\n\tExpression: {}",
+            unary_operation_expression.operator,
+            expression_to_string(&*unary_operation_expression.expression)
+        ),
+        ExpressionType::FunctionDeclaration(function_declaration_expression) => format!(
+            "Inline function declaration\n\tArguments: {}\n\tBody:{}",
+            function_declaration_expression
+                .arguments
+                .iter()
+                .fold(String::new(), |acc, cur| acc
+                    + "\n\t\t"
+                    + &expression_to_string(cur)),
+            function_declaration_expression
+                .body
+                .statements
+                .iter()
+                .fold(String::new(), |acc, cur| acc
+                    + "\n\t\t"
+                    + &statements::statement_to_string(cur))
+        ),
     };
 }
 

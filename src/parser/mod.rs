@@ -22,7 +22,10 @@ impl Parser {
         let mut ast = Vec::<statements::StatementType>::new();
 
         while self.pos < self.tokens.len() {
-            ast.push(self.parse_statement())
+            let statement = self.parse_statement();
+            println!("{}", statements::statement_to_string(&statement));
+
+            ast.push(statement)
         }
 
         return ast;

@@ -7,6 +7,12 @@ print(y)
 print(z)
 print(a)
 
+if(true){
+    var local = "local value"
+
+    print(local)
+}
+
 var intVal = 10
 var floatVal = 10.5
 var textVal = "hello world"
@@ -64,7 +70,27 @@ fn outer(x) {
 
 print(outer(5))
 
+if (true) {
+    print("if true branch")
+}
+
+if (false) {
+    print("should not run")
+}
+
 var scopeTest = "outer"
+
+if(true){
+    var scopeTest = "inner"
+    print(scopeTest)
+
+    if(true){
+        var scopeTest = "inner-inner"
+        print(scopeTest)
+    }
+
+    print(scopeTest)
+}
 
 print(scopeTest)
 
@@ -81,8 +107,13 @@ fn   spaced ( a , b )   {
 print(spaced(1,2))
 
 fn earlyReturn(x) {
+    if (x) {
+        return "early"
+    }
+
     return "late"
 }
 
 print(earlyReturn(true))
 print(earlyReturn(false))
+

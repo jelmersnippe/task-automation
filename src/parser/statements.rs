@@ -10,6 +10,7 @@ pub enum StatementType {
     Return(expressions::ExpressionType),
     FunctionCall(expressions::FunctionCallExpression),
     BuiltIn(BuiltInStatement),
+    IfStatement(IfStatement),
 }
 
 #[derive(PartialEq, Debug)]
@@ -27,6 +28,12 @@ pub struct VariableDeclarationStatement {
 pub struct FunctionDeclarationStatement {
     pub identifier: String,
     pub arguments: Vec<expressions::IdentifierExpression>,
+    pub body: Block,
+}
+
+#[derive(PartialEq, Debug)]
+pub struct IfStatement {
+    pub condition: expressions::ExpressionType,
     pub body: Block,
 }
 
@@ -49,6 +56,7 @@ impl Parser {
                 TokenKind::Return => self.parse_return_statement(),
                 TokenKind::Identifier => self.parse_function_call_statement(token),
                 TokenKind::Print => self.parse_print_statement(),
+                TokenKind::If => self.parse_if_statement(),
                 _ => panic!("Unknown token type in root parse: {:?}", token),
             };
         }
@@ -65,7 +73,12 @@ impl Parser {
     }
 
     fn parse_function_call_statement(&mut self, identifier_token: Token) -> StatementType {
-        return StatementType::FunctionCall(self.parse_function_call_expression(identifier_token));
+        return match self.parse_function_expression(identifier_token) {
+            expressions::ExpressionType::FunctionCall(function_call_expression) => {
+                StatementType::FunctionCall(function_call_expression)
+            }
+            _ => panic!("Tried to parse function call statement but got invalid expression"),
+        };
     }
 
     fn parse_return_statement(&mut self) -> StatementType {
@@ -103,6 +116,7 @@ impl Parser {
             self.expect(TokenKind::RightParenthesis);
         }
 
+        self.expect(TokenKind::LeftCurly);
         let body = self.parse_block();
 
         return StatementType::FunctionDeclaration(FunctionDeclarationStatement {
@@ -113,13 +127,23 @@ impl Parser {
     }
 
     pub fn parse_block(&mut self) -> Block {
-        self.expect(TokenKind::LeftCurly);
         let mut statements: Vec<StatementType> = vec![];
         while !self.r#match(TokenKind::RightCurly) {
             statements.push(self.parse_statement())
         }
 
         return Block { statements };
+    }
+
+    fn parse_if_statement(&mut self) -> StatementType {
+        self.expect(TokenKind::LeftParenthesis);
+        let condition = self.parse_expression();
+        self.expect(TokenKind::RightParenthesis);
+
+        self.expect(TokenKind::LeftCurly);
+        let body = self.parse_block();
+
+        return StatementType::IfStatement(IfStatement { condition, body });
     }
 }
 
@@ -163,5 +187,16 @@ pub fn statement_to_string(statement: &StatementType) -> String {
         StatementType::BuiltIn(built_in_statement) => {
             format!("Builtin: {:?}", built_in_statement)
         }
+        StatementType::IfStatement(if_statement) => format!(
+            "If statement\n\tCondition: '{}'\n\tBody: {}",
+            expressions::expression_to_string(&if_statement.condition),
+            if_statement
+                .body
+                .statements
+                .iter()
+                .fold(String::new(), |acc, cur| acc
+                    + "\n\t\t"
+                    + &statement_to_string(cur))
+        ),
     }
 }
