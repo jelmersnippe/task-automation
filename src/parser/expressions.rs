@@ -34,7 +34,7 @@ pub struct FunctionCallExpression {
 
 #[derive(PartialEq, Debug)]
 pub struct FunctionDeclarationExpression {
-    pub arguments: Vec<ExpressionType>,
+    pub parameters: Vec<IdentifierExpression>,
     pub body: Block,
 }
 
@@ -273,11 +273,10 @@ impl Parser {
             panic!("Expected identifier token, found {:?}", token)
         }
 
-        if self.r#match(TokenKind::LeftParenthesis) {
-            return ExpressionType::FunctionCall(FunctionCallExpression {
-                name: token.value,
-                arguments: self.parse_arguments(),
-            });
+        if let Some(x) = self.peek()
+            && x.kind == TokenKind::LeftParenthesis
+        {
+            return self.parse_function_expression(token);
         }
 
         return ExpressionType::Identifier(IdentifierExpression { name: token.value });
@@ -285,19 +284,50 @@ impl Parser {
 
     pub(crate) fn parse_function_expression(&mut self, identifier_token: Token) -> ExpressionType {
         self.expect(TokenKind::LeftParenthesis);
-        let arguments = self.parse_arguments();
 
-        if self.r#match(TokenKind::LeftCurly) {
+        let is_function_declaration = identifier_token.value == "fn";
+
+        if is_function_declaration {
+            let parameters = self.parse_parameters();
+            self.expect(TokenKind::LeftCurly);
             return ExpressionType::FunctionDeclaration(FunctionDeclarationExpression {
-                arguments: arguments,
+                parameters: parameters,
                 body: self.parse_block(),
             });
         }
 
         return ExpressionType::FunctionCall(FunctionCallExpression {
             name: identifier_token.value,
-            arguments: arguments,
+            arguments: self.parse_arguments(),
         });
+    }
+
+    fn parse_parameters(&mut self) -> Vec<IdentifierExpression> {
+        let mut parameters: Vec<IdentifierExpression> = vec![];
+
+        if !self.r#match(TokenKind::RightParenthesis) {
+            let expression = self.parse_expression();
+            match expression {
+                ExpressionType::Identifier(identifier_expression) => {
+                    parameters.push(identifier_expression)
+                }
+                _ => panic!("Expected identifier while parsing parameters"),
+            }
+
+            while self.r#match(TokenKind::Comma) {
+                let expression = self.parse_expression();
+                match expression {
+                    ExpressionType::Identifier(identifier_expression) => {
+                        parameters.push(identifier_expression)
+                    }
+                    _ => panic!("Expected identifier while parsing parameters"),
+                }
+            }
+
+            self.expect(TokenKind::RightParenthesis);
+        }
+
+        return parameters;
     }
 
     fn parse_arguments(&mut self) -> Vec<ExpressionType> {
@@ -341,22 +371,28 @@ pub fn expression_to_string(expression: &ExpressionType) -> String {
             unary_operation_expression.operator,
             expression_to_string(&*unary_operation_expression.expression)
         ),
-        ExpressionType::FunctionDeclaration(function_declaration_expression) => format!(
-            "Inline function declaration\n\tArguments: {}\n\tBody:{}",
-            function_declaration_expression
-                .arguments
-                .iter()
-                .fold(String::new(), |acc, cur| acc
-                    + "\n\t\t"
-                    + &expression_to_string(cur)),
-            function_declaration_expression
-                .body
-                .statements
-                .iter()
-                .fold(String::new(), |acc, cur| acc
-                    + "\n\t\t"
-                    + &statements::statement_to_string(cur))
-        ),
+        ExpressionType::FunctionDeclaration(function_declaration_expression) => {
+            format!(
+                "Inline function declaration\n\tArguments: {}\n\tBody:{}",
+                function_declaration_expression.parameters.iter().fold(
+                    String::new(),
+                    |acc, cur| acc
+                        + "\n\t\t"
+                        + &expression_to_string(&ExpressionType::Identifier(
+                            IdentifierExpression {
+                                name: cur.name.clone()
+                            }
+                        ))
+                ),
+                function_declaration_expression
+                    .body
+                    .statements
+                    .iter()
+                    .fold(String::new(), |acc, cur| acc
+                        + "\n\t\t"
+                        + &statements::statement_to_string(cur))
+            )
+        }
     };
 }
 

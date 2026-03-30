@@ -33,7 +33,7 @@ fn parses_function_declaration_as_argument() {
             name: String::from("inlineFunctionCall"),
             arguments: vec![ExpressionType::FunctionDeclaration(
                 FunctionDeclarationExpression {
-                    arguments: vec![],
+                    parameters: vec![],
                     body: Block { statements: vec![] }
                 }
             )]
