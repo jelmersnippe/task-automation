@@ -1,5 +1,5 @@
-mod expressions;
-mod statements;
+pub(crate) mod expressions;
+pub(crate) mod statements;
 
 #[cfg(test)]
 mod binary_tests;

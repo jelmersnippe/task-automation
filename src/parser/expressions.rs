@@ -4,7 +4,7 @@ use crate::{
     parser::statements::{self, Block},
 };
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum ExpressionType {
     Literal(LiteralType),
     Identifier(IdentifierExpression),
@@ -21,18 +21,18 @@ pub enum LiteralType {
     Boolean(bool),
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct IdentifierExpression {
     pub name: String,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct FunctionCallExpression {
     pub name: String,
     pub arguments: Vec<ExpressionType>,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct FunctionDeclarationExpression {
     pub parameters: Vec<IdentifierExpression>,
     pub body: Block,
@@ -98,13 +98,13 @@ impl BinaryOperator {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum UnaryOperator {
     Minus,
     Bang,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct BinaryOperationExpression {
     pub left: Box<ExpressionType>,
     pub operator: BinaryOperator,
@@ -152,7 +152,7 @@ impl BinaryOperationExpression {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct UnaryOperationExpression {
     pub operator: UnaryOperator,
     pub expression: Box<ExpressionType>,

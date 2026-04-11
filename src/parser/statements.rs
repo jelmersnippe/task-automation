@@ -3,7 +3,7 @@ use super::expressions;
 use crate::lexer::lexer::Token;
 use crate::lexer::lexer::TokenKind;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum StatementType {
     VariableDeclaration(VariableDeclarationStatement),
     FunctionDeclaration(FunctionDeclarationStatement),
@@ -13,36 +13,36 @@ pub enum StatementType {
     IfStatement(IfStatement),
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Block {
     pub statements: Vec<StatementType>,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct VariableDeclarationStatement {
     pub identifier: String,
     pub value: expressions::ExpressionType,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct FunctionDeclarationStatement {
     pub identifier: String,
     pub arguments: Vec<expressions::IdentifierExpression>,
     pub body: Block,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct IfStatement {
     pub condition: expressions::ExpressionType,
     pub body: Block,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum BuiltInStatement {
     Print(PrintStatement),
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct PrintStatement {
     pub argument: expressions::ExpressionType,
 }

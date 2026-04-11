@@ -4,10 +4,12 @@ use std::{
 };
 
 use crate::{
+    interpreter::Interpreter,
     lexer::lexer::{TokenKind, lexer, print_tokens},
     parser::{Parser, print_ast},
 };
 
+mod interpreter;
 mod lexer;
 mod parser;
 
@@ -49,4 +51,7 @@ fn process_file(path: &'static str) {
     let mut parser = Parser::new(tokens);
     let ast = parser.parse();
     print_ast(&ast);
+
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
 }
