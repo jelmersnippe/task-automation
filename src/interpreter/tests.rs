@@ -214,3 +214,16 @@ fn interprets_variable_assignment_bool() {
     );
     assert_eq!(interpreter.functions.len(), 0);
 }
+
+#[test]
+#[should_panic]
+fn panics_on_variable_assignment_existing() {
+    let dsl = "
+    var x = true
+    var x = false
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
+}

@@ -58,6 +58,13 @@ impl Interpreter {
                 let identifier = statement.identifier.clone();
                 let value = statement.value.clone();
                 let expression = self.interpret_expression(&value);
+                if let Some(_) = self.variables.get(&identifier) {
+                    panic!(
+                        "Variable with identifier '{}' already declared",
+                        &identifier
+                    );
+                }
+
                 self.variables.insert(identifier, expression);
             }
             StatementType::FunctionDeclaration(statement) => {
