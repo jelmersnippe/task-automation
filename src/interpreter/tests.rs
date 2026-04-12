@@ -216,6 +216,45 @@ fn interprets_variable_assignment_bool() {
 }
 
 #[test]
+fn interprets_variable_assignment_scoped() {
+    let dsl = "
+    fn foo() {
+        var x = false
+    }
+
+    foo()
+    var x = true
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.variables,
+        HashMap::from([(String::from("x"), Rc::new(Primitive::Boolean(true)))])
+    );
+    assert_eq!(interpreter.functions.len(), 1);
+}
+
+#[test]
+#[should_panic]
+fn panics_on_variable_assignment_scoped_which_exists() {
+    let dsl = "
+    fn foo() {
+        var x = false
+    }
+
+    var x = true
+    foo()
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
+}
+
+#[test]
 #[should_panic]
 fn panics_on_variable_assignment_existing() {
     let dsl = "
