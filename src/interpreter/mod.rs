@@ -20,6 +20,7 @@ struct StatementExecution {
     cleanup: Box<dyn FnOnce(&mut Interpreter, StatementType)>,
 }
 
+#[derive(Debug, PartialEq)]
 struct FunctionDeclaration {
     arguments: Vec<String>,
     body: Vec<StatementType>,
@@ -46,6 +47,8 @@ impl Interpreter {
         while self.pos < self.statements.len() {
             let statement = self.statements[self.pos].clone();
             self.interpret_statement(&statement);
+
+            self.pos += 1;
         }
     }
 
