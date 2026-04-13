@@ -1,33 +1,32 @@
 use std::{collections::HashMap, rc::Rc};
 
 use crate::parser::{
-    expressions::ExpressionType,
-    statements::{BuiltInStatement, FunctionDeclarationStatement, StatementType},
+    expressions::{
+        BinaryOperationExpression, BinaryOperator, ExpressionType, FunctionCallExpression,
+        UnaryOperationExpression, UnaryOperator,
+    },
+    statements::{BuiltInStatement, StatementType},
 };
 
 #[cfg(test)]
 mod tests;
 
 #[derive(PartialEq, Debug, Clone)]
-enum Primitive {
+enum DataType {
     Number(f32),
     String(String),
     Boolean(bool),
+    Function(FunctionDeclaration),
 }
 
-struct StatementExecution {
-    callback: Box<dyn FnOnce(&mut Interpreter)>,
-    cleanup: Box<dyn FnOnce(&mut Interpreter, StatementType)>,
-}
-
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 struct FunctionDeclaration {
     arguments: Vec<String>,
     body: Vec<StatementType>,
 }
 
 pub struct Interpreter {
-    variables: HashMap<String, Rc<Primitive>>,
+    variables: HashMap<String, Rc<DataType>>,
     functions: HashMap<String, Rc<FunctionDeclaration>>,
     statements: Vec<StatementType>,
     pos: usize,
@@ -52,7 +51,7 @@ impl Interpreter {
         }
     }
 
-    fn interpret_statement(&mut self, statement: &StatementType) {
+    fn interpret_statement(&mut self, statement: &StatementType) -> Option<Rc<DataType>> {
         match statement {
             StatementType::VariableDeclaration(statement) => {
                 let identifier = statement.identifier.clone();
@@ -66,6 +65,7 @@ impl Interpreter {
                 }
 
                 self.variables.insert(identifier, expression);
+                return None;
             }
             StatementType::FunctionDeclaration(statement) => {
                 let identifier = statement.identifier.clone();
@@ -79,58 +79,108 @@ impl Interpreter {
                         body: statements,
                     }),
                 );
+
+                return None;
             }
-            StatementType::Return(statement) => todo!(),
-            StatementType::FunctionCall(statement) => {
-                let function_declaration = {
-                    let x = self.functions.get(&statement.name).unwrap();
-                    x.clone()
-                };
-
-                let expected_arguments = function_declaration.arguments.len();
-                let received_arguments = statement.arguments.len();
-
-                if expected_arguments != received_arguments {
-                    panic!(
-                        "Argument count for function '{}' is invalid. Expect: {}, received {}",
-                        &statement.name, expected_arguments, received_arguments
-                    );
-                }
-
-                let resolved_arguments: Vec<Rc<Primitive>> = statement
-                    .arguments
-                    .iter()
-                    .map(|x| self.interpret_expression(x))
-                    .collect();
-
-                // Set arguments as available variables
-                for (identifier, value) in function_declaration
-                    .arguments
-                    .iter()
-                    .zip(resolved_arguments)
-                {
-                    self.variables.insert(identifier.clone(), value);
-                }
-
-                for x in function_declaration.body.iter() {
-                    self.interpret_statement(&x);
-                }
-                for x in function_declaration.body.iter().rev() {
-                    self.cleanup_statement(&x);
-                }
-
-                // Remove argument variables afer scope ended
-                for argument in function_declaration.arguments.iter() {
-                    self.variables.remove(argument);
-                }
+            StatementType::Return(expression) => {
+                return Some(self.interpret_expression(expression));
             }
+            StatementType::FunctionCall(statement) => return self.execute_function(statement),
             StatementType::BuiltIn(statement) => match statement {
                 BuiltInStatement::Print(print_statement) => {
-                    println!("{:?}", self.interpret_expression(&print_statement.argument))
+                    println!("{:?}", self.interpret_expression(&print_statement.argument));
+
+                    return None;
                 }
             },
-            StatementType::IfStatement(statement) => todo!(),
+            StatementType::IfStatement(statement) => {
+                let condition_result = self.interpret_expression(&statement.condition);
+
+                match *condition_result {
+                    DataType::Boolean(should_execute) => {
+                        if !should_execute {
+                            return None;
+                        }
+
+                        let return_value =
+                            self.execute_statements(statement.body.statements.iter().collect());
+
+                        if let Some(_) = return_value {
+                            panic!(
+                                "If statement '{:?}' block contains return statement",
+                                statement.condition
+                            )
+                        }
+
+                        return None;
+                    }
+                    _ => panic!(
+                        "Condition '{:?}' of if statement does not result in a boolean",
+                        &statement.condition
+                    ),
+                }
+            }
         }
+    }
+
+    fn execute_function(&mut self, statement: &FunctionCallExpression) -> Option<Rc<DataType>> {
+        let function_declaration = {
+            let x = self.functions.get(&statement.name).unwrap();
+            x.clone()
+        };
+
+        let expected_arguments = function_declaration.arguments.len();
+        let received_arguments = statement.arguments.len();
+
+        if expected_arguments != received_arguments {
+            panic!(
+                "Argument count for function '{}' is invalid. Expect: {}, received {}",
+                &statement.name, expected_arguments, received_arguments
+            );
+        }
+
+        let resolved_arguments: Vec<Rc<DataType>> = statement
+            .arguments
+            .iter()
+            .map(|x| self.interpret_expression(x))
+            .collect();
+
+        // Set arguments as available variables
+        for (identifier, value) in function_declaration
+            .arguments
+            .iter()
+            .zip(resolved_arguments)
+        {
+            self.variables.insert(identifier.clone(), value);
+        }
+
+        let return_value = self.execute_statements(function_declaration.body.iter().collect());
+
+        // Remove argument variables afer scope ended
+        for argument in function_declaration.arguments.iter() {
+            self.variables.remove(argument);
+        }
+
+        return return_value;
+    }
+
+    fn execute_statements(&mut self, statements: Vec<&StatementType>) -> Option<Rc<DataType>> {
+        let mut return_value: Option<Rc<DataType>> = None;
+        let mut executed_statements: Vec<StatementType> = vec![];
+        for x in statements {
+            let statement_result = self.interpret_statement(x);
+            executed_statements.push(x.clone());
+
+            if let Some(value) = statement_result {
+                return_value = Some(value);
+                break;
+            }
+        }
+        for x in executed_statements.iter().rev() {
+            self.cleanup_statement(&x);
+        }
+
+        return return_value;
     }
 
     fn cleanup_statement(&mut self, statement: &StatementType) {
@@ -147,18 +197,18 @@ impl Interpreter {
         }
     }
 
-    fn interpret_expression(&mut self, expression: &ExpressionType) -> Rc<Primitive> {
+    fn interpret_expression(&mut self, expression: &ExpressionType) -> Rc<DataType> {
         match expression {
             ExpressionType::Literal(literal_type) => {
                 return match literal_type {
                     crate::parser::expressions::LiteralType::String(x) => {
-                        Rc::new(Primitive::String(x.clone()))
+                        Rc::new(DataType::String(x.clone()))
                     }
                     crate::parser::expressions::LiteralType::Number(x) => {
-                        Rc::new(Primitive::Number(x.clone()))
+                        Rc::new(DataType::Number(x.clone()))
                     }
                     crate::parser::expressions::LiteralType::Boolean(x) => {
-                        Rc::new(Primitive::Boolean(x.clone()))
+                        Rc::new(DataType::Boolean(x.clone()))
                     }
                 };
             }
@@ -172,10 +222,135 @@ impl Interpreter {
                     )
                 }
             }
-            ExpressionType::FunctionCall(function_call_expression) => todo!(),
-            ExpressionType::FunctionDeclaration(function_declaration_expression) => todo!(),
-            ExpressionType::BinaryOperation(binary_operation_expression) => todo!(),
-            ExpressionType::UnaryOperation(unary_operation_expression) => todo!(),
+            ExpressionType::FunctionCall(function_call_expression) => {
+                if let Some(return_value) = self.execute_function(function_call_expression) {
+                    return return_value;
+                } else {
+                    panic!(
+                        "Function {} does not have a return value",
+                        function_call_expression.name
+                    )
+                }
+            }
+            ExpressionType::FunctionDeclaration(function_declaration_expression) => {
+                let arguments = function_declaration_expression
+                    .parameters
+                    .iter()
+                    .map(|x| x.name.clone())
+                    .collect();
+                let statements = function_declaration_expression.body.statements.clone();
+
+                return Rc::new(DataType::Function(FunctionDeclaration {
+                    arguments,
+                    body: statements,
+                }));
+            }
+            ExpressionType::BinaryOperation(binary_operation_expression) => {
+                Rc::new(self.interpret_binary_expression(binary_operation_expression))
+            }
+            ExpressionType::UnaryOperation(unary_operation_expression) => {
+                Rc::new(self.interpret_unary_expression(unary_operation_expression))
+            }
         }
+    }
+
+    fn interpret_unary_expression(&mut self, expression: &UnaryOperationExpression) -> DataType {
+        let value = self.interpret_expression(&expression.expression);
+
+        match *value {
+            DataType::Number(x) => {
+                if expression.operator == UnaryOperator::Minus {
+                    DataType::Number(-x);
+                }
+
+                panic!(
+                    "Unary operator '{:?}' not supported for number",
+                    expression.operator
+                );
+            }
+            DataType::Boolean(x) => {
+                if expression.operator == UnaryOperator::Bang {
+                    DataType::Boolean(!x);
+                }
+
+                panic!(
+                    "Unary operator '{:?}' not supported for number",
+                    expression.operator
+                )
+            }
+            _ => panic!("Unsupported expression type for unary processing"),
+        }
+    }
+
+    fn interpret_binary_expression(&mut self, expression: &BinaryOperationExpression) -> DataType {
+        let left = self.interpret_expression(&expression.left);
+        let right = self.interpret_expression(&expression.right);
+
+        return match left.as_ref() {
+            DataType::Number(l) => match right.as_ref() {
+                DataType::Number(r) => match expression.operator {
+                    BinaryOperator::Add => DataType::Number(l + r),
+                    BinaryOperator::Subtract => DataType::Number(l - r),
+                    BinaryOperator::Divide => DataType::Number(l / r),
+                    BinaryOperator::Multiply => DataType::Number(l * r),
+                    BinaryOperator::Equal => DataType::Boolean(l == r),
+                    BinaryOperator::NotEqual => DataType::Boolean(l != r),
+                    BinaryOperator::GreaterThan => DataType::Boolean(l > r),
+                    BinaryOperator::LessThan => DataType::Boolean(l < r),
+                    BinaryOperator::GreaterOrEqual => DataType::Boolean(l >= r),
+                    BinaryOperator::LessOrEqual => DataType::Boolean(l <= r),
+                    _ => panic!(
+                        "Invalid operation for number binary operation: {} {:?} {}",
+                        l, expression.operator, r
+                    ),
+                },
+                _ => panic!(
+                    "Left and right types of binary expression '{:?}' don't match",
+                    expression
+                ),
+            },
+            DataType::String(l) => match right.as_ref() {
+                DataType::String(r) => {
+                    return match expression.operator {
+                        BinaryOperator::Add => DataType::String(format!("{}{}", l, r)),
+                        BinaryOperator::Equal => DataType::Boolean(l == r),
+                        BinaryOperator::NotEqual => DataType::Boolean(l != r),
+                        BinaryOperator::GreaterThan => DataType::Boolean(l > r),
+                        BinaryOperator::LessThan => DataType::Boolean(l < r),
+                        BinaryOperator::GreaterOrEqual => DataType::Boolean(l >= r),
+                        BinaryOperator::LessOrEqual => DataType::Boolean(l <= r),
+                        _ => panic!(
+                            "Invalid operation for string binary operation: {} {:?} {}",
+                            &l, expression.operator, &r
+                        ),
+                    };
+                }
+                _ => panic!(
+                    "Left and right of binary expression '{:?}' don't match",
+                    expression
+                ),
+            },
+            DataType::Boolean(left_value) => match right.as_ref() {
+                DataType::Boolean(right_value) => {
+                    let l = *left_value;
+                    let r = *right_value;
+                    match expression.operator {
+                        BinaryOperator::Equal => DataType::Boolean(l == r),
+                        BinaryOperator::NotEqual => DataType::Boolean(l != r),
+                        BinaryOperator::And => DataType::Boolean(l && r),
+                        BinaryOperator::Or => DataType::Boolean(l || r),
+                        _ => panic!(
+                            "Invalid operation for boolean binary operation: {} {:?} {}",
+                            l, expression.operator, r
+                        ),
+                    }
+                }
+                _ => panic!(
+                    "Left and right of binary expression '{:?}' don't match",
+                    expression
+                ),
+            },
+            _ => panic!("Invalid DataType used for binary expression"),
+        };
     }
 }

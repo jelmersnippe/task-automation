@@ -1,7 +1,7 @@
 use std::{collections::HashMap, rc::Rc};
 
 use crate::{
-    interpreter::{FunctionDeclaration, Interpreter, Primitive},
+    interpreter::{DataType, FunctionDeclaration, Interpreter},
     lexer::lexer,
     parser::{
         Parser,
@@ -177,7 +177,7 @@ fn interprets_variable_assignment_number() {
 
     assert_eq!(
         interpreter.variables,
-        HashMap::from([(String::from("x"), Rc::new(Primitive::Number(3.0)))])
+        HashMap::from([(String::from("x"), Rc::new(DataType::Number(3.0)))])
     );
     assert_eq!(interpreter.functions.len(), 0);
 }
@@ -194,7 +194,7 @@ fn interprets_variable_assignment_string() {
         interpreter.variables,
         HashMap::from([(
             String::from("x"),
-            Rc::new(Primitive::String(String::from("Hello")))
+            Rc::new(DataType::String(String::from("Hello")))
         )])
     );
     assert_eq!(interpreter.functions.len(), 0);
@@ -210,7 +210,7 @@ fn interprets_variable_assignment_bool() {
 
     assert_eq!(
         interpreter.variables,
-        HashMap::from([(String::from("x"), Rc::new(Primitive::Boolean(true)))])
+        HashMap::from([(String::from("x"), Rc::new(DataType::Boolean(true)))])
     );
     assert_eq!(interpreter.functions.len(), 0);
 }
@@ -232,7 +232,7 @@ fn interprets_variable_assignment_scoped() {
 
     assert_eq!(
         interpreter.variables,
-        HashMap::from([(String::from("x"), Rc::new(Primitive::Boolean(true)))])
+        HashMap::from([(String::from("x"), Rc::new(DataType::Boolean(true)))])
     );
     assert_eq!(interpreter.functions.len(), 1);
 }
