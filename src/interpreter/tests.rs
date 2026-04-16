@@ -1,12 +1,13 @@
-use std::{collections::HashMap, rc::Rc};
+use std::rc::Rc;
 
 use crate::{
-    interpreter::{DataType, FunctionDeclaration, Interpreter},
+    interpreter::{Interpreter, function::FunctionDeclaration, scope::DataType},
     lexer::lexer,
     parser::{
         Parser,
         expressions::{
             BinaryOperationExpression, BinaryOperator, ExpressionType, IdentifierExpression,
+            LiteralType,
         },
         statements::{StatementType, VariableDeclarationStatement},
     },
@@ -41,7 +42,22 @@ fn interprets_function_call_with_arguments() {
     let mut interpreter = Interpreter::new(ast);
     interpreter.interpret();
 
-    assert_eq!(interpreter.variables.len(), 1);
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("foo")),
+        Some(Rc::new(DataType::Function(FunctionDeclaration::new(
+            vec![String::from("bar")],
+            vec![StatementType::VariableDeclaration(
+                VariableDeclarationStatement {
+                    identifier: String::from("x"),
+                    value: ExpressionType::Identifier(IdentifierExpression {
+                        name: String::from("bar")
+                    })
+                }
+            )]
+        ))))
+    );
+
+    assert_eq!(interpreter.scope.get_variable(&String::from("x")), None);
 }
 
 #[test]
@@ -57,7 +73,20 @@ fn interprets_function_call() {
     let mut interpreter = Interpreter::new(ast);
     interpreter.interpret();
 
-    assert_eq!(interpreter.variables.len(), 1);
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("foo")),
+        Some(Rc::new(DataType::Function(FunctionDeclaration::new(
+            vec![],
+            vec![StatementType::VariableDeclaration(
+                VariableDeclarationStatement {
+                    identifier: String::from("x"),
+                    value: ExpressionType::Literal(LiteralType::Number(3.0))
+                }
+            )]
+        ))))
+    );
+
+    assert_eq!(interpreter.scope.get_variable(&String::from("x")), None);
 }
 
 #[test]
@@ -71,53 +100,21 @@ fn interprets_function_declaration_with_return() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.variables,
-        HashMap::from([(
-            String::from("foo"),
-            Rc::new(DataType::Function(FunctionDeclaration {
-                body: vec![StatementType::Return(ExpressionType::BinaryOperation(
-                    BinaryOperationExpression::new(
-                        ExpressionType::Identifier(IdentifierExpression {
-                            name: String::from("bar")
-                        }),
-                        BinaryOperator::Add,
-                        ExpressionType::Identifier(IdentifierExpression {
-                            name: String::from("baz")
-                        })
-                    )
-                ))],
-                arguments: vec![String::from("bar"), String::from("baz")]
-            }))
-        )])
-    );
-}
-
-#[test]
-fn interprets_function_declaration_with_body() {
-    let dsl = "fn foo() {
-        var x = 3
-    }";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-
-    assert_eq!(
-        interpreter.variables,
-        HashMap::from([(
-            String::from("foo"),
-            Rc::new(DataType::Function(FunctionDeclaration {
-                body: vec![StatementType::VariableDeclaration(
-                    VariableDeclarationStatement {
-                        identifier: String::from("x"),
-                        value: crate::parser::expressions::ExpressionType::Literal(
-                            crate::parser::expressions::LiteralType::Number(3.0)
-                        ),
-                    }
-                )],
-                arguments: vec![]
-            }))
-        )])
+        interpreter.scope.get_variable(&String::from("foo")),
+        Some(Rc::new(DataType::Function(FunctionDeclaration::new(
+            vec![String::from("bar"), String::from("baz")],
+            vec![StatementType::Return(ExpressionType::BinaryOperation(
+                BinaryOperationExpression::new(
+                    ExpressionType::Identifier(IdentifierExpression {
+                        name: String::from("bar")
+                    }),
+                    BinaryOperator::Add,
+                    ExpressionType::Identifier(IdentifierExpression {
+                        name: String::from("baz")
+                    })
+                )
+            ))],
+        ))))
     );
 }
 
@@ -130,14 +127,11 @@ fn interprets_function_declaration_with_arguments() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.variables,
-        HashMap::from([(
-            String::from("foo"),
-            Rc::new(DataType::Function(FunctionDeclaration {
-                body: vec![],
-                arguments: vec![String::from("bar"), String::from("baz")]
-            }))
-        )])
+        interpreter.scope.get_variable(&String::from("foo")),
+        Some(Rc::new(DataType::Function(FunctionDeclaration::new(
+            vec![String::from("bar"), String::from("baz")],
+            vec![]
+        ))))
     );
 }
 
@@ -150,14 +144,11 @@ fn interprets_function_declaration() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.variables,
-        HashMap::from([(
-            String::from("foo"),
-            Rc::new(DataType::Function(FunctionDeclaration {
-                body: vec![],
-                arguments: vec![]
-            }))
-        )])
+        interpreter.scope.get_variable(&String::from("foo")),
+        Some(Rc::new(DataType::Function(FunctionDeclaration::new(
+            vec![],
+            vec![]
+        ))))
     );
 }
 
@@ -170,8 +161,8 @@ fn interprets_variable_assignment_number() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.variables,
-        HashMap::from([(String::from("x"), Rc::new(DataType::Number(3.0)))])
+        interpreter.scope.get_variable(&String::from("x")),
+        Some(Rc::new(DataType::Number(3.0)))
     );
 }
 
@@ -184,11 +175,8 @@ fn interprets_variable_assignment_string() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.variables,
-        HashMap::from([(
-            String::from("x"),
-            Rc::new(DataType::String(String::from("Hello")))
-        )])
+        interpreter.scope.get_variable(&String::from("x")),
+        Some(Rc::new(DataType::String(String::from("Hello"))))
     );
 }
 
@@ -201,8 +189,29 @@ fn interprets_variable_assignment_bool() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.variables,
-        HashMap::from([(String::from("x"), Rc::new(DataType::Boolean(true)))])
+        interpreter.scope.get_variable(&String::from("x")),
+        Some(Rc::new(DataType::Boolean(true)))
+    );
+}
+
+#[test]
+fn interprets_variable_assignment_scoped_2() {
+    let dsl = "
+    fn foo() {
+        var x = false
+    }
+
+    var x = true
+    foo()
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("x")),
+        Some(Rc::new(DataType::Boolean(true)))
     );
 }
 
@@ -222,37 +231,17 @@ fn interprets_variable_assignment_scoped() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.variables,
-        HashMap::from([
-            (String::from("x"), Rc::new(DataType::Boolean(true))),
-            (
-                String::from("foo"),
-                Rc::new(DataType::Function(FunctionDeclaration {
-                    arguments: vec![],
-                    body: vec![StatementType::VariableDeclaration(
-                        VariableDeclarationStatement {
-                            identifier: String::from("x"),
-                            value: crate::parser::expressions::ExpressionType::Literal(
-                                crate::parser::expressions::LiteralType::Boolean(false)
-                            ),
-                        }
-                    )],
-                }))
-            ),
-        ])
+        interpreter.scope.get_variable(&String::from("x")),
+        Some(Rc::new(DataType::Boolean(true)))
     );
 }
 
 #[test]
 #[should_panic]
-fn panics_on_variable_assignment_scoped_which_exists() {
+fn panics_on_variable_assignment_existing() {
     let dsl = "
-    fn foo() {
-        var x = false
-    }
-
     var x = true
-    foo()
+    var x = false
     ";
     let tokens = lexer::lexer(String::from(dsl));
     let ast = Parser::new(tokens).parse();
@@ -262,10 +251,10 @@ fn panics_on_variable_assignment_scoped_which_exists() {
 
 #[test]
 #[should_panic]
-fn panics_on_variable_assignment_existing() {
+fn panics_on_function_declaration_existing() {
     let dsl = "
-    var x = true
-    var x = false
+    fn foo() {}
+    fn foo() {}
     ";
     let tokens = lexer::lexer(String::from(dsl));
     let ast = Parser::new(tokens).parse();
