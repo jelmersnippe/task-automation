@@ -27,7 +27,6 @@ struct FunctionDeclaration {
 
 pub struct Interpreter {
     variables: HashMap<String, Rc<DataType>>,
-    functions: HashMap<String, Rc<FunctionDeclaration>>,
     statements: Vec<StatementType>,
     pos: usize,
 }
@@ -36,7 +35,6 @@ impl Interpreter {
     pub fn new(statements: Vec<StatementType>) -> Self {
         Self {
             variables: Default::default(),
-            functions: Default::default(),
             statements,
             pos: 0,
         }
@@ -55,29 +53,31 @@ impl Interpreter {
         match statement {
             StatementType::VariableDeclaration(statement) => {
                 let identifier = statement.identifier.clone();
+                if let Some(_) = self.variables.get(&identifier) {
+                    panic!("Duplicate identifier '{}' already declared", &identifier);
+                }
+
                 let value = statement.value.clone();
                 let expression = self.interpret_expression(&value);
-                if let Some(_) = self.variables.get(&identifier) {
-                    panic!(
-                        "Variable with identifier '{}' already declared",
-                        &identifier
-                    );
-                }
 
                 self.variables.insert(identifier, expression);
                 return None;
             }
             StatementType::FunctionDeclaration(statement) => {
                 let identifier = statement.identifier.clone();
+                if let Some(_) = self.variables.get(&identifier) {
+                    panic!("Duplicate identifier '{}' already declared", &identifier);
+                }
+
                 let arguments = statement.arguments.iter().map(|x| x.name.clone()).collect();
                 let statements = statement.body.statements.clone();
 
-                self.functions.insert(
+                self.variables.insert(
                     identifier,
-                    Rc::new(FunctionDeclaration {
+                    Rc::new(DataType::Function(FunctionDeclaration {
                         arguments,
                         body: statements,
-                    }),
+                    })),
                 );
 
                 return None;
@@ -124,9 +124,13 @@ impl Interpreter {
     }
 
     fn execute_function(&mut self, statement: &FunctionCallExpression) -> Option<Rc<DataType>> {
-        let function_declaration = {
-            let x = self.functions.get(&statement.name).unwrap();
-            x.clone()
+        let function_declaration = if let Some(x) = self.variables.get(&statement.name) {
+            match x.as_ref() {
+                DataType::Function(function_declaration) => function_declaration.clone(),
+                _ => panic!("Identifier '{}' is not callable", &statement.name),
+            }
+        } else {
+            panic!("Identifier '{}' not found", &statement.name)
         };
 
         let expected_arguments = function_declaration.arguments.len();
@@ -191,7 +195,7 @@ impl Interpreter {
             }
             StatementType::FunctionDeclaration(statement) => {
                 let identifier = statement.identifier.clone();
-                self.functions.remove(&identifier);
+                self.variables.remove(&identifier);
             }
             _ => {}
         }

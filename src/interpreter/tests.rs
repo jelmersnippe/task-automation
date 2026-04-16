@@ -41,8 +41,7 @@ fn interprets_function_call_with_arguments() {
     let mut interpreter = Interpreter::new(ast);
     interpreter.interpret();
 
-    assert_eq!(interpreter.variables.len(), 0);
-    assert_eq!(interpreter.functions.len(), 1);
+    assert_eq!(interpreter.variables.len(), 1);
 }
 
 #[test]
@@ -58,8 +57,7 @@ fn interprets_function_call() {
     let mut interpreter = Interpreter::new(ast);
     interpreter.interpret();
 
-    assert_eq!(interpreter.variables.len(), 0);
-    assert_eq!(interpreter.functions.len(), 1);
+    assert_eq!(interpreter.variables.len(), 1);
 }
 
 #[test]
@@ -72,12 +70,11 @@ fn interprets_function_declaration_with_return() {
     let mut interpreter = Interpreter::new(ast);
     interpreter.interpret();
 
-    assert_eq!(interpreter.variables.len(), 0);
     assert_eq!(
-        interpreter.functions,
+        interpreter.variables,
         HashMap::from([(
             String::from("foo"),
-            Rc::new(FunctionDeclaration {
+            Rc::new(DataType::Function(FunctionDeclaration {
                 body: vec![StatementType::Return(ExpressionType::BinaryOperation(
                     BinaryOperationExpression::new(
                         ExpressionType::Identifier(IdentifierExpression {
@@ -90,7 +87,7 @@ fn interprets_function_declaration_with_return() {
                     )
                 ))],
                 arguments: vec![String::from("bar"), String::from("baz")]
-            })
+            }))
         )])
     );
 }
@@ -105,12 +102,11 @@ fn interprets_function_declaration_with_body() {
     let mut interpreter = Interpreter::new(ast);
     interpreter.interpret();
 
-    assert_eq!(interpreter.variables.len(), 0);
     assert_eq!(
-        interpreter.functions,
+        interpreter.variables,
         HashMap::from([(
             String::from("foo"),
-            Rc::new(FunctionDeclaration {
+            Rc::new(DataType::Function(FunctionDeclaration {
                 body: vec![StatementType::VariableDeclaration(
                     VariableDeclarationStatement {
                         identifier: String::from("x"),
@@ -120,7 +116,7 @@ fn interprets_function_declaration_with_body() {
                     }
                 )],
                 arguments: vec![]
-            })
+            }))
         )])
     );
 }
@@ -133,15 +129,14 @@ fn interprets_function_declaration_with_arguments() {
     let mut interpreter = Interpreter::new(ast);
     interpreter.interpret();
 
-    assert_eq!(interpreter.variables.len(), 0);
     assert_eq!(
-        interpreter.functions,
+        interpreter.variables,
         HashMap::from([(
             String::from("foo"),
-            Rc::new(FunctionDeclaration {
+            Rc::new(DataType::Function(FunctionDeclaration {
                 body: vec![],
                 arguments: vec![String::from("bar"), String::from("baz")]
-            })
+            }))
         )])
     );
 }
@@ -154,15 +149,14 @@ fn interprets_function_declaration() {
     let mut interpreter = Interpreter::new(ast);
     interpreter.interpret();
 
-    assert_eq!(interpreter.variables.len(), 0);
     assert_eq!(
-        interpreter.functions,
+        interpreter.variables,
         HashMap::from([(
             String::from("foo"),
-            Rc::new(FunctionDeclaration {
+            Rc::new(DataType::Function(FunctionDeclaration {
                 body: vec![],
                 arguments: vec![]
-            })
+            }))
         )])
     );
 }
@@ -179,7 +173,6 @@ fn interprets_variable_assignment_number() {
         interpreter.variables,
         HashMap::from([(String::from("x"), Rc::new(DataType::Number(3.0)))])
     );
-    assert_eq!(interpreter.functions.len(), 0);
 }
 
 #[test]
@@ -197,7 +190,6 @@ fn interprets_variable_assignment_string() {
             Rc::new(DataType::String(String::from("Hello")))
         )])
     );
-    assert_eq!(interpreter.functions.len(), 0);
 }
 
 #[test]
@@ -212,7 +204,6 @@ fn interprets_variable_assignment_bool() {
         interpreter.variables,
         HashMap::from([(String::from("x"), Rc::new(DataType::Boolean(true)))])
     );
-    assert_eq!(interpreter.functions.len(), 0);
 }
 
 #[test]
@@ -232,9 +223,24 @@ fn interprets_variable_assignment_scoped() {
 
     assert_eq!(
         interpreter.variables,
-        HashMap::from([(String::from("x"), Rc::new(DataType::Boolean(true)))])
+        HashMap::from([
+            (String::from("x"), Rc::new(DataType::Boolean(true))),
+            (
+                String::from("foo"),
+                Rc::new(DataType::Function(FunctionDeclaration {
+                    arguments: vec![],
+                    body: vec![StatementType::VariableDeclaration(
+                        VariableDeclarationStatement {
+                            identifier: String::from("x"),
+                            value: crate::parser::expressions::ExpressionType::Literal(
+                                crate::parser::expressions::LiteralType::Boolean(false)
+                            ),
+                        }
+                    )],
+                }))
+            ),
+        ])
     );
-    assert_eq!(interpreter.functions.len(), 1);
 }
 
 #[test]
