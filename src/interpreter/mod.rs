@@ -8,7 +8,7 @@ use crate::parser::{
         BinaryOperationExpression, BinaryOperator, ExpressionType, FunctionCallExpression,
         UnaryOperationExpression, UnaryOperator,
     },
-    statements::{BuiltInStatement, StatementType},
+    statements::{BuiltInStatement, StatementType, statement_to_string},
 };
 
 #[cfg(test)]
@@ -109,7 +109,13 @@ fn interpret_statement(
                 ),
             }
         }
-        StatementType::VariableAssignment(variable_assignment_statement) => todo!(),
+        StatementType::VariableAssignment(statement) => {
+            scope.update_variable(
+                statement.identifier.clone(),
+                interpret_expression(scope, &statement.value),
+            );
+            return None;
+        }
     }
 }
 fn interpret_binary_expression(

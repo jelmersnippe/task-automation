@@ -136,6 +136,23 @@ fn interprets_function_declaration_with_arguments() {
 }
 
 #[test]
+fn interprets_function_declaration_as_variable() {
+    let dsl = "var foo = fn() {}";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("foo")),
+        Some(Rc::new(DataType::Function(FunctionDeclaration::new(
+            vec![],
+            vec![]
+        ))))
+    );
+}
+
+#[test]
 fn interprets_function_declaration() {
     let dsl = "fn foo() {}";
     let tokens = lexer::lexer(String::from(dsl));
@@ -153,7 +170,44 @@ fn interprets_function_declaration() {
 }
 
 #[test]
-fn interprets_variable_assignment_number() {
+fn interprets_variable_assignment_function() {
+    let dsl = "
+    var x = 3
+    x = fn() {}
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("x")),
+        Some(Rc::new(DataType::Function(FunctionDeclaration::new(
+            vec![],
+            vec![]
+        ))))
+    );
+}
+
+#[test]
+fn interprets_variable_assignment() {
+    let dsl = "
+    var x = 3
+    x = 5
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("x")),
+        Some(Rc::new(DataType::Number(5.0)))
+    );
+}
+
+#[test]
+fn interprets_variable_declaration_number() {
     let dsl = "var x = 3";
     let tokens = lexer::lexer(String::from(dsl));
     let ast = Parser::new(tokens).parse();
@@ -167,7 +221,7 @@ fn interprets_variable_assignment_number() {
 }
 
 #[test]
-fn interprets_variable_assignment_string() {
+fn interprets_variable_declaration_string() {
     let dsl = "var x = \"Hello\"";
     let tokens = lexer::lexer(String::from(dsl));
     let ast = Parser::new(tokens).parse();
@@ -181,7 +235,7 @@ fn interprets_variable_assignment_string() {
 }
 
 #[test]
-fn interprets_variable_assignment_bool() {
+fn interprets_variable_declaration_bool() {
     let dsl = "var x = true";
     let tokens = lexer::lexer(String::from(dsl));
     let ast = Parser::new(tokens).parse();
@@ -195,7 +249,7 @@ fn interprets_variable_assignment_bool() {
 }
 
 #[test]
-fn interprets_variable_assignment_scoped_2() {
+fn interprets_variable_declaration_scoped_2() {
     let dsl = "
     fn foo() {
         var x = false
@@ -216,7 +270,7 @@ fn interprets_variable_assignment_scoped_2() {
 }
 
 #[test]
-fn interprets_variable_assignment_scoped() {
+fn interprets_variable_declaration_scoped() {
     let dsl = "
     fn foo() {
         var x = false
@@ -238,7 +292,7 @@ fn interprets_variable_assignment_scoped() {
 
 #[test]
 #[should_panic]
-fn panics_on_variable_assignment_existing() {
+fn panics_on_variable_declaration_existing() {
     let dsl = "
     var x = true
     var x = false

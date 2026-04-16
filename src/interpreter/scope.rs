@@ -40,6 +40,14 @@ impl<'a> Scope<'a> {
         self.variables.insert(identifier, data);
     }
 
+    pub fn update_variable(&mut self, identifier: String, data: Rc<DataType>) {
+        if let None = self.variables.get(&identifier) {
+            panic!("Identifier '{}' has not declared", &identifier);
+        }
+
+        self.variables.insert(identifier, data);
+    }
+
     pub fn remove_variable(&mut self, identifier: &String) {
         self.variables.remove(identifier);
     }
