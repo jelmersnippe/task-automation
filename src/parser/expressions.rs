@@ -285,7 +285,7 @@ impl Parser {
     pub(crate) fn parse_function_expression(&mut self, identifier_token: Token) -> ExpressionType {
         self.expect(TokenKind::LeftParenthesis);
 
-        let is_function_declaration = identifier_token.value == "fn";
+        let is_function_declaration = identifier_token.kind == TokenKind::Function;
 
         if is_function_declaration {
             let parameters = self.parse_parameters();

@@ -6,6 +6,7 @@ use crate::lexer::lexer::TokenKind;
 #[derive(PartialEq, Debug, Clone)]
 pub enum StatementType {
     VariableDeclaration(VariableDeclarationStatement),
+    VariableAssignment(VariableAssignmentStatement),
     FunctionDeclaration(FunctionDeclarationStatement),
     Return(expressions::ExpressionType),
     FunctionCall(expressions::FunctionCallExpression),
@@ -20,6 +21,12 @@ pub struct Block {
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct VariableDeclarationStatement {
+    pub identifier: String,
+    pub value: expressions::ExpressionType,
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub struct VariableAssignmentStatement {
     pub identifier: String,
     pub value: expressions::ExpressionType,
 }
@@ -54,7 +61,7 @@ impl Parser {
                 TokenKind::Variable => self.parse_variable_declaration(),
                 TokenKind::Function => self.parse_function_declaration(),
                 TokenKind::Return => self.parse_return_statement(),
-                TokenKind::Identifier => self.parse_function_call_statement(token),
+                TokenKind::Identifier => self.parse_identifier_statement(token),
                 TokenKind::Print => self.parse_print_statement(),
                 TokenKind::If => self.parse_if_statement(),
                 _ => panic!("Unknown token type in root parse: {:?}", token),
@@ -72,7 +79,14 @@ impl Parser {
         return StatementType::BuiltIn(BuiltInStatement::Print(PrintStatement { argument }));
     }
 
-    fn parse_function_call_statement(&mut self, identifier_token: Token) -> StatementType {
+    fn parse_identifier_statement(&mut self, identifier_token: Token) -> StatementType {
+        if self.r#match(TokenKind::Assign) {
+            return StatementType::VariableAssignment(VariableAssignmentStatement {
+                identifier: identifier_token.value,
+                value: self.parse_expression(),
+            });
+        }
+
         return match self.parse_function_expression(identifier_token) {
             expressions::ExpressionType::FunctionCall(function_call_expression) => {
                 StatementType::FunctionCall(function_call_expression)
@@ -197,6 +211,11 @@ pub fn statement_to_string(statement: &StatementType) -> String {
                 .fold(String::new(), |acc, cur| acc
                     + "\n\t\t"
                     + &statement_to_string(cur))
+        ),
+        StatementType::VariableAssignment(variable_assignment_statement) => format!(
+            "Variable assignment: {} = {}",
+            variable_assignment_statement.identifier,
+            expressions::expression_to_string(&variable_assignment_statement.value)
         ),
     }
 }

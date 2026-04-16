@@ -109,6 +109,7 @@ fn interpret_statement(
                 ),
             }
         }
+        StatementType::VariableAssignment(variable_assignment_statement) => todo!(),
     }
 }
 fn interpret_binary_expression(

@@ -8,7 +8,7 @@ use crate::{
         },
         statements::{
             Block, BuiltInStatement, FunctionDeclarationStatement, PrintStatement, StatementType,
-            VariableDeclarationStatement,
+            VariableAssignmentStatement, VariableDeclarationStatement,
         },
     },
 };
@@ -335,7 +335,7 @@ fn parses_function_declaration_with_multiple_arguments() {
 }
 
 #[test]
-fn parses_variable_assignment_number() {
+fn parses_variable_declaration_number() {
     let result = Parser::new(vec![
         Token::new("var", TokenKind::Variable),
         Token::new("x", TokenKind::Identifier),
@@ -368,7 +368,7 @@ fn parses_variable_assignment_number() {
 }
 
 #[test]
-fn parses_variable_assignment_string() {
+fn parses_variable_declaration_string() {
     let result = Parser::new(vec![
         Token::new("var", TokenKind::Variable),
         Token::new("x", TokenKind::Identifier),
@@ -389,7 +389,7 @@ fn parses_variable_assignment_string() {
 }
 
 #[test]
-fn parses_variable_assignment_identifier() {
+fn parses_variable_declaration_identifier() {
     let result = Parser::new(vec![
         Token::new("var", TokenKind::Variable),
         Token::new("x", TokenKind::Identifier),
@@ -412,7 +412,7 @@ fn parses_variable_assignment_identifier() {
 }
 
 #[test]
-fn parses_variable_assignment_boolean() {
+fn parses_variable_declaration_boolean() {
     let result = Parser::new(vec![
         Token::new("var", TokenKind::Variable),
         Token::new("x", TokenKind::Identifier),
@@ -434,6 +434,126 @@ fn parses_variable_assignment_boolean() {
             }),
             StatementType::VariableDeclaration(VariableDeclarationStatement {
                 identifier: String::from("y"),
+                value: ExpressionType::Literal(LiteralType::Boolean(false))
+            }),
+        ]
+    )
+}
+
+#[test]
+fn parses_variable_assignment_number() {
+    let result = Parser::new(vec![
+        Token::new("var", TokenKind::Variable),
+        Token::new("x", TokenKind::Identifier),
+        Token::new("=", TokenKind::Assign),
+        Token::new("5", TokenKind::Number),
+        Token::new("x", TokenKind::Identifier),
+        Token::new("=", TokenKind::Assign),
+        Token::new("-", TokenKind::Minus),
+        Token::new("5", TokenKind::Number),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![
+            StatementType::VariableDeclaration(VariableDeclarationStatement {
+                identifier: String::from("x"),
+                value: ExpressionType::Literal(LiteralType::Number(5 as f32))
+            }),
+            StatementType::VariableAssignment(VariableAssignmentStatement {
+                identifier: String::from("x"),
+                value: ExpressionType::UnaryOperation(UnaryOperationExpression {
+                    expression: Box::new(ExpressionType::Literal(LiteralType::Number(5 as f32))),
+                    operator: UnaryOperator::Minus
+                })
+            })
+        ]
+    )
+}
+
+#[test]
+fn parses_variable_assignment_string() {
+    let result = Parser::new(vec![
+        Token::new("var", TokenKind::Variable),
+        Token::new("x", TokenKind::Identifier),
+        Token::new("=", TokenKind::Assign),
+        Token::new("Hello World", TokenKind::String),
+        Token::new("x", TokenKind::Identifier),
+        Token::new("=", TokenKind::Assign),
+        Token::new("Update", TokenKind::String),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![
+            StatementType::VariableDeclaration(VariableDeclarationStatement {
+                identifier: String::from("x"),
+                value: ExpressionType::Literal(LiteralType::String(String::from("Hello World")))
+            }),
+            StatementType::VariableAssignment(VariableAssignmentStatement {
+                identifier: String::from("x"),
+                value: ExpressionType::Literal(LiteralType::String(String::from("Update")))
+            })
+        ]
+    )
+}
+
+#[test]
+fn parses_variable_assignment_identifier() {
+    let result = Parser::new(vec![
+        Token::new("var", TokenKind::Variable),
+        Token::new("x", TokenKind::Identifier),
+        Token::new("=", TokenKind::Assign),
+        Token::new("identifier", TokenKind::Identifier),
+        Token::new("x", TokenKind::Identifier),
+        Token::new("=", TokenKind::Assign),
+        Token::new("identifier2", TokenKind::Identifier),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![
+            StatementType::VariableDeclaration(VariableDeclarationStatement {
+                identifier: String::from("x"),
+                value: ExpressionType::Identifier(IdentifierExpression {
+                    name: String::from("identifier")
+                })
+            }),
+            StatementType::VariableAssignment(VariableAssignmentStatement {
+                identifier: String::from("x"),
+                value: ExpressionType::Identifier(IdentifierExpression {
+                    name: String::from("identifier2")
+                })
+            })
+        ]
+    )
+}
+
+#[test]
+fn parses_variable_assignment_boolean() {
+    let result = Parser::new(vec![
+        Token::new("var", TokenKind::Variable),
+        Token::new("x", TokenKind::Identifier),
+        Token::new("=", TokenKind::Assign),
+        Token::new("true", TokenKind::True),
+        Token::new("x", TokenKind::Identifier),
+        Token::new("=", TokenKind::Assign),
+        Token::new("false", TokenKind::False),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![
+            StatementType::VariableDeclaration(VariableDeclarationStatement {
+                identifier: String::from("x"),
+                value: ExpressionType::Literal(LiteralType::Boolean(true))
+            }),
+            StatementType::VariableAssignment(VariableAssignmentStatement {
+                identifier: String::from("x"),
                 value: ExpressionType::Literal(LiteralType::Boolean(false))
             }),
         ]
