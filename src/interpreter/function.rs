@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{fmt, rc::Rc};
 
 use crate::{
     interpreter::scope::DataType,
@@ -9,6 +9,12 @@ use crate::{
 pub struct FunctionDeclaration {
     arguments: Vec<String>,
     body: Vec<StatementType>,
+}
+
+impl fmt::Display for FunctionDeclaration {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "fn ({}) {{}} )", self.arguments.as_slice().join(", "))
+    }
 }
 
 impl FunctionDeclaration {

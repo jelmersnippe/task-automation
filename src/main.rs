@@ -42,19 +42,11 @@ fn repl() {
 
 fn process_file(path: &String) {
     let dsl = read_to_string(path).unwrap();
-    println!("Found DSL:\n{dsl}");
 
     let tokens = lexer(dsl);
-    let _ = tokens
-        .iter()
-        .filter(|x| x.kind == TokenKind::Illegal)
-        .for_each(|x| println!("{:?}", x));
-
-    println!();
 
     let mut parser = Parser::new(tokens);
     let ast = parser.parse();
-    print_ast(&ast);
 
     let mut interpreter = Interpreter::new(ast);
     interpreter.interpret();

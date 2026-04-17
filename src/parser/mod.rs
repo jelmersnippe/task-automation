@@ -23,7 +23,6 @@ impl Parser {
 
         while self.pos < self.tokens.len() {
             let statement = self.parse_statement();
-            println!("{}", statements::statement_to_string(&statement));
 
             ast.push(statement)
         }

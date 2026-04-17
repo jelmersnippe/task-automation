@@ -74,10 +74,12 @@ fn interpret_statement(
         }
         StatementType::BuiltIn(statement) => match statement {
             BuiltInStatement::Print(print_statement) => {
-                println!(
-                    "{:?}",
-                    interpret_expression(scope, &print_statement.argument)
-                );
+                match interpret_expression(scope, &print_statement.argument).as_ref() {
+                    scope::DataType::Number(x) => println!("{}", x),
+                    scope::DataType::String(x) => println!("{:?}", x),
+                    scope::DataType::Boolean(x) => println!("{}", x),
+                    scope::DataType::Function(x) => println!("{}", x),
+                }
 
                 return None;
             }

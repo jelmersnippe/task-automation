@@ -47,8 +47,4 @@ impl<'a> Scope<'a> {
 
         self.variables.insert(identifier, data);
     }
-
-    pub fn remove_variable(&mut self, identifier: &String) {
-        self.variables.remove(identifier);
-    }
 }
