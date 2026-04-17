@@ -1,9 +1,15 @@
+use std::process::{Command, Stdio};
 use std::{collections::HashMap, rc::Rc, sync::OnceLock};
 
 static BUILTINS: OnceLock<HashMap<&'static str, BuiltinFn>> = OnceLock::new();
 
 pub(crate) fn get_builtins() -> &'static HashMap<&'static str, BuiltinFn> {
-    BUILTINS.get_or_init(|| HashMap::from([("print", print as BuiltinFn)]))
+    BUILTINS.get_or_init(|| {
+        HashMap::from([
+            ("print", print as BuiltinFn),
+            ("spawn_terminal", spawn_terminal as BuiltinFn),
+        ])
+    })
 }
 
 type BuiltinFn = fn(Vec<Rc<super::scope::DataType>>) -> Option<Rc<super::scope::DataType>>;
@@ -19,6 +25,53 @@ fn print(data: Vec<Rc<super::scope::DataType>>) -> Option<Rc<super::scope::DataT
         super::scope::DataType::Boolean(x) => println!("{}", x),
         super::scope::DataType::Function(x) => println!("{}", x),
     }
+
+    return None;
+}
+
+// wt.exe wsl bash -c "cd ~/dev/task-automation && exec bash"
+fn spawn_terminal(data: Vec<Rc<super::scope::DataType>>) -> Option<Rc<super::scope::DataType>> {
+    if data.len() < 1 || data.len() > 3 {
+        panic!("spawn_terminal takes 1-3 arguments. Received: {:?}", data)
+    }
+
+    let mut command: String;
+
+    let path = &data[0];
+    match path.as_ref() {
+        super::scope::DataType::String(x) => command = format!("cd {}", x),
+        _ => panic!("Path has to be a string"),
+    }
+
+    if data.len() > 1 {
+        let cmd_string;
+
+        match &data[1].as_ref() {
+            super::scope::DataType::String(x) => cmd_string = x.clone(),
+            _ => panic!("Only string commands are supported"),
+        }
+
+        if !cmd_string.is_empty() {
+            command += format!(" && {}", cmd_string).as_str();
+        }
+    }
+
+    // Retain the terminal in bash mode
+    command += " && exec bash";
+
+    println!("wt.exe wsl bash -lc \"{}\"", command);
+
+    Command::new("wt.exe")
+        .arg("wsl")
+        .arg("bash")
+        // Use a login shell so path is loaded
+        .arg("-lc")
+        .arg(command)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .expect("Failed to spawn terminal");
 
     return None;
 }

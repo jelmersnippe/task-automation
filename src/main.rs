@@ -1,5 +1,4 @@
 use std::{
-    env,
     fs::read_to_string,
     io::{self, Write, stdin},
 };
@@ -11,14 +10,21 @@ mod lexer;
 mod parser;
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let file_path = &args[1];
+    let arg = std::env::args()
+        .nth(1)
+        .expect("Expected 'repl' or a dsl file path");
 
-    // repl();
-    process_file(file_path);
+    if arg == "repl" {
+        repl();
+        return;
+    }
+
+    let path = std::path::PathBuf::from(arg);
+
+    process_file(path);
 }
 
-fn _repl() {
+fn repl() {
     loop {
         let mut dsl = String::new();
         print!("> ");
@@ -29,7 +35,7 @@ fn _repl() {
     }
 }
 
-fn process_file(path: &String) {
+fn process_file(path: std::path::PathBuf) {
     let dsl = read_to_string(path).unwrap();
 
     interpret(dsl);
