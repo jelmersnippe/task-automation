@@ -7,7 +7,7 @@ fn tokenizes_built_in_print() {
     assert_eq!(
         result,
         vec![
-            Token::new("print", TokenKind::Print),
+            Token::new("print", TokenKind::Identifier),
             Token::new("(", TokenKind::LeftParenthesis),
             Token::new("Hello World", TokenKind::String),
             Token::new(")", TokenKind::RightParenthesis),

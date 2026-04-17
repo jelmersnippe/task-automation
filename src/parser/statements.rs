@@ -10,7 +10,6 @@ pub enum StatementType {
     FunctionDeclaration(FunctionDeclarationStatement),
     Return(expressions::ExpressionType),
     FunctionCall(expressions::FunctionCallExpression),
-    BuiltIn(BuiltInStatement),
     IfStatement(IfStatement),
 }
 
@@ -44,16 +43,6 @@ pub struct IfStatement {
     pub body: Block,
 }
 
-#[derive(PartialEq, Debug, Clone)]
-pub enum BuiltInStatement {
-    Print(PrintStatement),
-}
-
-#[derive(PartialEq, Debug, Clone)]
-pub struct PrintStatement {
-    pub argument: expressions::ExpressionType,
-}
-
 impl Parser {
     pub(crate) fn parse_statement(&mut self) -> StatementType {
         if let Some(token) = self.next() {
@@ -62,21 +51,12 @@ impl Parser {
                 TokenKind::Function => self.parse_function_declaration(),
                 TokenKind::Return => self.parse_return_statement(),
                 TokenKind::Identifier => self.parse_identifier_statement(token),
-                TokenKind::Print => self.parse_print_statement(),
                 TokenKind::If => self.parse_if_statement(),
                 _ => panic!("Unknown token type in root parse: {:?}", token),
             };
         }
 
         panic!("No more tokens to parse");
-    }
-
-    fn parse_print_statement(&mut self) -> StatementType {
-        self.expect(TokenKind::LeftParenthesis);
-        let argument = self.parse_expression();
-        self.expect(TokenKind::RightParenthesis);
-
-        return StatementType::BuiltIn(BuiltInStatement::Print(PrintStatement { argument }));
     }
 
     fn parse_identifier_statement(&mut self, identifier_token: Token) -> StatementType {

@@ -11,7 +11,7 @@ use crate::{
             BinaryOperationExpression, BinaryOperator, ExpressionType, FunctionCallExpression,
             UnaryOperationExpression, UnaryOperator,
         },
-        statements::{BuiltInStatement, StatementType},
+        statements::StatementType,
     },
 };
 
@@ -76,18 +76,6 @@ fn interpret_statement(
         StatementType::FunctionCall(statement) => {
             return execute_function(scope, statement);
         }
-        StatementType::BuiltIn(statement) => match statement {
-            BuiltInStatement::Print(print_statement) => {
-                match interpret_expression(scope, &print_statement.argument).as_ref() {
-                    scope::DataType::Number(x) => println!("{}", x),
-                    scope::DataType::String(x) => println!("{:?}", x),
-                    scope::DataType::Boolean(x) => println!("{}", x),
-                    scope::DataType::Function(x) => println!("{}", x),
-                }
-
-                return None;
-            }
-        },
         StatementType::IfStatement(statement) => {
             let condition_result = interpret_expression(scope, &statement.condition);
 

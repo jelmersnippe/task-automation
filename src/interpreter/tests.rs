@@ -14,6 +14,57 @@ use crate::{
 };
 
 #[test]
+fn interpret_builtin_print() {
+    let dsl = "
+    print(\"foo\")
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+
+    interpreter.interpret();
+}
+
+#[test]
+#[should_panic]
+fn panics_on_no_arguments_to_print() {
+    let dsl = "
+    print()
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+
+    interpreter.interpret();
+}
+
+#[test]
+#[should_panic]
+fn panics_on_too_many_arguments_to_print() {
+    let dsl = "
+    print(\"foo\", 3)
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+
+    interpreter.interpret();
+}
+
+#[test]
+#[should_panic]
+fn panics_on_overriding_builtin() {
+    let dsl = "
+    var print = 3
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+
+    interpreter.interpret();
+}
+
+#[test]
 #[should_panic]
 fn panics_on_function_call_with_invalid_arguments() {
     let dsl = "

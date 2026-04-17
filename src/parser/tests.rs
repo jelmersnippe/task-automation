@@ -7,8 +7,8 @@ use crate::{
             IdentifierExpression, LiteralType, UnaryOperationExpression, UnaryOperator,
         },
         statements::{
-            Block, BuiltInStatement, FunctionDeclarationStatement, PrintStatement, StatementType,
-            VariableAssignmentStatement, VariableDeclarationStatement,
+            Block, FunctionDeclarationStatement, StatementType, VariableAssignmentStatement,
+            VariableDeclarationStatement,
         },
     },
 };
@@ -38,28 +38,6 @@ fn parses_function_declaration_as_argument() {
                 }
             )])
         })]
-    )
-}
-
-#[test]
-fn parses_built_in_print() {
-    let result = Parser::new(vec![
-        Token::new("print", TokenKind::Print),
-        Token::new("(", TokenKind::LeftParenthesis),
-        Token::new("x", TokenKind::Identifier),
-        Token::new(")", TokenKind::RightParenthesis),
-    ])
-    .parse();
-
-    assert_eq!(
-        result,
-        vec![StatementType::BuiltIn(BuiltInStatement::Print(
-            PrintStatement {
-                argument: ExpressionType::Identifier(IdentifierExpression {
-                    name: String::from("x")
-                })
-            }
-        ))]
     )
 }
 
