@@ -1,4 +1,5 @@
 use std::{
+    env,
     fs::read_to_string,
     io::{self, Write, stdin},
 };
@@ -14,8 +15,11 @@ mod lexer;
 mod parser;
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    let file_path = &args[1];
+
     // repl();
-    process_file("./dsl/test.dsl");
+    process_file(file_path);
 }
 
 fn repl() {
@@ -36,7 +40,7 @@ fn repl() {
     }
 }
 
-fn process_file(path: &'static str) {
+fn process_file(path: &String) {
     let dsl = read_to_string(path).unwrap();
     println!("Found DSL:\n{dsl}");
 

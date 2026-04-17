@@ -47,11 +47,6 @@ impl FunctionDeclaration {
         let return_value =
             super::execute_statements(&mut function_scope, self.body.iter().collect());
 
-        // Remove argument variables afer scope ended
-        for argument in self.arguments.iter() {
-            function_scope.remove_variable(argument);
-        }
-
         return return_value;
     }
 }

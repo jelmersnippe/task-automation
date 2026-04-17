@@ -8,7 +8,7 @@ use crate::parser::{
         BinaryOperationExpression, BinaryOperator, ExpressionType, FunctionCallExpression,
         UnaryOperationExpression, UnaryOperator,
     },
-    statements::{BuiltInStatement, StatementType, statement_to_string},
+    statements::{BuiltInStatement, StatementType},
 };
 
 #[cfg(test)]
@@ -91,17 +91,13 @@ fn interpret_statement(
                         return None;
                     }
 
-                    let return_value =
-                        execute_statements(scope, statement.body.statements.iter().collect());
+                    let mut block_scope = scope::Scope::new(Some(scope));
+                    let return_value = execute_statements(
+                        &mut block_scope,
+                        statement.body.statements.iter().collect(),
+                    );
 
-                    if let Some(_) = return_value {
-                        panic!(
-                            "If statement '{:?}' block contains return statement",
-                            statement.condition
-                        )
-                    }
-
-                    return None;
+                    return return_value;
                 }
                 _ => panic!(
                     "Condition '{:?}' of if statement does not result in a boolean",
@@ -280,25 +276,8 @@ fn execute_statements(
             break;
         }
     }
-    for x in executed_statements.iter().rev() {
-        cleanup_statement(scope, &x);
-    }
 
     return return_value;
-}
-
-fn cleanup_statement(scope: &mut scope::Scope, statement: &StatementType) {
-    match statement {
-        StatementType::VariableDeclaration(statement) => {
-            let identifier = statement.identifier.clone();
-            scope.remove_variable(&identifier);
-        }
-        StatementType::FunctionDeclaration(statement) => {
-            let identifier = statement.identifier.clone();
-            scope.remove_variable(&identifier);
-        }
-        _ => {}
-    }
 }
 
 fn interpret_unary_expression(

@@ -30,6 +30,59 @@ fn panics_on_function_call_with_invalid_arguments() {
 }
 
 #[test]
+fn interprets_if_scoped_variables() {
+    let dsl = "
+    var x = \"outer\"
+
+    if (true) {
+        var x = \"inner\"
+
+        if (true) {
+            var x = \"inner-inner\"
+        }
+    }
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("x")),
+        Some(Rc::new(DataType::String(String::from("outer"))))
+    );
+}
+
+#[test]
+fn interprets_function_call_with_return_inside_if() {
+    let dsl = "
+    fn foo(bar) {
+        if (bar) {
+            return 1
+        }
+
+        return 0
+    }
+
+    var x = foo(true)
+    var y = foo(false)
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("x")),
+        Some(Rc::new(DataType::Number(1.0)))
+    );
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("y")),
+        Some(Rc::new(DataType::Number(0.0)))
+    );
+}
+
+#[test]
 fn interprets_function_call_with_arguments() {
     let dsl = "
     fn foo(bar) {
