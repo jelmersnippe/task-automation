@@ -304,9 +304,3 @@ pub fn lexer(text: String) -> Vec<Token> {
 
     return tokens;
 }
-
-pub fn print_tokens(tokens: &Vec<Token>) {
-    tokens
-        .iter()
-        .for_each(|x| println!("{:?}: {:}", x.kind, x.value));
-}

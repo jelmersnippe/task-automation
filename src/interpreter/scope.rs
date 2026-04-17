@@ -1,5 +1,7 @@
 use std::{collections::HashMap, rc::Rc};
 
+use crate::interpreter::builtin::get_builtins;
+
 #[derive(PartialEq, Debug, Clone)]
 pub enum DataType {
     Number(f32),
@@ -33,7 +35,11 @@ impl<'a> Scope<'a> {
     }
 
     pub fn set_variable(&mut self, identifier: String, data: Rc<DataType>) {
-        if let Some(_) = self.variables.get(&identifier) {
+        if get_builtins().contains_key(&identifier.as_str()) {
+            panic!("Can't override builtin '{}'", &identifier)
+        }
+
+        if self.variables.contains_key(&identifier) {
             panic!("Duplicate identifier '{}' already declared", &identifier);
         }
 
@@ -41,7 +47,7 @@ impl<'a> Scope<'a> {
     }
 
     pub fn update_variable(&mut self, identifier: String, data: Rc<DataType>) {
-        if let None = self.variables.get(&identifier) {
+        if !self.variables.contains_key(&identifier) {
             panic!("Identifier '{}' has not declared", &identifier);
         }
 

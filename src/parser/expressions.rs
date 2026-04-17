@@ -1,7 +1,13 @@
+use std::rc::Rc;
+
 use super::Parser;
 use crate::{
+    interpreter::{
+        interpret_expression,
+        scope::{self, DataType},
+    },
     lexer::lexer::{Token, TokenKind},
-    parser::statements::{self, Block},
+    parser::statements::Block,
 };
 
 #[derive(PartialEq, Debug, Clone)]
@@ -29,7 +35,30 @@ pub struct IdentifierExpression {
 #[derive(PartialEq, Debug, Clone)]
 pub struct FunctionCallExpression {
     pub name: String,
-    pub arguments: Vec<ExpressionType>,
+    pub arguments: Arguments,
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub struct Arguments {
+    arguments: Vec<ExpressionType>,
+}
+
+impl Arguments {
+    pub fn new(arguments: Vec<ExpressionType>) -> Self {
+        Self { arguments }
+    }
+
+    pub fn resolve(&self, scope: &scope::Scope) -> Vec<Rc<DataType>> {
+        return self
+            .arguments
+            .iter()
+            .map(|x| interpret_expression(scope, x))
+            .collect();
+    }
+
+    pub fn len(&self) -> usize {
+        return self.arguments.len();
+    }
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -298,7 +327,7 @@ impl Parser {
 
         return ExpressionType::FunctionCall(FunctionCallExpression {
             name: identifier_token.value,
-            arguments: self.parse_arguments(),
+            arguments: Arguments::new(self.parse_arguments()),
         });
     }
 
@@ -345,64 +374,4 @@ impl Parser {
 
         return arguments;
     }
-}
-
-pub fn expression_to_string(expression: &ExpressionType) -> String {
-    return match expression {
-        ExpressionType::Literal(literal_type) => match literal_type {
-            LiteralType::String(value) => format!("String literal with value '{}'", value),
-            LiteralType::Number(value) => format!("Number literal with value {}", value),
-            LiteralType::Boolean(value) => format!("Boolean literal with value {}", value),
-        },
-        ExpressionType::Identifier(identifier_expression) => {
-            format!("Identifier '{}'", identifier_expression.name)
-        }
-        ExpressionType::FunctionCall(function_call_expression) => {
-            function_call_expression_to_string(function_call_expression)
-        }
-        ExpressionType::BinaryOperation(binary_operation_expression) => format!(
-            "Binary expression:\n\tLeft: {}\n\tOperator: {:?}\n\tRight: {}",
-            expression_to_string(&*binary_operation_expression.left),
-            binary_operation_expression.operator,
-            expression_to_string(&*binary_operation_expression.right)
-        ),
-        ExpressionType::UnaryOperation(unary_operation_expression) => format!(
-            "Unary expression:\n\tOperator: {:?}\n\tExpression: {}",
-            unary_operation_expression.operator,
-            expression_to_string(&*unary_operation_expression.expression)
-        ),
-        ExpressionType::FunctionDeclaration(function_declaration_expression) => {
-            format!(
-                "Inline function declaration\n\tArguments: {}\n\tBody:{}",
-                function_declaration_expression.parameters.iter().fold(
-                    String::new(),
-                    |acc, cur| acc
-                        + "\n\t\t"
-                        + &expression_to_string(&ExpressionType::Identifier(
-                            IdentifierExpression {
-                                name: cur.name.clone()
-                            }
-                        ))
-                ),
-                function_declaration_expression
-                    .body
-                    .statements
-                    .iter()
-                    .fold(String::new(), |acc, cur| acc
-                        + "\n\t\t"
-                        + &statements::statement_to_string(cur))
-            )
-        }
-    };
-}
-
-pub fn function_call_expression_to_string(expression: &FunctionCallExpression) -> String {
-    return format!(
-        "Function call\n\tName: '{}'\n\tArguments: {}",
-        expression.name,
-        expression
-            .arguments
-            .iter()
-            .fold(String::new(), |acc, cur| acc + &expression_to_string(cur))
-    );
 }

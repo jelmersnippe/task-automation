@@ -37,16 +37,14 @@ impl FunctionDeclaration {
             );
         }
 
-        let resolved_arguments: Vec<Rc<DataType>> = call_info
-            .arguments
-            .iter()
-            .map(|x| super::interpret_expression(scope, x))
-            .collect();
-
         let mut function_scope = super::scope::Scope::new(Some(scope));
 
         // Set arguments as available variables
-        for (identifier, value) in self.arguments.iter().zip(resolved_arguments) {
+        for (identifier, value) in self
+            .arguments
+            .iter()
+            .zip(call_info.arguments.resolve(scope))
+        {
             function_scope.set_variable(identifier.clone(), value);
         }
 

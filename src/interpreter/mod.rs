@@ -1,14 +1,18 @@
+pub(crate) mod builtin;
 pub(crate) mod function;
 pub(crate) mod scope;
 
 use std::rc::Rc;
 
-use crate::parser::{
-    expressions::{
-        BinaryOperationExpression, BinaryOperator, ExpressionType, FunctionCallExpression,
-        UnaryOperationExpression, UnaryOperator,
+use crate::{
+    interpreter::builtin::{execute_builtin, get_builtins},
+    parser::{
+        expressions::{
+            BinaryOperationExpression, BinaryOperator, ExpressionType, FunctionCallExpression,
+            UnaryOperationExpression, UnaryOperator,
+        },
+        statements::{BuiltInStatement, StatementType},
     },
-    statements::{BuiltInStatement, StatementType},
 };
 
 #[cfg(test)]
@@ -195,6 +199,10 @@ fn execute_function(
     scope: &scope::Scope,
     statement: &FunctionCallExpression,
 ) -> Option<Rc<scope::DataType>> {
+    if let Some(var) = get_builtins().get(&statement.name.as_str()) {
+        return execute_builtin(var, statement.arguments.resolve(scope));
+    }
+
     let function_declaration = if let Some(x) = scope.get_variable(&statement.name) {
         match x.as_ref() {
             scope::DataType::Function(function_declaration) => function_declaration.clone(),
@@ -207,7 +215,10 @@ fn execute_function(
     return function_declaration.execute(statement, scope);
 }
 
-fn interpret_expression(scope: &scope::Scope, expression: &ExpressionType) -> Rc<scope::DataType> {
+pub fn interpret_expression(
+    scope: &scope::Scope,
+    expression: &ExpressionType,
+) -> Rc<scope::DataType> {
     match expression {
         ExpressionType::Literal(literal_type) => {
             return match literal_type {

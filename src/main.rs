@@ -4,11 +4,7 @@ use std::{
     io::{self, Write, stdin},
 };
 
-use crate::{
-    interpreter::Interpreter,
-    lexer::lexer::{TokenKind, lexer, print_tokens},
-    parser::{Parser, print_ast},
-};
+use crate::{interpreter::Interpreter, lexer::lexer::lexer, parser::Parser};
 
 mod interpreter;
 mod lexer;
@@ -22,28 +18,25 @@ fn main() {
     process_file(file_path);
 }
 
-fn repl() {
+fn _repl() {
     loop {
-        let mut input = String::new();
+        let mut dsl = String::new();
         print!("> ");
         let _ = io::stdout().flush();
-        let _ = stdin().read_line(&mut input);
+        let _ = stdin().read_line(&mut dsl);
 
-        let tokens = lexer(input);
-        print_tokens(&tokens);
-        println!();
-
-        let mut parser = Parser::new(tokens);
-        let ast = parser.parse();
-        print_ast(&ast);
-        println!();
+        interpret(dsl);
     }
 }
 
 fn process_file(path: &String) {
     let dsl = read_to_string(path).unwrap();
 
-    let tokens = lexer(dsl);
+    interpret(dsl);
+}
+
+fn interpret(input: String) {
+    let tokens = lexer(input);
 
     let mut parser = Parser::new(tokens);
     let ast = parser.parse();

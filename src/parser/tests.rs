@@ -3,7 +3,7 @@ use crate::{
     parser::{
         Parser,
         expressions::{
-            ExpressionType, FunctionCallExpression, FunctionDeclarationExpression,
+            Arguments, ExpressionType, FunctionCallExpression, FunctionDeclarationExpression,
             IdentifierExpression, LiteralType, UnaryOperationExpression, UnaryOperator,
         },
         statements::{
@@ -31,12 +31,12 @@ fn parses_function_declaration_as_argument() {
         result,
         vec![StatementType::FunctionCall(FunctionCallExpression {
             name: String::from("inlineFunctionCall"),
-            arguments: vec![ExpressionType::FunctionDeclaration(
+            arguments: Arguments::new(vec![ExpressionType::FunctionDeclaration(
                 FunctionDeclarationExpression {
                     parameters: vec![],
                     body: Block { statements: vec![] }
                 }
-            )]
+            )])
         })]
     )
 }
@@ -82,7 +82,7 @@ fn parses_function_call_expression_without_arguments() {
                 identifier: String::from("x"),
                 value: ExpressionType::FunctionCall(FunctionCallExpression {
                     name: String::from("greet"),
-                    arguments: vec![]
+                    arguments: Arguments::new(vec![])
                 })
             }
         )]
@@ -113,11 +113,11 @@ fn parses_function_call_expression_with_literal_arguments() {
                 identifier: String::from("x"),
                 value: ExpressionType::FunctionCall(FunctionCallExpression {
                     name: String::from("greet"),
-                    arguments: vec![
+                    arguments: Arguments::new(vec![
                         ExpressionType::Literal(LiteralType::Number(5 as f32)),
                         ExpressionType::Literal(LiteralType::String(String::from("Hello World"))),
                         ExpressionType::Literal(LiteralType::Boolean(true))
-                    ]
+                    ])
                 })
             }
         )]
@@ -144,9 +144,11 @@ fn parses_function_call_expression_with_identifier_argument() {
                 identifier: String::from("x"),
                 value: ExpressionType::FunctionCall(FunctionCallExpression {
                     name: String::from("greet"),
-                    arguments: vec![ExpressionType::Identifier(IdentifierExpression {
-                        name: String::from("x")
-                    })]
+                    arguments: Arguments::new(vec![ExpressionType::Identifier(
+                        IdentifierExpression {
+                            name: String::from("x")
+                        }
+                    )])
                 })
             }
         )]
@@ -166,7 +168,7 @@ fn parses_function_call_statement_without_arguments() {
         result,
         vec![StatementType::FunctionCall(FunctionCallExpression {
             name: String::from("greet"),
-            arguments: vec![]
+            arguments: Arguments::new(vec![])
         })]
     )
 }
@@ -189,11 +191,11 @@ fn parses_function_call_statement_with_literal_arguments() {
         result,
         vec![StatementType::FunctionCall(FunctionCallExpression {
             name: String::from("greet"),
-            arguments: vec![
+            arguments: Arguments::new(vec![
                 ExpressionType::Literal(LiteralType::Number(5 as f32)),
                 ExpressionType::Literal(LiteralType::String(String::from("Hello World"))),
                 ExpressionType::Literal(LiteralType::Boolean(true))
-            ]
+            ])
         })]
     )
 }
@@ -212,9 +214,9 @@ fn parses_function_call_statement_with_identifier_argument() {
         result,
         vec![StatementType::FunctionCall(FunctionCallExpression {
             name: String::from("greet"),
-            arguments: vec![ExpressionType::Identifier(IdentifierExpression {
+            arguments: Arguments::new(vec![ExpressionType::Identifier(IdentifierExpression {
                 name: String::from("x")
-            })]
+            })])
         })]
     )
 }
