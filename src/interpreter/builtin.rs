@@ -61,7 +61,7 @@ fn spawn_terminal(data: Vec<Rc<super::scope::DataType>>) -> Option<Rc<super::sco
 
     println!("wt.exe wsl bash -lc \"{}\"", command);
 
-    Command::new("wt.exe")
+    let success = Command::new("wt.exe")
         .arg("wsl")
         .arg("bash")
         // Use a login shell so path is loaded
@@ -70,8 +70,12 @@ fn spawn_terminal(data: Vec<Rc<super::scope::DataType>>) -> Option<Rc<super::sco
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        .spawn()
-        .expect("Failed to spawn terminal");
+        .spawn();
+
+    match success {
+        Err(error) => println!("{}", error),
+        _ => {}
+    }
 
     return None;
 }
