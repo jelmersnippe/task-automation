@@ -17,6 +17,26 @@ use crate::{
 };
 
 #[test]
+fn interprets_function_call_assignment() {
+    let dsl = "
+    var x = 3
+    fn foo() {
+        return x;
+    }
+    foo() = 5
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("x")),
+        Rc::new(DataType::Number(5.0))
+    );
+}
+
+#[test]
 fn interpret_builtin_print() {
     let dsl = "
     print(\"foo\")

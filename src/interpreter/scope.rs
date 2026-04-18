@@ -9,7 +9,20 @@ pub enum DataType {
     Boolean(bool),
     Function(super::function::FunctionDeclaration),
     List(super::list::ListDeclaration),
+    Reference(ReferenceData),
     Undefined(),
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub struct ReferenceData {
+    pub identifier: String,
+    pub data: Rc<DataType>,
+}
+
+impl fmt::Display for ReferenceData {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.data)
+    }
 }
 
 impl fmt::Display for DataType {
@@ -20,6 +33,7 @@ impl fmt::Display for DataType {
             DataType::Boolean(x) => format!("{}", x),
             DataType::Function(function_declaration) => format!("{}", function_declaration),
             DataType::List(data_types) => format!("{}", data_types),
+            DataType::Reference(data) => data.to_string(),
             DataType::Undefined() => "undefined".to_string(),
         };
         write!(f, "{}", string)

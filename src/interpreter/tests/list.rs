@@ -13,7 +13,29 @@ use crate::{
 };
 
 #[test]
-fn interpret_function_call_assignment() {
+fn interpret_accessor_function_call() {
+    let dsl = "
+    fn foo() {
+        return 1
+    }
+
+    var x = [foo];
+    var y = x[0]()
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("y")),
+        Rc::new(DataType::Number(1.0))
+    );
+}
+
+#[test]
+fn interpret_function_call_accessor_assignment() {
     let dsl = "
     var x = [1];
     
@@ -33,6 +55,26 @@ fn interpret_function_call_assignment() {
         interpreter.scope.get_variable(&String::from("x")),
         Rc::new(DataType::List(ListDeclaration::new(vec![Rc::new(
             DataType::Number(2.0)
+        )])))
+    );
+}
+
+#[test]
+fn interpret_list_assignment_nested() {
+    let dsl = "
+    var x = [[1]]
+    x[0][0] = 2
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("x")),
+        Rc::new(DataType::List(ListDeclaration::new(vec![Rc::new(
+            DataType::List(ListDeclaration::new(vec![Rc::new(DataType::Number(2.0))]))
         )])))
     );
 }
