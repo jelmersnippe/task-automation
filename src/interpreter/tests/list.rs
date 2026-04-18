@@ -13,6 +13,72 @@ use crate::{
 };
 
 #[test]
+fn interprets_array_reference_overwrite() {
+    let dsl = "
+    var x = [1,2,3]
+    fn foo() {
+        return x;
+    }
+    var y = foo()
+    y = [9, 9, 9]
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("x")),
+        Rc::new(DataType::List(ListDeclaration::new(vec![
+            Rc::new(DataType::Number(1.0)),
+            Rc::new(DataType::Number(2.0)),
+            Rc::new(DataType::Number(3.0)),
+        ])))
+    );
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("y")),
+        Rc::new(DataType::List(ListDeclaration::new(vec![
+            Rc::new(DataType::Number(9.0)),
+            Rc::new(DataType::Number(9.0)),
+            Rc::new(DataType::Number(9.0)),
+        ])))
+    );
+}
+
+#[test]
+fn interprets_array_reference_assignment() {
+    let dsl = "
+    var x = [1,2,3]
+    fn foo() {
+        return x;
+    }
+    var y = foo()
+    y[0] = 5
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("x")),
+        Rc::new(DataType::List(ListDeclaration::new(vec![
+            Rc::new(DataType::Number(5.0)),
+            Rc::new(DataType::Number(2.0)),
+            Rc::new(DataType::Number(3.0)),
+        ])))
+    );
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("y")),
+        Rc::new(DataType::List(ListDeclaration::new(vec![
+            Rc::new(DataType::Number(5.0)),
+            Rc::new(DataType::Number(2.0)),
+            Rc::new(DataType::Number(3.0)),
+        ])))
+    );
+}
+
+#[test]
 fn interpret_accessor_function_call() {
     let dsl = "
     fn foo() {

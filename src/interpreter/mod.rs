@@ -9,7 +9,7 @@ use crate::{
     interpreter::{
         builtin::{execute_builtin, get_builtins},
         list::ListDeclaration,
-        scope::DataType,
+        scope::{DataType, ReferenceData},
     },
     parser::{
         expressions::{
@@ -121,43 +121,26 @@ fn interpret_statement(scope: &mut scope::Scope, statement: &StatementType) -> S
 }
 
 fn interpret_assignment(scope: &mut scope::Scope, assignment: &AssignmentStatement) {
+    let value = interpret_expression(scope, &assignment.value);
     match &assignment.identifier {
         ExpressionType::Identifier(identifier_expression) => {
-            scope.update_variable(
-                identifier_expression.name.clone(),
-                interpret_expression(scope, &assignment.value),
-            );
+            scope.update_variable(identifier_expression.name.clone(), value);
         }
         // Will need a resolver function that runs untill we reach {value: identifier | list, key: x}
         ExpressionType::Accessor(accessor_expression) => {
-            let value = interpret_expression(scope, &accessor_expression.value);
+            let storage = interpret_expression(scope, &accessor_expression.value);
 
-            match value.as_ref() {
+            match storage.as_ref() {
                 DataType::List(list) => {
                     let key = interpret_expression(scope, &accessor_expression.key);
 
                     match key.as_ref() {
-                        DataType::Number(index) => {
-                            list.set(*index, interpret_expression(scope, &assignment.value))
-                        }
+                        DataType::Number(index) => list.set(*index, value),
                         _ => panic!("Invalid index for list"),
                     };
                 }
                 _ => panic!("Invalid use of accessor"),
             };
-        }
-        ExpressionType::FunctionCall(call_expression) => {
-            let value = interpret_expression(scope, &call_expression.value);
-
-            match value.as_ref() {
-                DataType::Reference(data) => {
-                    scope.update_variable(
-                        data.identifier.clone(),
-                        interpret_expression(scope, &assignment.value),
-                    );
-                }
-                _ => panic!("{} is not callable", value),
-            }
         }
         _ => panic!("Expression is not assignable"),
     }
@@ -263,6 +246,8 @@ pub fn interpret_expression(
     scope: &scope::Scope,
     expression: &ExpressionType,
 ) -> Rc<scope::DataType> {
+    println!("{:?}", expression);
+
     match expression {
         ExpressionType::Literal(literal_type) => match literal_type {
             LiteralType::String(x) => Rc::new(scope::DataType::String(x.clone())),

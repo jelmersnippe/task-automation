@@ -17,13 +17,14 @@ use crate::{
 };
 
 #[test]
-fn interprets_function_call_assignment() {
+fn interprets_variable_rebinding() {
     let dsl = "
     var x = 3
     fn foo() {
         return x;
     }
-    foo() = 5
+    var y = foo()
+    y = 5
     ";
     let tokens = lexer::lexer(String::from(dsl));
     let ast = Parser::new(tokens).parse();
@@ -32,6 +33,10 @@ fn interprets_function_call_assignment() {
 
     assert_eq!(
         interpreter.scope.get_variable(&String::from("x")),
+        Rc::new(DataType::Number(3.0))
+    );
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("y")),
         Rc::new(DataType::Number(5.0))
     );
 }
