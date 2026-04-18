@@ -1,3 +1,8 @@
+#[cfg(test)]
+mod binary_tests;
+#[cfg(test)]
+mod list_tests;
+
 use crate::{
     lexer::lexer::{Token, TokenKind},
     parser::{

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, fmt, rc::Rc};
 
 use crate::interpreter::builtin::get_builtins;
 
@@ -8,6 +8,20 @@ pub enum DataType {
     String(String),
     Boolean(bool),
     Function(super::function::FunctionDeclaration),
+    List(super::list::ListDeclaration),
+}
+
+impl fmt::Display for DataType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let string = match self {
+            DataType::Number(x) => format!("{}", x),
+            DataType::String(x) => format!("\"{}\"", x),
+            DataType::Boolean(x) => format!("{}", x),
+            DataType::Function(function_declaration) => format!("{}", function_declaration),
+            DataType::List(data_types) => format!("{}", data_types),
+        };
+        write!(f, "{}", string)
+    }
 }
 
 pub struct Scope<'a> {

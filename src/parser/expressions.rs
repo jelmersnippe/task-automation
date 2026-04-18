@@ -18,6 +18,19 @@ pub enum ExpressionType {
     FunctionDeclaration(FunctionDeclarationExpression),
     BinaryOperation(BinaryOperationExpression),
     UnaryOperation(UnaryOperationExpression),
+    List(ListExpression),
+    // Dictionary(DictionaryExpression),
+}
+
+// #[derive(PartialEq, Debug, Clone)]
+// pub struct DictionaryExpression {
+//     pub keys: Vec<ExpressionType>,
+//     pub values: Vec<ExpressionType>,
+// }
+
+#[derive(PartialEq, Debug, Clone)]
+pub struct ListExpression {
+    pub values: Vec<ExpressionType>,
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -287,6 +300,9 @@ impl Parser {
                 TokenKind::False => ExpressionType::Literal(LiteralType::Boolean(false)),
                 TokenKind::Identifier => self.parse_identifier_expression(token),
                 TokenKind::Function => self.parse_function_expression(token),
+                TokenKind::LeftBracket => ExpressionType::List(ListExpression {
+                    values: self.parse_comma_separated_list(TokenKind::RightBracket),
+                }),
                 _ => panic!(
                     "Unsupported token type for simple expression {:?}",
                     token.kind
@@ -327,7 +343,7 @@ impl Parser {
 
         return ExpressionType::FunctionCall(FunctionCallExpression {
             name: identifier_token.value,
-            arguments: Arguments::new(self.parse_arguments()),
+            arguments: Arguments::new(self.parse_comma_separated_list(TokenKind::RightParenthesis)),
         });
     }
 
@@ -359,17 +375,17 @@ impl Parser {
         return parameters;
     }
 
-    fn parse_arguments(&mut self) -> Vec<ExpressionType> {
+    fn parse_comma_separated_list(&mut self, delimiter: TokenKind) -> Vec<ExpressionType> {
         let mut arguments: Vec<ExpressionType> = vec![];
 
-        if !self.r#match(TokenKind::RightParenthesis) {
+        if !self.r#match(delimiter.clone()) {
             arguments.push(self.parse_expression());
 
             while self.r#match(TokenKind::Comma) {
                 arguments.push(self.parse_expression());
             }
 
-            self.expect(TokenKind::RightParenthesis);
+            self.expect(delimiter);
         }
 
         return arguments;

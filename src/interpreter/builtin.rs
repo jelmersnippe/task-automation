@@ -19,14 +19,11 @@ fn print(data: Vec<Rc<super::scope::DataType>>) -> Option<Rc<super::scope::DataT
         panic!("print only takes 1 argument. Received: {:?}", data)
     }
 
-    match data[0].as_ref() {
-        super::scope::DataType::Number(x) => println!("{}", x),
-        super::scope::DataType::String(x) => println!("{:?}", x),
-        super::scope::DataType::Boolean(x) => println!("{}", x),
-        super::scope::DataType::Function(x) => println!("{}", x),
-    }
+    let arg = data.iter().nth(0).unwrap();
 
-    return None;
+    println!("{}", arg);
+
+    None
 }
 
 // wt.exe wsl bash -c "cd ~/dev/task-automation && exec bash"
@@ -37,16 +34,16 @@ fn spawn_terminal(data: Vec<Rc<super::scope::DataType>>) -> Option<Rc<super::sco
 
     let mut command: String;
 
-    let path = &data[0];
+    let path = data.iter().nth(0).unwrap();
     match path.as_ref() {
         super::scope::DataType::String(x) => command = format!("cd {}", x),
         _ => panic!("Path has to be a string"),
     }
 
-    if data.len() > 1 {
+    if let Some(cmd) = data.iter().nth(1) {
         let cmd_string;
 
-        match &data[1].as_ref() {
+        match cmd.as_ref() {
             super::scope::DataType::String(x) => cmd_string = x.clone(),
             _ => panic!("Only string commands are supported"),
         }
@@ -77,7 +74,7 @@ fn spawn_terminal(data: Vec<Rc<super::scope::DataType>>) -> Option<Rc<super::sco
         _ => {}
     }
 
-    return None;
+    None
 }
 
 pub(crate) fn execute_builtin(

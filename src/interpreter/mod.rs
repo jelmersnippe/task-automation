@@ -1,15 +1,19 @@
 pub(crate) mod builtin;
 pub(crate) mod function;
+pub(crate) mod list;
 pub(crate) mod scope;
 
 use std::rc::Rc;
 
 use crate::{
-    interpreter::builtin::{execute_builtin, get_builtins},
+    interpreter::{
+        builtin::{execute_builtin, get_builtins},
+        list::ListDeclaration,
+    },
     parser::{
         expressions::{
             BinaryOperationExpression, BinaryOperator, ExpressionType, FunctionCallExpression,
-            UnaryOperationExpression, UnaryOperator,
+            ListExpression, UnaryOperationExpression, UnaryOperator,
         },
         statements::StatementType,
     },
@@ -54,7 +58,7 @@ fn interpret_statement(
             let expression = interpret_expression(scope, &value);
 
             scope.set_variable(identifier, expression);
-            return None;
+            None
         }
         StatementType::FunctionDeclaration(statement) => {
             let identifier = statement.identifier.clone();
@@ -68,14 +72,10 @@ fn interpret_statement(
                 )),
             );
 
-            return None;
+            None
         }
-        StatementType::Return(expression) => {
-            return Some(interpret_expression(scope, expression));
-        }
-        StatementType::FunctionCall(statement) => {
-            return execute_function(scope, statement);
-        }
+        StatementType::Return(expression) => Some(interpret_expression(scope, expression)),
+        StatementType::FunctionCall(statement) => execute_function(scope, statement),
         StatementType::IfStatement(statement) => {
             let condition_result = interpret_expression(scope, &statement.condition);
 
@@ -91,7 +91,7 @@ fn interpret_statement(
                         statement.body.statements.iter().collect(),
                     );
 
-                    return return_value;
+                    return_value
                 }
                 _ => panic!(
                     "Condition '{:?}' of if statement does not result in a boolean",
@@ -104,7 +104,7 @@ fn interpret_statement(
                 statement.identifier.clone(),
                 interpret_expression(scope, &statement.value),
             );
-            return None;
+            None
         }
     }
 }
@@ -115,7 +115,7 @@ fn interpret_binary_expression(
     let left = interpret_expression(scope, &expression.left);
     let right = interpret_expression(scope, &expression.right);
 
-    return match left.as_ref() {
+    match left.as_ref() {
         scope::DataType::Number(l) => match right.as_ref() {
             scope::DataType::Number(r) => match expression.operator {
                 BinaryOperator::Add => scope::DataType::Number(l + r),
@@ -180,7 +180,7 @@ fn interpret_binary_expression(
             ),
         },
         _ => panic!("Invalid DataType used for binary expression"),
-    };
+    }
 }
 
 fn execute_function(
@@ -200,7 +200,7 @@ fn execute_function(
         panic!("Identifier '{}' not found", &statement.name)
     };
 
-    return function_declaration.execute(statement, scope);
+    function_declaration.execute(statement, scope)
 }
 
 pub fn interpret_expression(
@@ -208,22 +208,20 @@ pub fn interpret_expression(
     expression: &ExpressionType,
 ) -> Rc<scope::DataType> {
     match expression {
-        ExpressionType::Literal(literal_type) => {
-            return match literal_type {
-                crate::parser::expressions::LiteralType::String(x) => {
-                    Rc::new(scope::DataType::String(x.clone()))
-                }
-                crate::parser::expressions::LiteralType::Number(x) => {
-                    Rc::new(scope::DataType::Number(x.clone()))
-                }
-                crate::parser::expressions::LiteralType::Boolean(x) => {
-                    Rc::new(scope::DataType::Boolean(x.clone()))
-                }
-            };
-        }
+        ExpressionType::Literal(literal_type) => match literal_type {
+            crate::parser::expressions::LiteralType::String(x) => {
+                Rc::new(scope::DataType::String(x.clone()))
+            }
+            crate::parser::expressions::LiteralType::Number(x) => {
+                Rc::new(scope::DataType::Number(x.clone()))
+            }
+            crate::parser::expressions::LiteralType::Boolean(x) => {
+                Rc::new(scope::DataType::Boolean(x.clone()))
+            }
+        },
         ExpressionType::Identifier(identifier_expression) => {
             if let Some(var) = scope.get_variable(&identifier_expression.name) {
-                return var;
+                var
             } else {
                 panic!(
                     "Variable for identifier {} not found",
@@ -233,7 +231,7 @@ pub fn interpret_expression(
         }
         ExpressionType::FunctionCall(function_call_expression) => {
             if let Some(return_value) = execute_function(scope, function_call_expression) {
-                return return_value;
+                return_value
             } else {
                 panic!(
                     "Function {} does not have a return value",
@@ -249,9 +247,9 @@ pub fn interpret_expression(
                 .collect();
             let statements = function_declaration_expression.body.statements.clone();
 
-            return Rc::new(scope::DataType::Function(
+            Rc::new(scope::DataType::Function(
                 function::FunctionDeclaration::new(arguments, statements),
-            ));
+            ))
         }
         ExpressionType::BinaryOperation(binary_operation_expression) => Rc::new(
             interpret_binary_expression(scope, binary_operation_expression),
@@ -259,7 +257,23 @@ pub fn interpret_expression(
         ExpressionType::UnaryOperation(unary_operation_expression) => Rc::new(
             interpret_unary_expression(scope, unary_operation_expression),
         ),
+        ExpressionType::List(list_expression) => Rc::new(scope::DataType::List(
+            interpret_list_expression(scope, list_expression),
+        )),
     }
+}
+
+fn interpret_list_expression(
+    scope: &scope::Scope,
+    list_expression: &ListExpression,
+) -> ListDeclaration {
+    let values = list_expression
+        .values
+        .iter()
+        .map(|x| interpret_expression(scope, x))
+        .collect();
+
+    ListDeclaration::new(values)
 }
 
 fn execute_statements(
@@ -278,7 +292,7 @@ fn execute_statements(
         }
     }
 
-    return return_value;
+    return_value
 }
 
 fn interpret_unary_expression(

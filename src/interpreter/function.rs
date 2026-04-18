@@ -13,7 +13,16 @@ pub struct FunctionDeclaration {
 
 impl fmt::Display for FunctionDeclaration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "fn ({}) {{}} )", self.arguments.as_slice().join(", "))
+        write!(f, "fn (")?;
+
+        for (i, value) in self.arguments.iter().enumerate() {
+            if i > 0 {
+                write!(f, ", ")?;
+            }
+            write!(f, "{}", value)?;
+        }
+
+        write!(f, ") {{ }}")
     }
 }
 

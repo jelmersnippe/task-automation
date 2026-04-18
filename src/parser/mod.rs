@@ -2,8 +2,6 @@ pub(crate) mod expressions;
 pub(crate) mod statements;
 
 #[cfg(test)]
-mod binary_tests;
-#[cfg(test)]
 mod tests;
 
 use crate::lexer::lexer::{Token, TokenKind};
