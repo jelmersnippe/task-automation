@@ -342,7 +342,7 @@ impl Parser {
                 TokenKind::LeftBracket => ExpressionType::List(ListExpression {
                     values: self.parse_comma_separated_list(TokenKind::RightBracket),
                 }),
-                _ => panic!(""),
+                _ => panic!("Invalid token for simple expression parsing"),
             };
         }
 

@@ -9,7 +9,7 @@ use crate::{
     interpreter::{
         builtin::{execute_builtin, get_builtins},
         list::ListDeclaration,
-        scope::{DataType, ReferenceData},
+        scope::DataType,
     },
     parser::{
         expressions::{
@@ -69,9 +69,13 @@ fn interpret_statement(scope: &mut scope::Scope, statement: &StatementType) -> S
             let statements = statement.body.statements.clone();
 
             scope.set_variable(
-                identifier,
+                identifier.clone(),
                 Rc::new(scope::DataType::Function(
-                    function::FunctionDeclaration::new(arguments, statements),
+                    function::FunctionDeclaration::new(
+                        Some(identifier.clone()),
+                        arguments,
+                        statements,
+                    ),
                 )),
             );
 
@@ -152,7 +156,7 @@ fn interpret_assignment(scope: &mut scope::Scope, assignment: &AssignmentStateme
                         interpret_expression(scope, &assignment.value),
                     );
                 }
-                _ => panic!(""),
+                _ => panic!("{} is not callable", value),
             }
         }
         _ => panic!("Expression is not assignable"),
@@ -280,7 +284,7 @@ pub fn interpret_expression(
             let statements = function_declaration_expression.body.statements.clone();
 
             Rc::new(scope::DataType::Function(
-                function::FunctionDeclaration::new(arguments, statements),
+                function::FunctionDeclaration::new(None, arguments, statements),
             ))
         }
         ExpressionType::BinaryOperation(binary_operation_expression) => Rc::new(
@@ -303,7 +307,7 @@ pub fn interpret_expression(
                 }
             }
 
-            panic!("");
+            panic!("Can't use accessor on {}", value);
         }
     }
 }

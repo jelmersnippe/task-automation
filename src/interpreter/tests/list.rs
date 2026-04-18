@@ -177,6 +177,7 @@ fn interpret_list_declaration() {
             Rc::new(DataType::Number(2.0)),
             Rc::new(DataType::Number(3.0)),
             Rc::new(DataType::Function(FunctionDeclaration::new(
+                Some(String::from("foo")),
                 vec![],
                 vec![StatementType::Return(ExpressionType::Literal(
                     LiteralType::Number(3.0)

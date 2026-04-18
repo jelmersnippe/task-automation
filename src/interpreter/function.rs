@@ -7,13 +7,20 @@ use crate::{
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct FunctionDeclaration {
+    name: Option<String>,
     arguments: Vec<String>,
     body: Vec<StatementType>,
 }
 
 impl fmt::Display for FunctionDeclaration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "fn (")?;
+        write!(f, "fn ")?;
+
+        if let Some(name) = &self.name {
+            write!(f, "{}", name)?;
+        }
+
+        write!(f, "(")?;
 
         for (i, value) in self.arguments.iter().enumerate() {
             if i > 0 {
@@ -27,8 +34,12 @@ impl fmt::Display for FunctionDeclaration {
 }
 
 impl FunctionDeclaration {
-    pub fn new(arguments: Vec<String>, body: Vec<StatementType>) -> Self {
-        Self { body, arguments }
+    pub fn new(name: Option<String>, arguments: Vec<String>, body: Vec<StatementType>) -> Self {
+        Self {
+            name,
+            body,
+            arguments,
+        }
     }
 
     pub fn execute(&self, parameters: &Parameters, scope: &super::scope::Scope) -> Rc<DataType> {
