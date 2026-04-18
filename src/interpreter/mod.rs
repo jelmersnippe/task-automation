@@ -9,11 +9,12 @@ use crate::{
     interpreter::{
         builtin::{execute_builtin, get_builtins},
         list::ListDeclaration,
+        scope::DataType,
     },
     parser::{
         expressions::{
             BinaryOperationExpression, BinaryOperator, CallExpression, ExpressionType,
-            ListExpression, LiteralType, UnaryOperationExpression, UnaryOperator,
+            ListExpression, LiteralType, Parameters, UnaryOperationExpression, UnaryOperator,
         },
         statements::{AssignmentStatement, ExpressionStatement, StatementType},
     },
@@ -47,10 +48,7 @@ impl Interpreter<'_> {
     }
 }
 
-fn interpret_statement(
-    scope: &mut scope::Scope,
-    statement: &StatementType,
-) -> Option<Rc<scope::DataType>> {
+fn interpret_statement(scope: &mut scope::Scope, statement: &StatementType) -> Rc<scope::DataType> {
     match statement {
         StatementType::VariableDeclaration(statement) => {
             let identifier = statement.identifier.clone();
@@ -58,7 +56,7 @@ fn interpret_statement(
             let expression = interpret_expression(scope, &value);
 
             scope.set_variable(identifier, expression);
-            None
+            Rc::new(DataType::Void())
         }
         StatementType::FunctionDeclaration(statement) => {
             let identifier = statement.identifier.clone();
@@ -72,16 +70,16 @@ fn interpret_statement(
                 )),
             );
 
-            None
+            Rc::new(DataType::Void())
         }
-        StatementType::Return(expression) => Some(interpret_expression(scope, expression)),
+        StatementType::Return(expression) => interpret_expression(scope, expression),
         StatementType::IfStatement(statement) => {
             let condition_result = interpret_expression(scope, &statement.condition);
 
             match *condition_result {
                 scope::DataType::Boolean(should_execute) => {
                     if !should_execute {
-                        return None;
+                        return Rc::new(DataType::Void());
                     }
 
                     let mut block_scope = scope::Scope::new(Some(scope));
@@ -101,11 +99,11 @@ fn interpret_statement(
         StatementType::Expression(statement) => match statement {
             ExpressionStatement::Assignment(assignment_statement) => {
                 interpret_assignment(scope, assignment_statement);
-                None
+                Rc::new(DataType::Void())
             }
             ExpressionStatement::Inline(expression_type) => {
                 interpret_expression(scope, expression_type);
-                None
+                Rc::new(DataType::Void())
             }
         },
     }
@@ -201,10 +199,7 @@ fn interpret_binary_expression(
     }
 }
 
-fn execute_function(
-    scope: &scope::Scope,
-    statement: &CallExpression,
-) -> Option<Rc<scope::DataType>> {
+fn execute_function(scope: &scope::Scope, statement: &CallExpression) -> Rc<scope::DataType> {
     // Check if it's a builtin
     match statement.value.as_ref() {
         ExpressionType::Identifier(identifier) => {
@@ -246,11 +241,7 @@ pub fn interpret_expression(
             }
         }
         ExpressionType::FunctionCall(function_call_expression) => {
-            if let Some(return_value) = execute_function(scope, function_call_expression) {
-                return_value
-            } else {
-                Rc::new(scope::DataType::Void())
-            }
+            execute_function(scope, function_call_expression)
         }
         ExpressionType::FunctionDeclaration(function_declaration_expression) => {
             let arguments = function_declaration_expression
@@ -293,15 +284,15 @@ fn interpret_list_expression(
 fn execute_statements(
     scope: &mut scope::Scope,
     statements: Vec<&StatementType>,
-) -> Option<Rc<scope::DataType>> {
-    let mut return_value: Option<Rc<scope::DataType>> = None;
+) -> Rc<scope::DataType> {
+    let mut return_value: Rc<scope::DataType> = Rc::new(DataType::Void());
     let mut executed_statements: Vec<StatementType> = vec![];
     for x in statements {
         let statement_result = interpret_statement(scope, x);
         executed_statements.push(x.clone());
 
-        if let Some(value) = statement_result {
-            return_value = Some(value);
+        if let StatementType::Return(_) = x {
+            return_value = statement_result;
             break;
         }
     }

@@ -34,11 +34,7 @@ impl FunctionDeclaration {
         Self { body, arguments }
     }
 
-    pub fn execute(
-        &self,
-        parameters: &Parameters,
-        scope: &super::scope::Scope,
-    ) -> Option<Rc<DataType>> {
+    pub fn execute(&self, parameters: &Parameters, scope: &super::scope::Scope) -> Rc<DataType> {
         let expected_arguments = self.arguments.len();
         let received_arguments = parameters.len();
 

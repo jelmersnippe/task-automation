@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod list;
+
 use std::rc::Rc;
 
 use crate::{

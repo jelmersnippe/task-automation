@@ -1,6 +1,8 @@
 use std::process::{Command, Stdio};
 use std::{collections::HashMap, rc::Rc, sync::OnceLock};
 
+use crate::interpreter::scope::DataType;
+
 static BUILTINS: OnceLock<HashMap<&'static str, BuiltinFn>> = OnceLock::new();
 
 pub(crate) fn get_builtins() -> &'static HashMap<&'static str, BuiltinFn> {
@@ -12,9 +14,9 @@ pub(crate) fn get_builtins() -> &'static HashMap<&'static str, BuiltinFn> {
     })
 }
 
-type BuiltinFn = fn(Vec<Rc<super::scope::DataType>>) -> Option<Rc<super::scope::DataType>>;
+type BuiltinFn = fn(Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::DataType>;
 
-fn print(data: Vec<Rc<super::scope::DataType>>) -> Option<Rc<super::scope::DataType>> {
+fn print(data: Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::DataType> {
     if data.len() != 1 {
         panic!("print only takes 1 argument. Received: {:?}", data)
     }
@@ -23,11 +25,11 @@ fn print(data: Vec<Rc<super::scope::DataType>>) -> Option<Rc<super::scope::DataT
 
     println!("{}", arg);
 
-    None
+    Rc::new(DataType::Void())
 }
 
 // wt.exe wsl bash -c "cd ~/dev/task-automation && exec bash"
-fn spawn_terminal(data: Vec<Rc<super::scope::DataType>>) -> Option<Rc<super::scope::DataType>> {
+fn spawn_terminal(data: Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::DataType> {
     if data.len() < 1 || data.len() > 3 {
         panic!("spawn_terminal takes 1-3 arguments. Received: {:?}", data)
     }
@@ -74,12 +76,12 @@ fn spawn_terminal(data: Vec<Rc<super::scope::DataType>>) -> Option<Rc<super::sco
         _ => {}
     }
 
-    None
+    Rc::new(DataType::Void())
 }
 
 pub(crate) fn execute_builtin(
     builtin: &BuiltinFn,
     arguments: Vec<Rc<super::scope::DataType>>,
-) -> Option<Rc<super::scope::DataType>> {
+) -> Rc<super::scope::DataType> {
     return builtin(arguments);
 }

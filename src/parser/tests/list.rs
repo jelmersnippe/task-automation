@@ -3,13 +3,65 @@ use crate::{
     parser::{
         Parser,
         expressions::{
-            BinaryOperationExpression, BinaryOperator, CallExpression, ExpressionType,
-            FunctionDeclarationExpression, IdentifierExpression, ListExpression, LiteralType,
-            Parameters, UnaryOperationExpression, UnaryOperator,
+            AccessorExpression, BinaryOperationExpression, BinaryOperator, CallExpression,
+            ExpressionType, FunctionDeclarationExpression, IdentifierExpression, ListExpression,
+            LiteralType, Parameters, UnaryOperationExpression, UnaryOperator,
         },
-        statements::{Block, StatementType, VariableDeclarationStatement},
+        statements::{
+            AssignmentStatement, Block, ExpressionStatement, StatementType,
+            VariableDeclarationStatement,
+        },
     },
 };
+
+#[test]
+fn parses_list_assignment() {
+    let result = Parser::new(vec![
+        Token::new("[", TokenKind::LeftBracket),
+        Token::new("]", TokenKind::RightBracket),
+        Token::new("[", TokenKind::LeftBracket),
+        Token::new("0", TokenKind::Number),
+        Token::new("]", TokenKind::RightBracket),
+        Token::new("=", TokenKind::Assign),
+        Token::new("1", TokenKind::Number),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![StatementType::Expression(ExpressionStatement::Assignment(
+            AssignmentStatement {
+                identifier: ExpressionType::Accessor(AccessorExpression {
+                    key: Box::new(ExpressionType::Literal(LiteralType::Number(0.0))),
+                    value: Box::new(ExpressionType::List(ListExpression { values: vec![] }))
+                }),
+                value: ExpressionType::Literal(LiteralType::Number(1.0)),
+            }
+        )),]
+    )
+}
+
+#[test]
+fn parses_list_accessor() {
+    let result = Parser::new(vec![
+        Token::new("[", TokenKind::LeftBracket),
+        Token::new("]", TokenKind::RightBracket),
+        Token::new("[", TokenKind::LeftBracket),
+        Token::new("0", TokenKind::Number),
+        Token::new("]", TokenKind::RightBracket),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![StatementType::Expression(ExpressionStatement::Inline(
+            ExpressionType::Accessor(AccessorExpression {
+                key: Box::new(ExpressionType::Literal(LiteralType::Number(0.0))),
+                value: Box::new(ExpressionType::List(ListExpression { values: vec![] }))
+            })
+        )),]
+    )
+}
 
 #[test]
 fn parses_list_declaration_complex() {
