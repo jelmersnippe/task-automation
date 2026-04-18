@@ -25,7 +25,7 @@ fn print(data: Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::DataType> {
 
     println!("{}", arg);
 
-    Rc::new(DataType::Void())
+    Rc::new(DataType::Undefined())
 }
 
 // wt.exe wsl bash -c "cd ~/dev/task-automation && exec bash"
@@ -76,7 +76,7 @@ fn spawn_terminal(data: Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::Dat
         _ => {}
     }
 
-    Rc::new(DataType::Void())
+    Rc::new(DataType::Undefined())
 }
 
 pub(crate) fn execute_builtin(

@@ -14,7 +14,7 @@ use crate::{
     parser::{
         expressions::{
             BinaryOperationExpression, BinaryOperator, CallExpression, ExpressionType,
-            ListExpression, LiteralType, Parameters, UnaryOperationExpression, UnaryOperator,
+            ListExpression, LiteralType, UnaryOperationExpression, UnaryOperator,
         },
         statements::{AssignmentStatement, ExpressionStatement, StatementType},
     },
@@ -48,7 +48,12 @@ impl Interpreter<'_> {
     }
 }
 
-fn interpret_statement(scope: &mut scope::Scope, statement: &StatementType) -> Rc<scope::DataType> {
+pub enum StatementResult {
+    Void(),
+    Return(Rc<DataType>),
+}
+
+fn interpret_statement(scope: &mut scope::Scope, statement: &StatementType) -> StatementResult {
     match statement {
         StatementType::VariableDeclaration(statement) => {
             let identifier = statement.identifier.clone();
@@ -56,7 +61,7 @@ fn interpret_statement(scope: &mut scope::Scope, statement: &StatementType) -> R
             let expression = interpret_expression(scope, &value);
 
             scope.set_variable(identifier, expression);
-            Rc::new(DataType::Void())
+            StatementResult::Void()
         }
         StatementType::FunctionDeclaration(statement) => {
             let identifier = statement.identifier.clone();
@@ -70,16 +75,18 @@ fn interpret_statement(scope: &mut scope::Scope, statement: &StatementType) -> R
                 )),
             );
 
-            Rc::new(DataType::Void())
+            StatementResult::Void()
         }
-        StatementType::Return(expression) => interpret_expression(scope, expression),
+        StatementType::Return(expression) => {
+            StatementResult::Return(interpret_expression(scope, expression))
+        }
         StatementType::IfStatement(statement) => {
             let condition_result = interpret_expression(scope, &statement.condition);
 
             match *condition_result {
                 scope::DataType::Boolean(should_execute) => {
                     if !should_execute {
-                        return Rc::new(DataType::Void());
+                        return StatementResult::Void();
                     }
 
                     let mut block_scope = scope::Scope::new(Some(scope));
@@ -99,11 +106,11 @@ fn interpret_statement(scope: &mut scope::Scope, statement: &StatementType) -> R
         StatementType::Expression(statement) => match statement {
             ExpressionStatement::Assignment(assignment_statement) => {
                 interpret_assignment(scope, assignment_statement);
-                Rc::new(DataType::Void())
+                StatementResult::Void()
             }
             ExpressionStatement::Inline(expression_type) => {
                 interpret_expression(scope, expression_type);
-                Rc::new(DataType::Void())
+                StatementResult::Void()
             }
         },
     }
@@ -231,14 +238,7 @@ pub fn interpret_expression(
             LiteralType::Boolean(x) => Rc::new(scope::DataType::Boolean(x.clone())),
         },
         ExpressionType::Identifier(identifier_expression) => {
-            if let Some(var) = scope.get_variable(&identifier_expression.name) {
-                var
-            } else {
-                panic!(
-                    "Variable for identifier {} not found",
-                    identifier_expression.name
-                )
-            }
+            scope.get_variable(&identifier_expression.name)
         }
         ExpressionType::FunctionCall(function_call_expression) => {
             execute_function(scope, function_call_expression)
@@ -264,7 +264,19 @@ pub fn interpret_expression(
         ExpressionType::List(list_expression) => Rc::new(scope::DataType::List(
             interpret_list_expression(scope, list_expression),
         )),
-        ExpressionType::Accessor(accessor_expression) => todo!(),
+        ExpressionType::Accessor(accessor_expression) => {
+            let value = interpret_expression(scope, &accessor_expression.value);
+
+            if let DataType::List(list) = value.as_ref() {
+                let key = interpret_expression(scope, &accessor_expression.key);
+
+                if let DataType::Number(index) = key.as_ref() {
+                    return list.get(*index);
+                }
+            }
+
+            panic!("");
+        }
     }
 }
 
@@ -284,20 +296,18 @@ fn interpret_list_expression(
 fn execute_statements(
     scope: &mut scope::Scope,
     statements: Vec<&StatementType>,
-) -> Rc<scope::DataType> {
-    let mut return_value: Rc<scope::DataType> = Rc::new(DataType::Void());
+) -> StatementResult {
     let mut executed_statements: Vec<StatementType> = vec![];
     for x in statements {
         let statement_result = interpret_statement(scope, x);
         executed_statements.push(x.clone());
 
-        if let StatementType::Return(_) = x {
-            return_value = statement_result;
-            break;
+        if let StatementResult::Return(_) = statement_result {
+            return statement_result;
         }
     }
 
-    return_value
+    StatementResult::Void()
 }
 
 fn interpret_unary_expression(

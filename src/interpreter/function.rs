@@ -2,10 +2,7 @@ use std::{fmt, rc::Rc};
 
 use crate::{
     interpreter::scope::DataType,
-    parser::{
-        expressions::{CallExpression, Parameters},
-        statements::StatementType,
-    },
+    parser::{expressions::Parameters, statements::StatementType},
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -55,6 +52,9 @@ impl FunctionDeclaration {
         let return_value =
             super::execute_statements(&mut function_scope, self.body.iter().collect());
 
-        return return_value;
+        match return_value {
+            super::StatementResult::Return(data_type) => data_type,
+            _ => Rc::new(DataType::Undefined()),
+        }
     }
 }

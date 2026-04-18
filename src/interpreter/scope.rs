@@ -9,7 +9,7 @@ pub enum DataType {
     Boolean(bool),
     Function(super::function::FunctionDeclaration),
     List(super::list::ListDeclaration),
-    Void(),
+    Undefined(),
 }
 
 impl fmt::Display for DataType {
@@ -20,7 +20,7 @@ impl fmt::Display for DataType {
             DataType::Boolean(x) => format!("{}", x),
             DataType::Function(function_declaration) => format!("{}", function_declaration),
             DataType::List(data_types) => format!("{}", data_types),
-            DataType::Void() => "void".to_string(),
+            DataType::Undefined() => "undefined".to_string(),
         };
         write!(f, "{}", string)
     }
@@ -39,15 +39,15 @@ impl<'a> Scope<'a> {
         }
     }
 
-    pub fn get_variable(&self, identifier: &String) -> Option<Rc<DataType>> {
+    pub fn get_variable(&self, identifier: &String) -> Rc<DataType> {
         if let Some(var) = self.variables.get(identifier) {
-            return Some(Rc::clone(var));
+            return Rc::clone(var);
         }
 
-        return match self.parent {
+        match self.parent {
             Some(parent) => parent.get_variable(identifier),
-            None => None,
-        };
+            None => Rc::new(DataType::Undefined()),
+        }
     }
 
     pub fn set_variable(&mut self, identifier: String, data: Rc<DataType>) {

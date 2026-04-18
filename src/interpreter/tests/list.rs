@@ -13,6 +13,31 @@ use crate::{
 };
 
 #[test]
+fn interpret_function_call_assignment() {
+    let dsl = "
+    var x = [1];
+    
+    fn foo() {
+        return x
+    }
+
+    foo()[0] = 2
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("x")),
+        Rc::new(DataType::List(ListDeclaration::new(vec![Rc::new(
+            DataType::Number(2.0)
+        )])))
+    );
+}
+
+#[test]
 fn interpret_list_assignment() {
     let dsl = "
     var x = [1]
@@ -26,9 +51,9 @@ fn interpret_list_assignment() {
 
     assert_eq!(
         interpreter.scope.get_variable(&String::from("x")),
-        Some(Rc::new(DataType::List(ListDeclaration::new(vec![
-            Rc::new(DataType::Number(2.0)),
-        ]))))
+        Rc::new(DataType::List(ListDeclaration::new(vec![Rc::new(
+            DataType::Number(2.0)
+        )])))
     );
 }
 
@@ -46,13 +71,13 @@ fn interpret_list_accessor() {
 
     assert_eq!(
         interpreter.scope.get_variable(&String::from("x")),
-        Some(Rc::new(DataType::List(ListDeclaration::new(vec![
-            Rc::new(DataType::Number(1.0)),
-        ]))))
+        Rc::new(DataType::List(ListDeclaration::new(vec![Rc::new(
+            DataType::Number(1.0)
+        )])))
     );
     assert_eq!(
         interpreter.scope.get_variable(&String::from("y")),
-        Some(Rc::new(DataType::Number(1.0)),)
+        Rc::new(DataType::Number(1.0))
     );
 }
 
@@ -74,7 +99,7 @@ fn interpret_list_declaration() {
 
     assert_eq!(
         interpreter.scope.get_variable(&String::from("x")),
-        Some(Rc::new(DataType::List(ListDeclaration::new(vec![
+        Rc::new(DataType::List(ListDeclaration::new(vec![
             Rc::new(DataType::Number(1.0)),
             Rc::new(DataType::String(String::from("Hello"))),
             Rc::new(DataType::Boolean(true)),
@@ -91,7 +116,7 @@ fn interpret_list_declaration() {
                     LiteralType::Number(3.0)
                 ))]
             ))),
-        ]))))
+        ])))
     );
 }
 
@@ -108,6 +133,6 @@ fn interpret_list_declaration_empty() {
 
     assert_eq!(
         interpreter.scope.get_variable(&String::from("x")),
-        Some(Rc::new(DataType::List(ListDeclaration::new(vec![]))))
+        Rc::new(DataType::List(ListDeclaration::new(vec![])))
     );
 }

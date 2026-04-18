@@ -103,7 +103,7 @@ fn interprets_if_scoped_variables() {
 
     assert_eq!(
         interpreter.scope.get_variable(&String::from("x")),
-        Some(Rc::new(DataType::String(String::from("outer"))))
+        Rc::new(DataType::String(String::from("outer")))
     );
 }
 
@@ -128,11 +128,11 @@ fn interprets_function_call_with_return_inside_if() {
 
     assert_eq!(
         interpreter.scope.get_variable(&String::from("x")),
-        Some(Rc::new(DataType::Number(1.0)))
+        Rc::new(DataType::Number(1.0))
     );
     assert_eq!(
         interpreter.scope.get_variable(&String::from("y")),
-        Some(Rc::new(DataType::Number(0.0)))
+        Rc::new(DataType::Number(0.0))
     );
 }
 
@@ -151,7 +151,7 @@ fn interprets_function_call_with_arguments() {
 
     assert_eq!(
         interpreter.scope.get_variable(&String::from("foo")),
-        Some(Rc::new(DataType::Function(FunctionDeclaration::new(
+        Rc::new(DataType::Function(FunctionDeclaration::new(
             vec![String::from("bar")],
             vec![StatementType::VariableDeclaration(
                 VariableDeclarationStatement {
@@ -161,10 +161,13 @@ fn interprets_function_call_with_arguments() {
                     })
                 }
             )]
-        ))))
+        )))
     );
 
-    assert_eq!(interpreter.scope.get_variable(&String::from("x")), None);
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("x")),
+        Rc::new(DataType::Undefined())
+    );
 }
 
 #[test]
@@ -182,7 +185,7 @@ fn interprets_function_call() {
 
     assert_eq!(
         interpreter.scope.get_variable(&String::from("foo")),
-        Some(Rc::new(DataType::Function(FunctionDeclaration::new(
+        Rc::new(DataType::Function(FunctionDeclaration::new(
             vec![],
             vec![StatementType::VariableDeclaration(
                 VariableDeclarationStatement {
@@ -190,10 +193,13 @@ fn interprets_function_call() {
                     value: ExpressionType::Literal(LiteralType::Number(3.0))
                 }
             )]
-        ))))
+        )))
     );
 
-    assert_eq!(interpreter.scope.get_variable(&String::from("x")), None);
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("x")),
+        Rc::new(DataType::Undefined())
+    );
 }
 
 #[test]
@@ -208,7 +214,7 @@ fn interprets_function_declaration_with_return() {
 
     assert_eq!(
         interpreter.scope.get_variable(&String::from("foo")),
-        Some(Rc::new(DataType::Function(FunctionDeclaration::new(
+        Rc::new(DataType::Function(FunctionDeclaration::new(
             vec![String::from("bar"), String::from("baz")],
             vec![StatementType::Return(ExpressionType::BinaryOperation(
                 BinaryOperationExpression::new(
@@ -221,7 +227,7 @@ fn interprets_function_declaration_with_return() {
                     })
                 )
             ))],
-        ))))
+        )))
     );
 }
 
@@ -235,10 +241,10 @@ fn interprets_function_declaration_with_arguments() {
 
     assert_eq!(
         interpreter.scope.get_variable(&String::from("foo")),
-        Some(Rc::new(DataType::Function(FunctionDeclaration::new(
+        Rc::new(DataType::Function(FunctionDeclaration::new(
             vec![String::from("bar"), String::from("baz")],
             vec![]
-        ))))
+        )))
     );
 }
 
@@ -252,10 +258,7 @@ fn interprets_function_declaration_as_variable() {
 
     assert_eq!(
         interpreter.scope.get_variable(&String::from("foo")),
-        Some(Rc::new(DataType::Function(FunctionDeclaration::new(
-            vec![],
-            vec![]
-        ))))
+        Rc::new(DataType::Function(FunctionDeclaration::new(vec![], vec![])))
     );
 }
 
@@ -269,10 +272,7 @@ fn interprets_function_declaration() {
 
     assert_eq!(
         interpreter.scope.get_variable(&String::from("foo")),
-        Some(Rc::new(DataType::Function(FunctionDeclaration::new(
-            vec![],
-            vec![]
-        ))))
+        Rc::new(DataType::Function(FunctionDeclaration::new(vec![], vec![])))
     );
 }
 
@@ -289,10 +289,7 @@ fn interprets_variable_assignment_function() {
 
     assert_eq!(
         interpreter.scope.get_variable(&String::from("x")),
-        Some(Rc::new(DataType::Function(FunctionDeclaration::new(
-            vec![],
-            vec![]
-        ))))
+        Rc::new(DataType::Function(FunctionDeclaration::new(vec![], vec![])))
     );
 }
 
@@ -309,7 +306,7 @@ fn interprets_variable_assignment() {
 
     assert_eq!(
         interpreter.scope.get_variable(&String::from("x")),
-        Some(Rc::new(DataType::Number(5.0)))
+        Rc::new(DataType::Number(5.0))
     );
 }
 
@@ -323,7 +320,7 @@ fn interprets_variable_declaration_number() {
 
     assert_eq!(
         interpreter.scope.get_variable(&String::from("x")),
-        Some(Rc::new(DataType::Number(3.0)))
+        Rc::new(DataType::Number(3.0))
     );
 }
 
@@ -337,7 +334,7 @@ fn interprets_variable_declaration_string() {
 
     assert_eq!(
         interpreter.scope.get_variable(&String::from("x")),
-        Some(Rc::new(DataType::String(String::from("Hello"))))
+        Rc::new(DataType::String(String::from("Hello")))
     );
 }
 
@@ -351,7 +348,7 @@ fn interprets_variable_declaration_bool() {
 
     assert_eq!(
         interpreter.scope.get_variable(&String::from("x")),
-        Some(Rc::new(DataType::Boolean(true)))
+        Rc::new(DataType::Boolean(true))
     );
 }
 
@@ -372,7 +369,7 @@ fn interprets_variable_declaration_scoped_2() {
 
     assert_eq!(
         interpreter.scope.get_variable(&String::from("x")),
-        Some(Rc::new(DataType::Boolean(true)))
+        Rc::new(DataType::Boolean(true))
     );
 }
 
@@ -393,7 +390,7 @@ fn interprets_variable_declaration_scoped() {
 
     assert_eq!(
         interpreter.scope.get_variable(&String::from("x")),
-        Some(Rc::new(DataType::Boolean(true)))
+        Rc::new(DataType::Boolean(true))
     );
 }
 

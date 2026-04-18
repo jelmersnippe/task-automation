@@ -314,16 +314,23 @@ impl Parser {
 
                     self.expect(TokenKind::RightParenthesis);
 
-                    return expression;
+                    expression
                 }
-                TokenKind::Minus => ExpressionType::UnaryOperation(UnaryOperationExpression::new(
-                    UnaryOperator::Minus,
-                    self.parse_simple_expression(),
-                )),
-                TokenKind::Bang => ExpressionType::UnaryOperation(UnaryOperationExpression {
-                    operator: UnaryOperator::Bang,
-                    expression: Box::new(self.parse_simple_expression()),
-                }),
+                TokenKind::Minus => {
+                    let expression = self.parse_simple_expression();
+                    ExpressionType::UnaryOperation(UnaryOperationExpression::new(
+                        UnaryOperator::Minus,
+                        expression,
+                    ))
+                }
+                TokenKind::Bang => {
+                    let expression = self.parse_simple_expression();
+
+                    ExpressionType::UnaryOperation(UnaryOperationExpression::new(
+                        UnaryOperator::Bang,
+                        expression,
+                    ))
+                }
                 TokenKind::Number => ExpressionType::Literal(LiteralType::Number(
                     token.value.parse::<f32>().unwrap(),
                 )),
@@ -335,10 +342,7 @@ impl Parser {
                 TokenKind::LeftBracket => ExpressionType::List(ListExpression {
                     values: self.parse_comma_separated_list(TokenKind::RightBracket),
                 }),
-                _ => panic!(
-                    "Unsupported token type for simple expression {:?}",
-                    token.kind
-                ),
+                _ => panic!(""),
             };
         }
 
