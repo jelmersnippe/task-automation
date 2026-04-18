@@ -14,7 +14,8 @@ use crate::{
 pub enum ExpressionType {
     Literal(LiteralType),
     Identifier(IdentifierExpression),
-    FunctionCall(FunctionCallExpression),
+    FunctionCall(CallExpression),
+    Accessor(AccessorExpression),
     FunctionDeclaration(FunctionDeclarationExpression),
     BinaryOperation(BinaryOperationExpression),
     UnaryOperation(UnaryOperationExpression),
@@ -46,31 +47,37 @@ pub struct IdentifierExpression {
 }
 
 #[derive(PartialEq, Debug, Clone)]
-pub struct FunctionCallExpression {
-    pub name: String,
-    pub arguments: Arguments,
+pub struct CallExpression {
+    pub value: Box<ExpressionType>,
+    pub parameters: Parameters,
 }
 
 #[derive(PartialEq, Debug, Clone)]
-pub struct Arguments {
-    arguments: Vec<ExpressionType>,
+pub struct AccessorExpression {
+    pub value: Box<ExpressionType>,
+    pub key: Box<ExpressionType>,
 }
 
-impl Arguments {
-    pub fn new(arguments: Vec<ExpressionType>) -> Self {
-        Self { arguments }
+#[derive(PartialEq, Debug, Clone)]
+pub struct Parameters {
+    values: Vec<ExpressionType>,
+}
+
+impl Parameters {
+    pub fn new(values: Vec<ExpressionType>) -> Self {
+        Self { values }
     }
 
     pub fn resolve(&self, scope: &scope::Scope) -> Vec<Rc<DataType>> {
         return self
-            .arguments
+            .values
             .iter()
             .map(|x| interpret_expression(scope, x))
             .collect();
     }
 
     pub fn len(&self) -> usize {
-        return self.arguments.len();
+        return self.values.len();
     }
 }
 
@@ -211,7 +218,7 @@ impl UnaryOperationExpression {
 
 impl Parser {
     pub(crate) fn parse_expression(&mut self) -> ExpressionType {
-        let mut left = self.parse_simple_expression();
+        let mut expression = self.parse_simple_expression();
         let mut operator: Option<BinaryOperator> = None;
         let mut right: Option<ExpressionType> = None;
 
@@ -252,8 +259,8 @@ impl Parser {
                     };
                 } else {
                     // Create left associative binary operation
-                    left = ExpressionType::BinaryOperation(BinaryOperationExpression::new(
-                        left, op, r,
+                    expression = ExpressionType::BinaryOperation(BinaryOperationExpression::new(
+                        expression, op, r,
                     ));
                     operator = Some(new_operator);
                     right = Some(new_right);
@@ -268,10 +275,35 @@ impl Parser {
         if let Some(r) = right
             && let Some(op) = operator
         {
-            return ExpressionType::BinaryOperation(BinaryOperationExpression::new(left, op, r));
+            expression =
+                ExpressionType::BinaryOperation(BinaryOperationExpression::new(expression, op, r));
         }
 
-        return left;
+        while let Some(x) = self.match_any(&[TokenKind::LeftBracket, TokenKind::LeftParenthesis]) {
+            match x.kind {
+                TokenKind::LeftBracket => {
+                    let key = self.parse_expression();
+
+                    self.expect(TokenKind::RightBracket);
+
+                    expression = ExpressionType::Accessor(AccessorExpression {
+                        value: Box::new(expression),
+                        key: Box::new(key),
+                    });
+                }
+                TokenKind::LeftParenthesis => {
+                    let parameters = self.parse_comma_separated_list(TokenKind::RightParenthesis);
+
+                    expression = ExpressionType::FunctionCall(CallExpression {
+                        value: Box::new(expression),
+                        parameters: Parameters::new(parameters),
+                    });
+                }
+                _ => panic!("Reached invalid expression statement parsing"),
+            }
+        }
+
+        expression
     }
 
     fn parse_simple_expression(&mut self) -> ExpressionType {
@@ -299,7 +331,7 @@ impl Parser {
                 TokenKind::True => ExpressionType::Literal(LiteralType::Boolean(true)),
                 TokenKind::False => ExpressionType::Literal(LiteralType::Boolean(false)),
                 TokenKind::Identifier => self.parse_identifier_expression(token),
-                TokenKind::Function => self.parse_function_expression(token),
+                TokenKind::Fn => self.parse_function_expression(token),
                 TokenKind::LeftBracket => ExpressionType::List(ListExpression {
                     values: self.parse_comma_separated_list(TokenKind::RightBracket),
                 }),
@@ -330,7 +362,7 @@ impl Parser {
     pub(crate) fn parse_function_expression(&mut self, identifier_token: Token) -> ExpressionType {
         self.expect(TokenKind::LeftParenthesis);
 
-        let is_function_declaration = identifier_token.kind == TokenKind::Function;
+        let is_function_declaration = identifier_token.kind == TokenKind::Fn;
 
         if is_function_declaration {
             let parameters = self.parse_parameters();
@@ -341,9 +373,11 @@ impl Parser {
             });
         }
 
-        return ExpressionType::FunctionCall(FunctionCallExpression {
-            name: identifier_token.value,
-            arguments: Arguments::new(self.parse_comma_separated_list(TokenKind::RightParenthesis)),
+        return ExpressionType::FunctionCall(CallExpression {
+            value: Box::new(self.parse_identifier_expression(identifier_token)),
+            parameters: Parameters::new(
+                self.parse_comma_separated_list(TokenKind::RightParenthesis),
+            ),
         });
     }
 
@@ -375,7 +409,10 @@ impl Parser {
         return parameters;
     }
 
-    fn parse_comma_separated_list(&mut self, delimiter: TokenKind) -> Vec<ExpressionType> {
+    pub(crate) fn parse_comma_separated_list(
+        &mut self,
+        delimiter: TokenKind,
+    ) -> Vec<ExpressionType> {
         let mut arguments: Vec<ExpressionType> = vec![];
 
         if !self.r#match(delimiter.clone()) {

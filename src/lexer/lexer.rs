@@ -6,8 +6,8 @@ pub enum TokenKind {
     Assign,
 
     // Keywords
-    Variable,
-    Function,
+    Var,
+    Fn,
     Return,
     If,
     Else,
@@ -51,10 +51,10 @@ pub enum TokenKind {
 
 fn lookup_keyword(s: &String) -> Option<TokenKind> {
     match s.as_str() {
-        "var" => Some(TokenKind::Variable),
+        "var" => Some(TokenKind::Var),
         "true" => Some(TokenKind::True),
         "false" => Some(TokenKind::False),
-        "fn" => Some(TokenKind::Function),
+        "fn" => Some(TokenKind::Fn),
         "return" => Some(TokenKind::Return),
         "if" => Some(TokenKind::If),
         "else" => Some(TokenKind::Else),

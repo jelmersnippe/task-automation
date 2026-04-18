@@ -3,9 +3,9 @@ use crate::{
     parser::{
         Parser,
         expressions::{
-            Arguments, BinaryOperationExpression, BinaryOperator, ExpressionType,
-            FunctionCallExpression, FunctionDeclarationExpression, ListExpression, LiteralType,
-            UnaryOperationExpression, UnaryOperator,
+            BinaryOperationExpression, BinaryOperator, CallExpression, ExpressionType,
+            FunctionDeclarationExpression, IdentifierExpression, ListExpression, LiteralType,
+            Parameters, UnaryOperationExpression, UnaryOperator,
         },
         statements::{Block, StatementType, VariableDeclarationStatement},
     },
@@ -14,11 +14,11 @@ use crate::{
 #[test]
 fn parses_list_declaration_complex() {
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("[", TokenKind::LeftBracket),
-        Token::new("fn", TokenKind::Function),
+        Token::new("fn", TokenKind::Fn),
         Token::new("(", TokenKind::LeftParenthesis),
         Token::new(")", TokenKind::RightParenthesis),
         Token::new("{", TokenKind::LeftCurly),
@@ -57,9 +57,11 @@ fn parses_list_declaration_complex() {
                                 name: String::from("foo")
                             }
                         ),
-                        ExpressionType::FunctionCall(FunctionCallExpression {
-                            name: String::from("bar"),
-                            arguments: Arguments::new(vec![])
+                        ExpressionType::FunctionCall(CallExpression {
+                            value: Box::new(ExpressionType::Identifier(IdentifierExpression {
+                                name: String::from("bar")
+                            })),
+                            parameters: Parameters::new(vec![])
                         }),
                         ExpressionType::List(ListExpression { values: vec![] }),
                         ExpressionType::BinaryOperation(BinaryOperationExpression::new(
@@ -80,7 +82,7 @@ fn parses_list_declaration_complex() {
 #[test]
 fn parses_list_declaration_literals() {
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("[", TokenKind::LeftBracket),
@@ -113,7 +115,7 @@ fn parses_list_declaration_literals() {
 #[test]
 fn parses_list_declaration_empty() {
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("[", TokenKind::LeftBracket),

@@ -9,6 +9,7 @@ pub enum DataType {
     Boolean(bool),
     Function(super::function::FunctionDeclaration),
     List(super::list::ListDeclaration),
+    Void(),
 }
 
 impl fmt::Display for DataType {
@@ -19,6 +20,7 @@ impl fmt::Display for DataType {
             DataType::Boolean(x) => format!("{}", x),
             DataType::Function(function_declaration) => format!("{}", function_declaration),
             DataType::List(data_types) => format!("{}", data_types),
+            DataType::Void() => "void".to_string(),
         };
         write!(f, "{}", string)
     }

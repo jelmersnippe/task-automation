@@ -60,7 +60,7 @@ fn tokenizes_function_declaration_without_arguments() {
     assert_eq!(
         result,
         vec![
-            Token::new("fn", TokenKind::Function),
+            Token::new("fn", TokenKind::Fn),
             Token::new("greet", TokenKind::Identifier),
             Token::new("(", TokenKind::LeftParenthesis),
             Token::new(")", TokenKind::RightParenthesis),
@@ -77,7 +77,7 @@ fn tokenizes_function_declaration_with_return() {
     assert_eq!(
         result,
         vec![
-            Token::new("fn", TokenKind::Function),
+            Token::new("fn", TokenKind::Fn),
             Token::new("greet", TokenKind::Identifier),
             Token::new("(", TokenKind::LeftParenthesis),
             Token::new(")", TokenKind::RightParenthesis),
@@ -96,7 +96,7 @@ fn tokenizes_function_declaration_with_single_argument() {
     assert_eq!(
         result,
         vec![
-            Token::new("fn", TokenKind::Function),
+            Token::new("fn", TokenKind::Fn),
             Token::new("greet", TokenKind::Identifier),
             Token::new("(", TokenKind::LeftParenthesis),
             Token::new("arg1", TokenKind::Identifier),
@@ -114,7 +114,7 @@ fn tokenizes_function_declaration_with_multiple_arguments() {
     assert_eq!(
         result,
         vec![
-            Token::new("fn", TokenKind::Function),
+            Token::new("fn", TokenKind::Fn),
             Token::new("greet", TokenKind::Identifier),
             Token::new("(", TokenKind::LeftParenthesis),
             Token::new("arg1", TokenKind::Identifier),
@@ -207,7 +207,7 @@ fn tokenizes_number_variable_assignment() {
     assert_eq!(
         result,
         vec![
-            Token::new("var", TokenKind::Variable),
+            Token::new("var", TokenKind::Var),
             Token::new("x", TokenKind::Identifier),
             Token::new("=", TokenKind::Assign),
             Token::new("5", TokenKind::Number),
@@ -222,11 +222,11 @@ fn tokenizes_boolean_variable_assignment() {
     assert_eq!(
         result,
         vec![
-            Token::new("var", TokenKind::Variable),
+            Token::new("var", TokenKind::Var),
             Token::new("x", TokenKind::Identifier),
             Token::new("=", TokenKind::Assign),
             Token::new("true", TokenKind::True),
-            Token::new("var", TokenKind::Variable),
+            Token::new("var", TokenKind::Var),
             Token::new("y", TokenKind::Identifier),
             Token::new("=", TokenKind::Assign),
             Token::new("false", TokenKind::False),
@@ -254,7 +254,7 @@ fn tokenizes_string_variable_assignment() {
     assert_eq!(
         result,
         vec![
-            Token::new("var", TokenKind::Variable),
+            Token::new("var", TokenKind::Var),
             Token::new("x", TokenKind::Identifier),
             Token::new("=", TokenKind::Assign),
             Token::new("Hello World", TokenKind::String),
@@ -312,8 +312,8 @@ fn tokenizes_keywords() {
     assert_eq!(
         result,
         vec![
-            Token::new("var", TokenKind::Variable),
-            Token::new("fn", TokenKind::Function),
+            Token::new("var", TokenKind::Var),
+            Token::new("fn", TokenKind::Fn),
             Token::new("return", TokenKind::Return),
             Token::new("true", TokenKind::True),
             Token::new("false", TokenKind::False),

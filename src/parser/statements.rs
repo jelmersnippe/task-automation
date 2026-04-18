@@ -1,16 +1,21 @@
 use super::Parser;
 use super::expressions;
-use crate::lexer::lexer::Token;
 use crate::lexer::lexer::TokenKind;
+use crate::parser::expressions::ExpressionType;
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum StatementType {
     VariableDeclaration(VariableDeclarationStatement),
-    VariableAssignment(VariableAssignmentStatement),
     FunctionDeclaration(FunctionDeclarationStatement),
     Return(expressions::ExpressionType),
-    FunctionCall(expressions::FunctionCallExpression),
     IfStatement(IfStatement),
+    Expression(ExpressionStatement),
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub enum ExpressionStatement {
+    Assignment(AssignmentStatement),
+    Inline(ExpressionType),
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -25,8 +30,8 @@ pub struct VariableDeclarationStatement {
 }
 
 #[derive(PartialEq, Debug, Clone)]
-pub struct VariableAssignmentStatement {
-    pub identifier: String,
+pub struct AssignmentStatement {
+    pub identifier: expressions::ExpressionType,
     pub value: expressions::ExpressionType,
 }
 
@@ -45,42 +50,53 @@ pub struct IfStatement {
 
 impl Parser {
     pub(crate) fn parse_statement(&mut self) -> StatementType {
-        if let Some(token) = self.next() {
+        if let Some(token) = self.peek() {
             return match token.kind {
-                TokenKind::Variable => self.parse_variable_declaration(),
-                TokenKind::Function => self.parse_function_declaration(),
+                TokenKind::Var => self.parse_variable_declaration(),
+                TokenKind::Fn
+                    if matches!(
+                    self.peek_ahead(2),
+                    Some(x) if x.kind == TokenKind::Identifier) =>
+                {
+                    self.parse_function_declaration()
+                }
                 TokenKind::Return => self.parse_return_statement(),
-                TokenKind::Identifier => self.parse_identifier_statement(token),
                 TokenKind::If => self.parse_if_statement(),
-                _ => panic!("Unknown token type in root parse: {:?}", token),
+                _ => self.parse_expression_statement(),
             };
         }
 
         panic!("No more tokens to parse");
     }
 
-    fn parse_identifier_statement(&mut self, identifier_token: Token) -> StatementType {
+    fn parse_expression_statement(&mut self) -> StatementType {
+        let expression = self.parse_expression();
+
         if self.r#match(TokenKind::Assign) {
-            return StatementType::VariableAssignment(VariableAssignmentStatement {
-                identifier: identifier_token.value,
-                value: self.parse_expression(),
-            });
+            let value = self.parse_expression();
+
+            return StatementType::Expression(ExpressionStatement::Assignment(
+                AssignmentStatement {
+                    identifier: expression,
+                    value,
+                },
+            ));
         }
 
-        return match self.parse_function_expression(identifier_token) {
-            expressions::ExpressionType::FunctionCall(function_call_expression) => {
-                StatementType::FunctionCall(function_call_expression)
-            }
-            _ => panic!("Tried to parse function call statement but got invalid expression"),
-        };
+        StatementType::Expression(ExpressionStatement::Inline(expression))
     }
 
     fn parse_return_statement(&mut self) -> StatementType {
-        return StatementType::Return(self.parse_expression());
+        self.expect(TokenKind::Return);
+
+        StatementType::Return(self.parse_expression())
     }
 
     fn parse_variable_declaration(&mut self) -> StatementType {
+        self.expect(TokenKind::Var);
+
         let identifier = self.expect(TokenKind::Identifier).value;
+
         self.expect(TokenKind::Assign);
         let value = self.parse_expression();
 
@@ -90,8 +106,7 @@ impl Parser {
         });
     }
 
-    fn parse_function_declaration(&mut self) -> StatementType {
-        let identifier = self.expect(TokenKind::Identifier).value;
+    fn parse_arguments(&mut self) -> Vec<expressions::IdentifierExpression> {
         let mut arguments: Vec<expressions::IdentifierExpression> = vec![];
 
         self.expect(TokenKind::LeftParenthesis);
@@ -109,6 +124,15 @@ impl Parser {
 
             self.expect(TokenKind::RightParenthesis);
         }
+
+        arguments
+    }
+
+    fn parse_function_declaration(&mut self) -> StatementType {
+        self.expect(TokenKind::Fn);
+
+        let identifier = self.expect(TokenKind::Identifier).value;
+        let arguments = self.parse_arguments();
 
         self.expect(TokenKind::LeftCurly);
         let body = self.parse_block();
@@ -130,6 +154,8 @@ impl Parser {
     }
 
     fn parse_if_statement(&mut self) -> StatementType {
+        self.expect(TokenKind::If);
+
         self.expect(TokenKind::LeftParenthesis);
         let condition = self.parse_expression();
         self.expect(TokenKind::RightParenthesis);

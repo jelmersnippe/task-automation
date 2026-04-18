@@ -2,13 +2,11 @@ var x = 1
 var y=2;
 var z = 3 ; var a = 4
 
-var simple_list = [1, "Hello", true, [1, 2, 3], y]
 
 print(x)
 print(y)
 print(z)
 print(a)
-print(simple_list)
 
 if(true){
     var local = "local value"
@@ -73,9 +71,6 @@ fn outer(x) {
 
 print(outer(5))
 
-var complex_list = [outer(5), outer]
-print(complex_list)
-
 if (true) {
     print("if true branch")
 }
@@ -123,3 +118,15 @@ fn earlyReturn(x) {
 print(earlyReturn(true))
 print(earlyReturn(false))
 
+var simple_list = [1, "Hello", true, [1, 2, 3], y]
+print(simple_list)
+
+print(simple_list[0])
+
+simple_list[0] = 3
+print(simple_list[0])
+
+var complex_list = [outer(5), outer]
+print(complex_list)
+
+print(len(simple_list))

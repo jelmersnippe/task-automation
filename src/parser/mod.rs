@@ -29,11 +29,16 @@ impl Parser {
     }
 
     fn peek(&self) -> Option<Token> {
-        if self.pos >= self.tokens.len() {
+        return self.peek_ahead(1);
+    }
+
+    fn peek_ahead(&self, look_ahead: usize) -> Option<Token> {
+        let corrected_look_ahead = self.pos + look_ahead - 1;
+        if corrected_look_ahead >= self.tokens.len() {
             return None;
         }
 
-        return Some(self.tokens[self.pos].clone());
+        return Some(self.tokens[corrected_look_ahead].clone());
     }
 
     fn next(&mut self) -> Option<Token> {

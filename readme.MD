@@ -5,8 +5,13 @@ Optimizations:
 - Simplify operation parsing
     - Recursive-descent parsing (every precedence calls next, then performs while, start from highest)
 
-TODO:
+## TODO:
+### Core:
+- Arrays + objects
+- Support identifiers in scope (DataType::Reference). Pointing to an identifier should store a ref instead of a value
+- Support void/null type
+
+### Native functionality:
 - Window positioning (track pid?)
 - MacOS support
-- Arrays + objects
 - Run as daemon in the background

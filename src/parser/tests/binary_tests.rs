@@ -15,7 +15,7 @@ use crate::{
 fn parses_truly_evil_3() {
     // var x = ((1 + 2) * 3 > (4 + 5)) && ((6 < 7) || (8 > 9))
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("(", TokenKind::LeftParenthesis),
@@ -96,7 +96,7 @@ fn parses_truly_evil_3() {
 fn parses_truly_evil_2() {
     // var x = (1 + 2 * 3 > 5 && 4 < 10) || (6 == 6 && 7 > 8)
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("(", TokenKind::LeftParenthesis),
@@ -175,7 +175,7 @@ fn parses_truly_evil_2() {
 fn parses_truly_evil_1() {
     // var x = -((1 + 2) * (3 - 4) > 5) && !(6 < 7)
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("-", TokenKind::Minus),
@@ -249,7 +249,7 @@ fn parses_truly_evil_1() {
 fn parses_deep_nesting_3() {
     // var x = (1 + 2 * 3 > 5 && 4 < 10) || (6 == 6)
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("(", TokenKind::LeftParenthesis),
@@ -316,7 +316,7 @@ fn parses_deep_nesting_3() {
 fn parses_deep_nesting_2() {
     // var x = ((1 + 2) * (3 + 4)) * (5 + 6)
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("(", TokenKind::LeftParenthesis),
@@ -375,7 +375,7 @@ fn parses_deep_nesting_2() {
 fn parses_deep_nesting_1() {
     // var x = (1 + (2 * (3 + (4 * 5))))
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("(", TokenKind::LeftParenthesis),
@@ -429,7 +429,7 @@ fn parses_deep_nesting_1() {
 fn parses_associativity_traps_6() {
     // var x = a || b && c || d && e
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("a", TokenKind::Identifier),
@@ -484,7 +484,7 @@ fn parses_associativity_traps_6() {
 fn parses_associativity_traps_5() {
     // var x = 1 + 2 * 3 + 4 * 5
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("1", TokenKind::Number),
@@ -529,7 +529,7 @@ fn parses_associativity_traps_5() {
 fn parses_associativity_traps_4() {
     // var x = true || false || true
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("true", TokenKind::True),
@@ -562,7 +562,7 @@ fn parses_associativity_traps_4() {
 fn parses_associativity_traps_3() {
     // var x = true && false && true
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("true", TokenKind::True),
@@ -595,7 +595,7 @@ fn parses_associativity_traps_3() {
 fn parses_associativity_traps_2() {
     // var x = 1 < 2 < 3
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("1", TokenKind::Number),
@@ -628,7 +628,7 @@ fn parses_associativity_traps_2() {
 fn parses_associativity_traps_1() {
     // var x = 1 - 2 - 3
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("1", TokenKind::Number),
@@ -663,7 +663,7 @@ fn parses_associativity_traps_1() {
 fn parses_combinations_4() {
     // var x = (1 + 2 * 3 > 5) && (4 < 10)
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("(", TokenKind::LeftParenthesis),
@@ -719,7 +719,7 @@ fn parses_combinations_4() {
 fn parses_combinations_3() {
     // var x = 1 + (2 * 3 > 5 && 4 < 10)
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("1", TokenKind::Number),
@@ -773,7 +773,7 @@ fn parses_combinations_3() {
 fn parses_combinations_2() {
     // var x = (1 + 2) * 3 > 5 && 4 < 10
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("(", TokenKind::LeftParenthesis),
@@ -827,7 +827,7 @@ fn parses_combinations_2() {
 fn parses_combinations_1() {
     // var x = 1 + 2 * 3 > 5 && 4 < 10
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("1", TokenKind::Number),
@@ -880,7 +880,7 @@ fn parses_combinations_1() {
 fn parses_logical_operator_1() {
     // var x = true && false
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("true", TokenKind::True),
@@ -908,7 +908,7 @@ fn parses_logical_operator_1() {
 fn parses_logical_operator_2() {
     // var x = true || false && true
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("true", TokenKind::True),
@@ -942,7 +942,7 @@ fn parses_logical_operator_2() {
 fn parses_logical_operator_3() {
     // var x = (true || false) && true
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("(", TokenKind::LeftParenthesis),
@@ -978,7 +978,7 @@ fn parses_logical_operator_3() {
 fn parses_logical_operator_4() {
     // var x = 1 < 2 && 3 < 4
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("1", TokenKind::Number),
@@ -1018,7 +1018,7 @@ fn parses_logical_operator_4() {
 fn parses_logical_operator_5() {
     // var x = 1 < 2 || 3 > 4 && 5 < 6
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("1", TokenKind::Number),
@@ -1071,7 +1071,7 @@ fn parses_logical_operator_5() {
 fn parses_comparison_vs_arithmetic_precedence_5() {
     // var x = 10 - (5 == 5)
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("10", TokenKind::Number),
@@ -1107,7 +1107,7 @@ fn parses_comparison_vs_arithmetic_precedence_5() {
 fn parses_comparison_vs_arithmetic_precedence_4() {
     // var x = 10 - 5 == 5
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("10", TokenKind::Number),
@@ -1141,7 +1141,7 @@ fn parses_comparison_vs_arithmetic_precedence_4() {
 fn parses_comparison_vs_arithmetic_precedence_3() {
     // var x = (1 + 2) * 3 > 6
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("(", TokenKind::LeftParenthesis),
@@ -1183,7 +1183,7 @@ fn parses_comparison_vs_arithmetic_precedence_3() {
 fn parses_comparison_vs_arithmetic_precedence_2() {
     // var x = 1 + 2 * 3 > 6
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("1", TokenKind::Number),
@@ -1223,7 +1223,7 @@ fn parses_comparison_vs_arithmetic_precedence_2() {
 fn parses_comparison_vs_arithmetic_precedence_1() {
     // var x = 1 + 2 > 2
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("1", TokenKind::Number),
@@ -1258,7 +1258,7 @@ fn parses_comparison_vs_arithmetic_precedence_1() {
 fn parses_unary_5() {
     // var x = -(-1 + 2)
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("-", TokenKind::Minus),
@@ -1296,7 +1296,7 @@ fn parses_unary_5() {
 fn parses_unary_4() {
     // var x = -(1 * 2)
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("-", TokenKind::Minus),
@@ -1330,7 +1330,7 @@ fn parses_unary_4() {
 fn parses_unary_3() {
     // var x = -1 * 2
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("-", TokenKind::Minus),
@@ -1362,7 +1362,7 @@ fn parses_unary_3() {
 fn parses_unary_2() {
     // var x = -(1 + 2)
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("-", TokenKind::Minus),
@@ -1396,7 +1396,7 @@ fn parses_unary_2() {
 fn parses_unary_1() {
     // var x = -1 + 2
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("-", TokenKind::Minus),
@@ -1429,7 +1429,7 @@ fn parses_unary_1() {
 fn parses_parenthesis_overriding_precedence_5() {
     // var x = ((1 + 2) * 3) + 4
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("(", TokenKind::LeftParenthesis),
@@ -1475,7 +1475,7 @@ fn parses_parenthesis_overriding_precedence_5() {
 fn parses_parenthesis_overriding_precedence_4() {
     // var x = (1 + 2) * (3 + 4)
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("(", TokenKind::LeftParenthesis),
@@ -1519,7 +1519,7 @@ fn parses_parenthesis_overriding_precedence_4() {
 fn parses_parenthesis_overriding_precedence_3() {
     // var x = 10 - (5 - 2)
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("10", TokenKind::Number),
@@ -1555,7 +1555,7 @@ fn parses_parenthesis_overriding_precedence_3() {
 fn parses_parenthesis_overriding_precedence_2() {
     // var x = (10 - 5) - 2
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("(", TokenKind::LeftParenthesis),
@@ -1591,7 +1591,7 @@ fn parses_parenthesis_overriding_precedence_2() {
 fn parses_parenthesis_overriding_precedence_1() {
     // var x = (1 + 2) * 3
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("(", TokenKind::LeftParenthesis),
@@ -1628,7 +1628,7 @@ fn parses_parenthesis_overriding_precedence_1() {
 fn parses_basic_arithmetic_precedence_5() {
     // var x = 10 / (2 * 3)
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("10", TokenKind::Number),
@@ -1664,7 +1664,7 @@ fn parses_basic_arithmetic_precedence_5() {
 fn parses_basic_arithmetic_precedence_4() {
     // var x = 10 / 2 * 3
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("10", TokenKind::Number),
@@ -1698,7 +1698,7 @@ fn parses_basic_arithmetic_precedence_4() {
 fn parses_basic_arithmetic_precedence_3() {
     // var x = 10 - 5 - 2
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("10", TokenKind::Number),
@@ -1732,7 +1732,7 @@ fn parses_basic_arithmetic_precedence_3() {
 fn parses_basic_arithmetic_precedence_2() {
     // var x = 1 * 2 + 3
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("1", TokenKind::Number),
@@ -1766,7 +1766,7 @@ fn parses_basic_arithmetic_precedence_2() {
 fn parses_basic_arithmetic_precedence_1() {
     // var x = 1 + 2 * 3
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("1", TokenKind::Number),

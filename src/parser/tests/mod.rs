@@ -8,12 +8,12 @@ use crate::{
     parser::{
         Parser,
         expressions::{
-            Arguments, ExpressionType, FunctionCallExpression, FunctionDeclarationExpression,
-            IdentifierExpression, LiteralType, UnaryOperationExpression, UnaryOperator,
+            CallExpression, ExpressionType, FunctionDeclarationExpression, IdentifierExpression,
+            LiteralType, Parameters, UnaryOperationExpression, UnaryOperator,
         },
         statements::{
-            Block, FunctionDeclarationStatement, StatementType, VariableAssignmentStatement,
-            VariableDeclarationStatement,
+            AssignmentStatement, Block, ExpressionStatement, FunctionDeclarationStatement,
+            StatementType, VariableDeclarationStatement,
         },
     },
 };
@@ -23,7 +23,7 @@ fn parses_function_declaration_as_argument() {
     let result = Parser::new(vec![
         Token::new("inlineFunctionCall", TokenKind::Identifier),
         Token::new("(", TokenKind::LeftParenthesis),
-        Token::new("fn", TokenKind::Function),
+        Token::new("fn", TokenKind::Fn),
         Token::new("(", TokenKind::LeftParenthesis),
         Token::new(")", TokenKind::RightParenthesis),
         Token::new("{", TokenKind::LeftCurly),
@@ -34,22 +34,26 @@ fn parses_function_declaration_as_argument() {
 
     assert_eq!(
         result,
-        vec![StatementType::FunctionCall(FunctionCallExpression {
-            name: String::from("inlineFunctionCall"),
-            arguments: Arguments::new(vec![ExpressionType::FunctionDeclaration(
-                FunctionDeclarationExpression {
-                    parameters: vec![],
-                    body: Block { statements: vec![] }
-                }
-            )])
-        })]
+        vec![StatementType::Expression(ExpressionStatement::Inline(
+            ExpressionType::FunctionCall(CallExpression {
+                value: Box::new(ExpressionType::Identifier(IdentifierExpression {
+                    name: String::from("inlineFunctionCall")
+                })),
+                parameters: Parameters::new(vec![ExpressionType::FunctionDeclaration(
+                    FunctionDeclarationExpression {
+                        parameters: vec![],
+                        body: Block { statements: vec![] }
+                    }
+                )])
+            })
+        ))]
     )
 }
 
 #[test]
 fn parses_function_call_expression_without_arguments() {
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("greet", TokenKind::Identifier),
@@ -63,9 +67,11 @@ fn parses_function_call_expression_without_arguments() {
         vec![StatementType::VariableDeclaration(
             VariableDeclarationStatement {
                 identifier: String::from("x"),
-                value: ExpressionType::FunctionCall(FunctionCallExpression {
-                    name: String::from("greet"),
-                    arguments: Arguments::new(vec![])
+                value: ExpressionType::FunctionCall(CallExpression {
+                    value: Box::new(ExpressionType::Identifier(IdentifierExpression {
+                        name: String::from("greet")
+                    })),
+                    parameters: Parameters::new(vec![])
                 })
             }
         )]
@@ -75,7 +81,7 @@ fn parses_function_call_expression_without_arguments() {
 #[test]
 fn parses_function_call_expression_with_literal_arguments() {
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("greet", TokenKind::Identifier),
@@ -94,9 +100,11 @@ fn parses_function_call_expression_with_literal_arguments() {
         vec![StatementType::VariableDeclaration(
             VariableDeclarationStatement {
                 identifier: String::from("x"),
-                value: ExpressionType::FunctionCall(FunctionCallExpression {
-                    name: String::from("greet"),
-                    arguments: Arguments::new(vec![
+                value: ExpressionType::FunctionCall(CallExpression {
+                    value: Box::new(ExpressionType::Identifier(IdentifierExpression {
+                        name: String::from("greet")
+                    })),
+                    parameters: Parameters::new(vec![
                         ExpressionType::Literal(LiteralType::Number(5 as f32)),
                         ExpressionType::Literal(LiteralType::String(String::from("Hello World"))),
                         ExpressionType::Literal(LiteralType::Boolean(true))
@@ -110,7 +118,7 @@ fn parses_function_call_expression_with_literal_arguments() {
 #[test]
 fn parses_function_call_expression_with_identifier_argument() {
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("greet", TokenKind::Identifier),
@@ -125,9 +133,11 @@ fn parses_function_call_expression_with_identifier_argument() {
         vec![StatementType::VariableDeclaration(
             VariableDeclarationStatement {
                 identifier: String::from("x"),
-                value: ExpressionType::FunctionCall(FunctionCallExpression {
-                    name: String::from("greet"),
-                    arguments: Arguments::new(vec![ExpressionType::Identifier(
+                value: ExpressionType::FunctionCall(CallExpression {
+                    value: Box::new(ExpressionType::Identifier(IdentifierExpression {
+                        name: String::from("greet")
+                    })),
+                    parameters: Parameters::new(vec![ExpressionType::Identifier(
                         IdentifierExpression {
                             name: String::from("x")
                         }
@@ -149,10 +159,14 @@ fn parses_function_call_statement_without_arguments() {
 
     assert_eq!(
         result,
-        vec![StatementType::FunctionCall(FunctionCallExpression {
-            name: String::from("greet"),
-            arguments: Arguments::new(vec![])
-        })]
+        vec![StatementType::Expression(ExpressionStatement::Inline(
+            ExpressionType::FunctionCall(CallExpression {
+                value: Box::new(ExpressionType::Identifier(IdentifierExpression {
+                    name: String::from("greet")
+                })),
+                parameters: Parameters::new(vec![])
+            })
+        ))]
     )
 }
 
@@ -172,14 +186,18 @@ fn parses_function_call_statement_with_literal_arguments() {
 
     assert_eq!(
         result,
-        vec![StatementType::FunctionCall(FunctionCallExpression {
-            name: String::from("greet"),
-            arguments: Arguments::new(vec![
-                ExpressionType::Literal(LiteralType::Number(5 as f32)),
-                ExpressionType::Literal(LiteralType::String(String::from("Hello World"))),
-                ExpressionType::Literal(LiteralType::Boolean(true))
-            ])
-        })]
+        vec![StatementType::Expression(ExpressionStatement::Inline(
+            ExpressionType::FunctionCall(CallExpression {
+                value: Box::new(ExpressionType::Identifier(IdentifierExpression {
+                    name: String::from("greet")
+                })),
+                parameters: Parameters::new(vec![
+                    ExpressionType::Literal(LiteralType::Number(5 as f32)),
+                    ExpressionType::Literal(LiteralType::String(String::from("Hello World"))),
+                    ExpressionType::Literal(LiteralType::Boolean(true))
+                ])
+            })
+        ))]
     )
 }
 
@@ -195,19 +213,25 @@ fn parses_function_call_statement_with_identifier_argument() {
 
     assert_eq!(
         result,
-        vec![StatementType::FunctionCall(FunctionCallExpression {
-            name: String::from("greet"),
-            arguments: Arguments::new(vec![ExpressionType::Identifier(IdentifierExpression {
-                name: String::from("x")
-            })])
-        })]
+        vec![StatementType::Expression(ExpressionStatement::Inline(
+            ExpressionType::FunctionCall(CallExpression {
+                value: Box::new(ExpressionType::Identifier(IdentifierExpression {
+                    name: String::from("greet")
+                })),
+                parameters: Parameters::new(vec![ExpressionType::Identifier(
+                    IdentifierExpression {
+                        name: String::from("x")
+                    }
+                )])
+            })
+        ))]
     )
 }
 
 #[test]
 fn parses_function_declaration_without_arguments() {
     let result = Parser::new(vec![
-        Token::new("fn", TokenKind::Function),
+        Token::new("fn", TokenKind::Fn),
         Token::new("greet", TokenKind::Identifier),
         Token::new("(", TokenKind::LeftParenthesis),
         Token::new(")", TokenKind::RightParenthesis),
@@ -231,7 +255,7 @@ fn parses_function_declaration_without_arguments() {
 #[test]
 fn parses_function_declaration_with_return() {
     let result = Parser::new(vec![
-        Token::new("fn", TokenKind::Function),
+        Token::new("fn", TokenKind::Fn),
         Token::new("greet", TokenKind::Identifier),
         Token::new("(", TokenKind::LeftParenthesis),
         Token::new(")", TokenKind::RightParenthesis),
@@ -261,7 +285,7 @@ fn parses_function_declaration_with_return() {
 #[test]
 fn parses_function_declaration_with_single_argument() {
     let result = Parser::new(vec![
-        Token::new("fn", TokenKind::Function),
+        Token::new("fn", TokenKind::Fn),
         Token::new("greet", TokenKind::Identifier),
         Token::new("(", TokenKind::LeftParenthesis),
         Token::new("arg1", TokenKind::Identifier),
@@ -288,7 +312,7 @@ fn parses_function_declaration_with_single_argument() {
 #[test]
 fn parses_function_declaration_with_multiple_arguments() {
     let result = Parser::new(vec![
-        Token::new("fn", TokenKind::Function),
+        Token::new("fn", TokenKind::Fn),
         Token::new("greet", TokenKind::Identifier),
         Token::new("(", TokenKind::LeftParenthesis),
         Token::new("arg1", TokenKind::Identifier),
@@ -322,11 +346,11 @@ fn parses_function_declaration_with_multiple_arguments() {
 #[test]
 fn parses_variable_declaration_number() {
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("5", TokenKind::Number),
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("y", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("-", TokenKind::Minus),
@@ -355,7 +379,7 @@ fn parses_variable_declaration_number() {
 #[test]
 fn parses_variable_declaration_string() {
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("Hello World", TokenKind::String),
@@ -376,7 +400,7 @@ fn parses_variable_declaration_string() {
 #[test]
 fn parses_variable_declaration_identifier() {
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("identifier", TokenKind::Identifier),
@@ -399,11 +423,11 @@ fn parses_variable_declaration_identifier() {
 #[test]
 fn parses_variable_declaration_boolean() {
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("true", TokenKind::True),
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("y", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("false", TokenKind::False),
@@ -428,7 +452,7 @@ fn parses_variable_declaration_boolean() {
 #[test]
 fn parses_variable_assignment_number() {
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("5", TokenKind::Number),
@@ -446,13 +470,15 @@ fn parses_variable_assignment_number() {
                 identifier: String::from("x"),
                 value: ExpressionType::Literal(LiteralType::Number(5 as f32))
             }),
-            StatementType::VariableAssignment(VariableAssignmentStatement {
-                identifier: String::from("x"),
+            StatementType::Expression(ExpressionStatement::Assignment(AssignmentStatement {
+                identifier: ExpressionType::Identifier(IdentifierExpression {
+                    name: String::from("x")
+                }),
                 value: ExpressionType::UnaryOperation(UnaryOperationExpression {
                     expression: Box::new(ExpressionType::Literal(LiteralType::Number(5 as f32))),
                     operator: UnaryOperator::Minus
                 })
-            })
+            }))
         ]
     )
 }
@@ -460,7 +486,7 @@ fn parses_variable_assignment_number() {
 #[test]
 fn parses_variable_assignment_string() {
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("Hello World", TokenKind::String),
@@ -477,10 +503,12 @@ fn parses_variable_assignment_string() {
                 identifier: String::from("x"),
                 value: ExpressionType::Literal(LiteralType::String(String::from("Hello World")))
             }),
-            StatementType::VariableAssignment(VariableAssignmentStatement {
-                identifier: String::from("x"),
+            StatementType::Expression(ExpressionStatement::Assignment(AssignmentStatement {
+                identifier: ExpressionType::Identifier(IdentifierExpression {
+                    name: String::from("x")
+                }),
                 value: ExpressionType::Literal(LiteralType::String(String::from("Update")))
-            })
+            }))
         ]
     )
 }
@@ -488,7 +516,7 @@ fn parses_variable_assignment_string() {
 #[test]
 fn parses_variable_assignment_identifier() {
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("identifier", TokenKind::Identifier),
@@ -507,12 +535,14 @@ fn parses_variable_assignment_identifier() {
                     name: String::from("identifier")
                 })
             }),
-            StatementType::VariableAssignment(VariableAssignmentStatement {
-                identifier: String::from("x"),
+            StatementType::Expression(ExpressionStatement::Assignment(AssignmentStatement {
+                identifier: ExpressionType::Identifier(IdentifierExpression {
+                    name: String::from("x")
+                }),
                 value: ExpressionType::Identifier(IdentifierExpression {
                     name: String::from("identifier2")
                 })
-            })
+            }))
         ]
     )
 }
@@ -520,7 +550,7 @@ fn parses_variable_assignment_identifier() {
 #[test]
 fn parses_variable_assignment_boolean() {
     let result = Parser::new(vec![
-        Token::new("var", TokenKind::Variable),
+        Token::new("var", TokenKind::Var),
         Token::new("x", TokenKind::Identifier),
         Token::new("=", TokenKind::Assign),
         Token::new("true", TokenKind::True),
@@ -537,10 +567,12 @@ fn parses_variable_assignment_boolean() {
                 identifier: String::from("x"),
                 value: ExpressionType::Literal(LiteralType::Boolean(true))
             }),
-            StatementType::VariableAssignment(VariableAssignmentStatement {
-                identifier: String::from("x"),
+            StatementType::Expression(ExpressionStatement::Assignment(AssignmentStatement {
+                identifier: ExpressionType::Identifier(IdentifierExpression {
+                    name: String::from("x")
+                }),
                 value: ExpressionType::Literal(LiteralType::Boolean(false))
-            }),
+            })),
         ]
     )
 }

@@ -12,10 +12,10 @@ use crate::{
     },
     parser::{
         expressions::{
-            BinaryOperationExpression, BinaryOperator, ExpressionType, FunctionCallExpression,
-            ListExpression, UnaryOperationExpression, UnaryOperator,
+            BinaryOperationExpression, BinaryOperator, CallExpression, ExpressionType,
+            ListExpression, LiteralType, UnaryOperationExpression, UnaryOperator,
         },
-        statements::StatementType,
+        statements::{AssignmentStatement, ExpressionStatement, StatementType},
     },
 };
 
@@ -75,7 +75,6 @@ fn interpret_statement(
             None
         }
         StatementType::Return(expression) => Some(interpret_expression(scope, expression)),
-        StatementType::FunctionCall(statement) => execute_function(scope, statement),
         StatementType::IfStatement(statement) => {
             let condition_result = interpret_expression(scope, &statement.condition);
 
@@ -99,15 +98,34 @@ fn interpret_statement(
                 ),
             }
         }
-        StatementType::VariableAssignment(statement) => {
-            scope.update_variable(
-                statement.identifier.clone(),
-                interpret_expression(scope, &statement.value),
-            );
-            None
-        }
+        StatementType::Expression(statement) => match statement {
+            ExpressionStatement::Assignment(assignment_statement) => {
+                interpret_assignment(scope, assignment_statement);
+                None
+            }
+            ExpressionStatement::Inline(expression_type) => {
+                interpret_expression(scope, expression_type);
+                None
+            }
+        },
     }
 }
+
+fn interpret_assignment(scope: &mut scope::Scope, assignment: &AssignmentStatement) {
+    match &assignment.identifier {
+        ExpressionType::Identifier(identifier_expression) => {
+            scope.update_variable(
+                identifier_expression.name.clone(),
+                interpret_expression(scope, &assignment.value),
+            );
+        }
+        // Will need a resolver function that runs untill we reach {value: identifier | list, key: x}
+        ExpressionType::Accessor(accessor_expression) => todo!(),
+        ExpressionType::FunctionCall(call_expression) => todo!(),
+        _ => panic!("Expression is not assignable"),
+    }
+}
+
 fn interpret_binary_expression(
     scope: &scope::Scope,
     expression: &BinaryOperationExpression,
@@ -185,22 +203,26 @@ fn interpret_binary_expression(
 
 fn execute_function(
     scope: &scope::Scope,
-    statement: &FunctionCallExpression,
+    statement: &CallExpression,
 ) -> Option<Rc<scope::DataType>> {
-    if let Some(var) = get_builtins().get(&statement.name.as_str()) {
-        return execute_builtin(var, statement.arguments.resolve(scope));
+    // Check if it's a builtin
+    match statement.value.as_ref() {
+        ExpressionType::Identifier(identifier) => {
+            if let Some(var) = get_builtins().get(identifier.name.as_str()) {
+                return execute_builtin(var, statement.parameters.resolve(scope));
+            }
+        }
+        _ => {}
     }
 
-    let function_declaration = if let Some(x) = scope.get_variable(&statement.name) {
-        match x.as_ref() {
-            scope::DataType::Function(function_declaration) => function_declaration.clone(),
-            _ => panic!("Identifier '{}' is not callable", &statement.name),
-        }
-    } else {
-        panic!("Identifier '{}' not found", &statement.name)
-    };
+    let value = interpret_expression(scope, &statement.value);
 
-    function_declaration.execute(statement, scope)
+    match value.as_ref() {
+        scope::DataType::Function(function_declaration) => {
+            function_declaration.execute(&statement.parameters, scope)
+        }
+        _ => panic!("Expression is not callable"),
+    }
 }
 
 pub fn interpret_expression(
@@ -209,15 +231,9 @@ pub fn interpret_expression(
 ) -> Rc<scope::DataType> {
     match expression {
         ExpressionType::Literal(literal_type) => match literal_type {
-            crate::parser::expressions::LiteralType::String(x) => {
-                Rc::new(scope::DataType::String(x.clone()))
-            }
-            crate::parser::expressions::LiteralType::Number(x) => {
-                Rc::new(scope::DataType::Number(x.clone()))
-            }
-            crate::parser::expressions::LiteralType::Boolean(x) => {
-                Rc::new(scope::DataType::Boolean(x.clone()))
-            }
+            LiteralType::String(x) => Rc::new(scope::DataType::String(x.clone())),
+            LiteralType::Number(x) => Rc::new(scope::DataType::Number(x.clone())),
+            LiteralType::Boolean(x) => Rc::new(scope::DataType::Boolean(x.clone())),
         },
         ExpressionType::Identifier(identifier_expression) => {
             if let Some(var) = scope.get_variable(&identifier_expression.name) {
@@ -233,10 +249,7 @@ pub fn interpret_expression(
             if let Some(return_value) = execute_function(scope, function_call_expression) {
                 return_value
             } else {
-                panic!(
-                    "Function {} does not have a return value",
-                    function_call_expression.name
-                )
+                Rc::new(scope::DataType::Void())
             }
         }
         ExpressionType::FunctionDeclaration(function_declaration_expression) => {
@@ -260,6 +273,7 @@ pub fn interpret_expression(
         ExpressionType::List(list_expression) => Rc::new(scope::DataType::List(
             interpret_list_expression(scope, list_expression),
         )),
+        ExpressionType::Accessor(accessor_expression) => todo!(),
     }
 }
 

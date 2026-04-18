@@ -2,7 +2,10 @@ use std::{fmt, rc::Rc};
 
 use crate::{
     interpreter::scope::DataType,
-    parser::{expressions::FunctionCallExpression, statements::StatementType},
+    parser::{
+        expressions::{CallExpression, Parameters},
+        statements::StatementType,
+    },
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -33,27 +36,23 @@ impl FunctionDeclaration {
 
     pub fn execute(
         &self,
-        call_info: &FunctionCallExpression,
+        parameters: &Parameters,
         scope: &super::scope::Scope,
     ) -> Option<Rc<DataType>> {
         let expected_arguments = self.arguments.len();
-        let received_arguments = call_info.arguments.len();
+        let received_arguments = parameters.len();
 
         if expected_arguments != received_arguments {
             panic!(
-                "Argument count for function '{}' is invalid. Expect: {}, received {}",
-                &call_info.name, expected_arguments, received_arguments
+                "Argument count for function is invalid. Expect: {}, received {}",
+                expected_arguments, received_arguments
             );
         }
 
         let mut function_scope = super::scope::Scope::new(Some(scope));
 
         // Set arguments as available variables
-        for (identifier, value) in self
-            .arguments
-            .iter()
-            .zip(call_info.arguments.resolve(scope))
-        {
+        for (identifier, value) in self.arguments.iter().zip(parameters.resolve(scope)) {
             function_scope.set_variable(identifier.clone(), value);
         }
 
