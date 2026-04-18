@@ -58,6 +58,30 @@ fn interpret_list_assignment() {
 }
 
 #[test]
+fn interpret_list_accessor_nested() {
+    let dsl = "
+    var x = [[1]]
+    var y = x[0][0]
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("x")),
+        Rc::new(DataType::List(ListDeclaration::new(vec![Rc::new(
+            DataType::List(ListDeclaration::new(vec![Rc::new(DataType::Number(1.0))]))
+        )])))
+    );
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("y")),
+        Rc::new(DataType::Number(1.0))
+    );
+}
+
+#[test]
 fn interpret_list_accessor() {
     let dsl = "
     var x = [1]
