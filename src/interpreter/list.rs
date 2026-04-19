@@ -43,6 +43,12 @@ impl ListDeclaration {
 
         self.values.borrow_mut()[i] = value
     }
+
+    pub fn length(&self) -> Rc<super::scope::DataType> {
+        Rc::new(super::scope::DataType::Number(
+            self.values.borrow().len() as f32
+        ))
+    }
 }
 
 impl fmt::Display for ListDeclaration {

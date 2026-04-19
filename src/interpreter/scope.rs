@@ -12,18 +12,6 @@ pub enum DataType {
     Undefined(),
 }
 
-#[derive(PartialEq, Debug, Clone)]
-pub struct ReferenceData {
-    pub identifier: String,
-    pub data: Rc<DataType>,
-}
-
-impl fmt::Display for ReferenceData {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.data)
-    }
-}
-
 impl fmt::Display for DataType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let string = match self {

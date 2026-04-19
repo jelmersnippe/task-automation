@@ -17,6 +17,27 @@ use crate::{
 };
 
 #[test]
+fn interprets_len_builtin() {
+    let dsl = "
+    var x = len(\"Hello\")
+    var y = len([1,2,3])
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("x")),
+        Rc::new(DataType::Number(5.0))
+    );
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("y")),
+        Rc::new(DataType::Number(3.0))
+    );
+}
+
+#[test]
 fn interprets_variable_rebinding() {
     let dsl = "
     var x = 3

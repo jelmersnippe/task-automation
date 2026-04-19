@@ -9,7 +9,7 @@ use crate::{
     interpreter::{
         builtin::{execute_builtin, get_builtins},
         list::ListDeclaration,
-        scope::{DataType, ReferenceData},
+        scope::DataType,
     },
     parser::{
         expressions::{

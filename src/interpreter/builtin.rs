@@ -10,11 +10,26 @@ pub(crate) fn get_builtins() -> &'static HashMap<&'static str, BuiltinFn> {
         HashMap::from([
             ("print", print as BuiltinFn),
             ("spawn_terminal", spawn_terminal as BuiltinFn),
+            ("len", len as BuiltinFn),
         ])
     })
 }
 
 type BuiltinFn = fn(Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::DataType>;
+
+fn len(data: Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::DataType> {
+    if data.len() != 1 {
+        panic!("len only takes 1 argument. Received: {:?}", data)
+    }
+
+    let arg = data.iter().nth(0).unwrap();
+
+    match arg.as_ref() {
+        DataType::String(string) => Rc::new(DataType::Number(string.len() as f32)),
+        DataType::List(list_declaration) => list_declaration.length(),
+        _ => panic!("Can't get length for '{}'", arg),
+    }
+}
 
 fn print(data: Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::DataType> {
     if data.len() != 1 {
