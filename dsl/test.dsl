@@ -17,6 +17,7 @@ if(true){
 var intVal = 10
 var floatVal = 10.5
 var textVal = "hello world"
+print("length: " + len(textVal))
 var boolTrue = true
 var boolFalse = false
 
@@ -120,6 +121,7 @@ print(earlyReturn(false))
 
 var simple_list = [1, "Hello", true, [1, 2, 3], y]
 print(simple_list)
+print("length: " + len(simple_list))
 
 print(simple_list[0])
 
@@ -128,5 +130,3 @@ print(simple_list[0])
 
 var complex_list = [outer(5), outer]
 print(complex_list)
-
-print(len(simple_list))

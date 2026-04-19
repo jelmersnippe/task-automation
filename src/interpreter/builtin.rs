@@ -73,7 +73,7 @@ fn spawn_terminal(data: Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::Dat
     // Retain the terminal in bash mode
     command += " && exec bash";
 
-    println!("wt.exe wsl bash -lc \"{}\"", command);
+    println!("Running: wt.exe wsl bash -lc \"{}\"", command);
 
     let success = Command::new("wt.exe")
         .arg("wsl")

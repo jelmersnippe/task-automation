@@ -171,6 +171,15 @@ fn interpret_binary_expression(
                     l, expression.operator, r
                 ),
             },
+            scope::DataType::String(r) => {
+                return match expression.operator {
+                    BinaryOperator::Add => scope::DataType::String(format!("{}{}", l, r)),
+                    _ => panic!(
+                        "Invalid operation for number and string binary operation: {} {:?} {}",
+                        &l, expression.operator, &r
+                    ),
+                };
+            }
             _ => panic!(
                 "Left and right types of binary expression '{:?}' don't match",
                 expression
@@ -188,6 +197,15 @@ fn interpret_binary_expression(
                     BinaryOperator::LessOrEqual => scope::DataType::Boolean(l <= r),
                     _ => panic!(
                         "Invalid operation for string binary operation: {} {:?} {}",
+                        &l, expression.operator, &r
+                    ),
+                };
+            }
+            scope::DataType::Number(r) => {
+                return match expression.operator {
+                    BinaryOperator::Add => scope::DataType::String(format!("{}{}", l, r)),
+                    _ => panic!(
+                        "Invalid operation for string and number binary operation: {} {:?} {}",
                         &l, expression.operator, &r
                     ),
                 };
@@ -246,8 +264,6 @@ pub fn interpret_expression(
     scope: &scope::Scope,
     expression: &ExpressionType,
 ) -> Rc<scope::DataType> {
-    println!("{:?}", expression);
-
     match expression {
         ExpressionType::Literal(literal_type) => match literal_type {
             LiteralType::String(x) => Rc::new(scope::DataType::String(x.clone())),
