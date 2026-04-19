@@ -1,4 +1,6 @@
 #[cfg(test)]
+mod dictionary;
+#[cfg(test)]
 mod list;
 
 use std::rc::Rc;

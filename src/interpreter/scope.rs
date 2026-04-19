@@ -9,6 +9,7 @@ pub enum DataType {
     Boolean(bool),
     Function(super::function::FunctionDeclaration),
     List(super::list::ListDeclaration),
+    Dictionary(super::list::DictionaryDeclaration),
     Undefined(),
 }
 
@@ -19,7 +20,8 @@ impl fmt::Display for DataType {
             DataType::String(x) => format!("\"{}\"", x),
             DataType::Boolean(x) => format!("{}", x),
             DataType::Function(function_declaration) => format!("{}", function_declaration),
-            DataType::List(data_types) => format!("{}", data_types),
+            DataType::List(values) => format!("{}", values),
+            DataType::Dictionary(entries) => format!("{}", entries),
             DataType::Undefined() => "undefined".to_string(),
         };
         write!(f, "{}", string)

@@ -20,14 +20,14 @@ pub enum ExpressionType {
     BinaryOperation(BinaryOperationExpression),
     UnaryOperation(UnaryOperationExpression),
     List(ListExpression),
-    // Dictionary(DictionaryExpression),
+    Dictionary(DictionaryExpression),
 }
 
-// #[derive(PartialEq, Debug, Clone)]
-// pub struct DictionaryExpression {
-//     pub keys: Vec<ExpressionType>,
-//     pub values: Vec<ExpressionType>,
-// }
+#[derive(PartialEq, Debug, Clone)]
+pub struct DictionaryExpression {
+    pub keys: Vec<ExpressionType>,
+    pub values: Vec<ExpressionType>,
+}
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct ListExpression {
@@ -342,6 +342,7 @@ impl Parser {
                 TokenKind::LeftBracket => ExpressionType::List(ListExpression {
                     values: self.parse_comma_separated_list(TokenKind::RightBracket),
                 }),
+                TokenKind::LeftCurly => self.parse_dictionary_expression(),
                 _ => panic!("Invalid token for simple expression parsing"),
             };
         }
@@ -430,5 +431,30 @@ impl Parser {
         }
 
         return arguments;
+    }
+
+    fn parse_dictionary_expression(&mut self) -> ExpressionType {
+        let mut keys: Vec<ExpressionType> = vec![];
+        let mut values: Vec<ExpressionType> = vec![];
+        while !self.r#match(TokenKind::RightCurly) {
+            let key = self.parse_expression();
+            match &key {
+                ExpressionType::Identifier(_) | ExpressionType::Literal(_) => keys.push(key),
+                ExpressionType::List(list) if list.values.len() == 1 => keys.push(key),
+                _ => panic!(
+                    "Invalid key for dictionary. Expected identifier, literal or [] with single expression, received: '{:?}'",
+                    key
+                ),
+            }
+
+            self.expect(TokenKind::Colon);
+
+            let value = self.parse_expression();
+            values.push(value);
+
+            self.expect(TokenKind::Comma);
+        }
+
+        return ExpressionType::Dictionary(DictionaryExpression { keys, values });
     }
 }

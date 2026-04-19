@@ -45,6 +45,7 @@ pub enum TokenKind {
     LeftBracket,
     RightBracket,
     Comma,
+    Colon,
 
     Illegal,
 }
@@ -76,6 +77,7 @@ fn lookup_char(c: char) -> Option<TokenKind> {
         '{' => Some(TokenKind::LeftCurly),
         '}' => Some(TokenKind::RightCurly),
         ',' => Some(TokenKind::Comma),
+        ':' => Some(TokenKind::Colon),
         _ => None,
     }
 }

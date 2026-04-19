@@ -1,8 +1,36 @@
-use std::{cell::RefCell, fmt, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ListDeclaration {
     values: Rc<RefCell<Vec<Rc<super::scope::DataType>>>>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct DictionaryDeclaration {
+    entries: Rc<RefCell<HashMap<String, Rc<super::scope::DataType>>>>,
+}
+
+impl DictionaryDeclaration {
+    pub fn new(entries: HashMap<String, Rc<super::scope::DataType>>) -> Self {
+        Self {
+            entries: Rc::new(RefCell::new(entries)),
+        }
+    }
+}
+
+impl fmt::Display for DictionaryDeclaration {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{{")?;
+
+        for (i, (key, value)) in self.entries.borrow().iter().enumerate() {
+            if i > 0 {
+                write!(f, ", ")?;
+            }
+            write!(f, "{}: {}", key, value)?;
+        }
+
+        write!(f, "}}")
+    }
 }
 
 impl ListDeclaration {

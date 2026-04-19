@@ -310,6 +310,7 @@ pub fn interpret_expression(
 
             panic!("Can't use accessor on {}", value);
         }
+        ExpressionType::Dictionary(dictionary_expression) => todo!(),
     }
 }
 
