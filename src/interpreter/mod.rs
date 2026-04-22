@@ -8,7 +8,7 @@ use std::{collections::HashMap, rc::Rc};
 
 use crate::{
     interpreter::{
-        builtin::{execute_builtin, get_builtins},
+        builtin::BUILTINS,
         list::{DictionaryDeclaration, ListDeclaration},
         scope::DataType,
     },
@@ -32,8 +32,14 @@ pub struct Interpreter<'a> {
 
 impl Interpreter<'_> {
     pub fn new(statements: Vec<StatementType>) -> Self {
+        let mut scope = scope::Scope::new(None);
+
+        for (k, v) in BUILTINS {
+            scope.set_variable(k.to_string(), Rc::new(DataType::Builtin(v.clone())));
+        }
+
         Self {
-            scope: scope::Scope::new(None),
+            scope,
             statements,
             pos: 0,
         }
@@ -240,22 +246,13 @@ fn interpret_binary_expression(
 }
 
 fn execute_function(scope: &scope::Scope, statement: &CallExpression) -> Rc<scope::DataType> {
-    // Check if it's a builtin
-    match statement.value.as_ref() {
-        ExpressionType::Identifier(identifier) => {
-            if let Some(var) = get_builtins().get(identifier.name.as_str()) {
-                return execute_builtin(var, statement.parameters.resolve(scope));
-            }
-        }
-        _ => {}
-    }
-
     let value = interpret_expression(scope, &statement.value);
 
     match value.as_ref() {
         scope::DataType::Function(function_declaration) => {
             function_declaration.execute(&statement.parameters, scope)
         }
+        scope::DataType::Builtin(builtin) => builtin(statement.parameters.resolve(scope)),
         _ => panic!("Expression is not callable"),
     }
 }

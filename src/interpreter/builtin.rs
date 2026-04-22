@@ -1,21 +1,11 @@
 use std::process::{Command, Stdio};
-use std::{collections::HashMap, rc::Rc, sync::OnceLock};
+use std::rc::Rc;
 
 use crate::interpreter::scope::DataType;
 
-static BUILTINS: OnceLock<HashMap<&'static str, BuiltinFn>> = OnceLock::new();
+pub static BUILTINS: &[(&str, BuiltinFn)] = &[("print", print), ("len", len)];
 
-pub(crate) fn get_builtins() -> &'static HashMap<&'static str, BuiltinFn> {
-    BUILTINS.get_or_init(|| {
-        HashMap::from([
-            ("print", print as BuiltinFn),
-            ("spawn_terminal", spawn_terminal as BuiltinFn),
-            ("len", len as BuiltinFn),
-        ])
-    })
-}
-
-type BuiltinFn = fn(Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::DataType>;
+pub type BuiltinFn = fn(Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::DataType>;
 
 fn len(data: Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::DataType> {
     if data.len() != 1 {
@@ -27,6 +17,7 @@ fn len(data: Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::DataType> {
     match arg.as_ref() {
         DataType::String(string) => Rc::new(DataType::Number(string.len() as f32)),
         DataType::List(list_declaration) => list_declaration.length(),
+        DataType::Dictionary(dict) => dict.length(),
         _ => panic!("Can't get length for '{}'", arg),
     }
 }
@@ -92,11 +83,4 @@ fn spawn_terminal(data: Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::Dat
     }
 
     Rc::new(DataType::Undefined())
-}
-
-pub(crate) fn execute_builtin(
-    builtin: &BuiltinFn,
-    arguments: Vec<Rc<super::scope::DataType>>,
-) -> Rc<super::scope::DataType> {
-    return builtin(arguments);
 }

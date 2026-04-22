@@ -1,8 +1,8 @@
 use std::{collections::HashMap, fmt, rc::Rc};
 
-use crate::interpreter::builtin::get_builtins;
+use crate::interpreter::builtin::BuiltinFn;
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub enum DataType {
     Number(f32),
     String(String),
@@ -10,7 +10,23 @@ pub enum DataType {
     Function(super::function::FunctionDeclaration),
     List(super::list::ListDeclaration),
     Dictionary(super::list::DictionaryDeclaration),
+    Builtin(BuiltinFn),
     Undefined(),
+}
+
+impl PartialEq for DataType {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Number(l0), Self::Number(r0)) => l0 == r0,
+            (Self::String(l0), Self::String(r0)) => l0 == r0,
+            (Self::Boolean(l0), Self::Boolean(r0)) => l0 == r0,
+            (Self::Function(l0), Self::Function(r0)) => l0 == r0,
+            (Self::List(l0), Self::List(r0)) => l0 == r0,
+            (Self::Dictionary(l0), Self::Dictionary(r0)) => l0 == r0,
+            (Self::Undefined(), Self::Undefined()) => true,
+            _ => false,
+        }
+    }
 }
 
 impl fmt::Display for DataType {
@@ -23,6 +39,7 @@ impl fmt::Display for DataType {
             DataType::List(values) => format!("{}", values),
             DataType::Dictionary(entries) => format!("{}", entries),
             DataType::Undefined() => "undefined".to_string(),
+            DataType::Builtin(builtin) => format!("{:?}", builtin),
         };
         write!(f, "{}", string)
     }
@@ -53,10 +70,6 @@ impl<'a> Scope<'a> {
     }
 
     pub fn set_variable(&mut self, identifier: String, data: Rc<DataType>) {
-        if get_builtins().contains_key(&identifier.as_str()) {
-            panic!("Can't override builtin '{}'", &identifier)
-        }
-
         if self.variables.contains_key(&identifier) {
             panic!("Duplicate identifier '{}' already declared", &identifier);
         }

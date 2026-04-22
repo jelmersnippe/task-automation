@@ -49,6 +49,10 @@ impl DictionaryDeclaration {
     pub fn clear(&self) {
         self.entries.borrow_mut().clear();
     }
+
+    pub fn length(&self) -> Rc<super::scope::DataType> {
+        Rc::new(DataType::Number(self.entries.borrow().len() as f32))
+    }
 }
 
 impl fmt::Display for DictionaryDeclaration {
