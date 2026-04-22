@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt, rc::Rc};
 
-use crate::interpreter::builtin::BuiltinFn;
+use crate::interpreter::builtin::{Builtin, dict_clear, dict_delete, dict_has};
 
 #[derive(Debug, Clone)]
 pub enum DataType {
@@ -10,7 +10,7 @@ pub enum DataType {
     Function(super::function::FunctionDeclaration),
     List(super::list::ListDeclaration),
     Dictionary(super::list::DictionaryDeclaration),
-    Builtin(BuiltinFn),
+    Builtin(Builtin),
     Undefined(),
 }
 
@@ -25,6 +25,21 @@ impl PartialEq for DataType {
             (Self::Dictionary(l0), Self::Dictionary(r0)) => l0 == r0,
             (Self::Undefined(), Self::Undefined()) => true,
             _ => false,
+        }
+    }
+}
+
+impl DataType {
+    pub(crate) fn get_builtins(&self) -> Vec<Builtin> {
+        match self {
+            DataType::Dictionary(_) => {
+                vec![
+                    Builtin::new(String::from("has"), dict_has).bind(Rc::new(self.clone())),
+                    Builtin::new(String::from("delete"), dict_delete).bind(Rc::new(self.clone())),
+                    Builtin::new(String::from("clear"), dict_clear).bind(Rc::new(self.clone())),
+                ]
+            }
+            _ => vec![],
         }
     }
 }

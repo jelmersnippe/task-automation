@@ -15,6 +15,78 @@ use crate::{
     },
 };
 
+#[should_panic]
+#[test]
+fn panics_on_accessing_undefined_key() {
+    let dsl = "
+    var x = {
+    }
+    x[\"a\"]
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
+}
+
+#[test]
+fn interprets_dictionary_builtins() {
+    let dsl = "
+    var x = {
+        a: 1,
+        b: undefined,
+    }
+
+    var a = x.has(\"a\")
+    var b = x.has(\"b\")
+    var c = x.has(\"x\")
+
+    x.delete(\"a\")
+    x.delete(\"x\")
+    x.clear()
+
+    var d = x.has(\"a\")
+    var e = x.has(\"b\")
+    var f = len(x)
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("a")),
+        Rc::new(DataType::Boolean(true)),
+    );
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("a")),
+        Rc::new(DataType::Boolean(true)),
+    );
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("c")),
+        Rc::new(DataType::Boolean(false)),
+    );
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("d")),
+        Rc::new(DataType::Boolean(false)),
+    );
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("e")),
+        Rc::new(DataType::Boolean(false)),
+    );
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("f")),
+        Rc::new(DataType::Number(0.0)),
+    );
+
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("x")),
+        Rc::new(DataType::Dictionary(DictionaryDeclaration::new(
+            HashMap::new()
+        )))
+    );
+}
+
 #[test]
 fn interprets_dictionary_assignment() {
     let dsl = "

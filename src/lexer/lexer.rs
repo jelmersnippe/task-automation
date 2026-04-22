@@ -45,6 +45,7 @@ pub enum TokenKind {
     LeftBracket,
     RightBracket,
     Comma,
+    Period,
     Colon,
 
     Illegal,
@@ -77,6 +78,7 @@ fn lookup_char(c: char) -> Option<TokenKind> {
         '{' => Some(TokenKind::LeftCurly),
         '}' => Some(TokenKind::RightCurly),
         ',' => Some(TokenKind::Comma),
+        '.' => Some(TokenKind::Period),
         ':' => Some(TokenKind::Colon),
         _ => None,
     }
@@ -102,7 +104,7 @@ impl Token {
 }
 
 fn is_digit(c: char) -> bool {
-    return c.is_ascii_digit() || c == '.';
+    return c.is_ascii_digit();
 }
 
 fn is_letter(c: char) -> bool {
@@ -112,7 +114,7 @@ fn is_letter(c: char) -> bool {
 fn is_valid_number(text: &String) -> bool {
     let decimal_separator_count = text.chars().filter(|x| *x == '.').count();
 
-    return decimal_separator_count <= 1 && text.chars().all(|x| is_digit(x));
+    return decimal_separator_count <= 1 && text.chars().all(|x| is_digit(x) || x == '.');
 }
 
 fn is_valid_string(text: &String) -> bool {
@@ -184,6 +186,26 @@ pub fn lexer(text: String) -> Vec<Token> {
                 current.clear();
             }
 
+            continue;
+        }
+
+        // Decimal point with trailing digit
+        if char == '.'
+            && let Some(next) = chars.peek()
+            && is_digit(*next)
+        {
+            current.push(char);
+            continue;
+        }
+
+        // Decimal point with leading digit
+        // Treat leading . as digit to turn a number like 1..1 illegal
+        if char == '.'
+            && current.len() > 0
+            && let Some(prev) = current.chars().nth(current.len() - 1)
+            && (is_digit(prev) || prev == '.')
+        {
+            current.push(char);
             continue;
         }
 

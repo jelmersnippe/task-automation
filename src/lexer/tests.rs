@@ -325,7 +325,7 @@ fn tokenizes_keywords() {
 
 #[test]
 fn tokenizes_separators_and_punctuators() {
-    let result = lexer::lexer(String::from("()[]{},:"));
+    let result = lexer::lexer(String::from("()[]{},.:"));
 
     assert_eq!(
         result,
@@ -337,6 +337,7 @@ fn tokenizes_separators_and_punctuators() {
             Token::new("{", TokenKind::LeftCurly),
             Token::new("}", TokenKind::RightCurly),
             Token::new(",", TokenKind::Comma),
+            Token::new(".", TokenKind::Period),
             Token::new(":", TokenKind::Colon)
         ]
     );

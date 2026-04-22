@@ -8,9 +8,10 @@ use std::{collections::HashMap, rc::Rc};
 
 use crate::{
     interpreter::{
-        builtin::BUILTINS,
+        builtin::{BUILTINS, Builtin},
+        helpers::expect_string,
         list::{DictionaryDeclaration, ListDeclaration},
-        scope::DataType,
+        scope::{DataType, Scope},
     },
     parser::{
         expressions::{
@@ -35,7 +36,10 @@ impl Interpreter<'_> {
         let mut scope = scope::Scope::new(None);
 
         for (k, v) in BUILTINS {
-            scope.set_variable(k.to_string(), Rc::new(DataType::Builtin(v.clone())));
+            scope.set_variable(
+                k.to_string(),
+                Rc::new(DataType::Builtin(Builtin::new(k.to_string(), v.clone()))),
+            );
         }
 
         Self {
@@ -252,7 +256,7 @@ fn execute_function(scope: &scope::Scope, statement: &CallExpression) -> Rc<scop
         scope::DataType::Function(function_declaration) => {
             function_declaration.execute(&statement.parameters, scope)
         }
-        scope::DataType::Builtin(builtin) => builtin(statement.parameters.resolve(scope)),
+        scope::DataType::Builtin(builtin) => builtin.execute(statement.parameters.resolve(scope)),
         _ => panic!("Expression is not callable"),
     }
 }
@@ -309,10 +313,26 @@ pub fn interpret_expression(
                 DataType::Dictionary(dict) => {
                     let key = interpret_expression(scope, &accessor_expression.key);
 
-                    dict.get(&key)
+                    dict.get(&expect_string(&key))
                 }
                 _ => panic!("Can't use accessor on {}", value),
             }
+        }
+        ExpressionType::Property(property_expression) => {
+            let value = interpret_expression(scope, &property_expression.value);
+
+            let builtins = value.get_builtins();
+
+            let mut property_scope = Scope::new(None);
+
+            for x in builtins {
+                property_scope.set_variable(x.name.clone(), Rc::new(DataType::Builtin(x)));
+            }
+
+            interpret_expression(
+                &property_scope,
+                &ExpressionType::Identifier(*property_expression.key.clone()),
+            )
         }
     }
 }

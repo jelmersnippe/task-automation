@@ -1,13 +1,47 @@
 use std::process::{Command, Stdio};
 use std::rc::Rc;
 
+use crate::interpreter::helpers::{expect_dict, expect_string};
 use crate::interpreter::scope::DataType;
 
-pub static BUILTINS: &[(&str, BuiltinFn)] = &[("print", print), ("len", len)];
+pub static BUILTINS: &[(&str, BuiltinFn)] = &[
+    ("print", print),
+    ("len", len),
+    ("spawn_terminal", spawn_terminal),
+];
 
-pub type BuiltinFn = fn(Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::DataType>;
+#[derive(Debug, Clone)]
+pub struct Builtin {
+    pub name: String,
+    receiver: Option<Rc<DataType>>,
+    function: BuiltinFn,
+}
 
-fn len(data: Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::DataType> {
+impl Builtin {
+    pub fn new(name: String, function: BuiltinFn) -> Self {
+        Self {
+            name,
+            function,
+            receiver: None,
+        }
+    }
+
+    pub fn bind(self, receiver: Rc<DataType>) -> Self {
+        Self {
+            name: self.name,
+            function: self.function,
+            receiver: Some(receiver),
+        }
+    }
+
+    pub fn execute(&self, parameters: Vec<Rc<DataType>>) -> Rc<DataType> {
+        (self.function)(self.receiver.clone(), parameters)
+    }
+}
+
+pub type BuiltinFn = fn(Option<Rc<DataType>>, Vec<Rc<DataType>>) -> Rc<DataType>;
+
+fn len(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
     if data.len() != 1 {
         panic!("len only takes 1 argument. Received: {:?}", data)
     }
@@ -22,7 +56,7 @@ fn len(data: Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::DataType> {
     }
 }
 
-fn print(data: Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::DataType> {
+fn print(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
     if data.len() != 1 {
         panic!("print only takes 1 argument. Received: {:?}", data)
     }
@@ -35,7 +69,7 @@ fn print(data: Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::DataType> {
 }
 
 // wt.exe wsl bash -c "cd ~/dev/task-automation && exec bash"
-fn spawn_terminal(data: Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::DataType> {
+fn spawn_terminal(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
     if data.len() < 1 || data.len() > 3 {
         panic!("spawn_terminal takes 1-3 arguments. Received: {:?}", data)
     }
@@ -44,7 +78,7 @@ fn spawn_terminal(data: Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::Dat
 
     let path = data.iter().nth(0).unwrap();
     match path.as_ref() {
-        super::scope::DataType::String(x) => command = format!("cd {}", x),
+        DataType::String(x) => command = format!("cd {}", x),
         _ => panic!("Path has to be a string"),
     }
 
@@ -52,7 +86,7 @@ fn spawn_terminal(data: Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::Dat
         let cmd_string;
 
         match cmd.as_ref() {
-            super::scope::DataType::String(x) => cmd_string = x.clone(),
+            DataType::String(x) => cmd_string = x.clone(),
             _ => panic!("Only string commands are supported"),
         }
 
@@ -83,4 +117,52 @@ fn spawn_terminal(data: Vec<Rc<super::scope::DataType>>) -> Rc<super::scope::Dat
     }
 
     Rc::new(DataType::Undefined())
+}
+
+pub(crate) fn dict_has(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
+    if data.len() != 1 {
+        panic!("get only takes 1 argument. received: {:?}", data)
+    }
+
+    if let Some(x) = receiver {
+        let arg = expect_string(data.iter().nth(0).unwrap());
+        let dict = expect_dict(&x);
+
+        return Rc::new(DataType::Boolean(dict.has(&arg)));
+    }
+
+    panic!("has can only be called on a dictionary");
+}
+
+pub(crate) fn dict_delete(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
+    if data.len() != 1 {
+        panic!("delete only takes 1 argument. received: {:?}", data)
+    }
+
+    if let Some(x) = receiver {
+        let arg = expect_string(data.iter().nth(0).unwrap());
+        let dict = expect_dict(&x);
+
+        dict.delete(&arg);
+
+        return Rc::new(DataType::Undefined());
+    }
+
+    panic!("has can only be called on a dictionary");
+}
+
+pub(crate) fn dict_clear(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
+    if !data.is_empty() {
+        panic!("clear takes no arguments. received: {:?}", data)
+    }
+
+    if let Some(x) = receiver {
+        let dict = expect_dict(&x);
+
+        dict.clear();
+
+        return Rc::new(DataType::Undefined());
+    }
+
+    panic!("has can only be called on a dictionary");
 }

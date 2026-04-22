@@ -16,6 +16,7 @@ pub enum ExpressionType {
     Identifier(IdentifierExpression),
     FunctionCall(CallExpression),
     Accessor(AccessorExpression),
+    Property(PropertyExpression),
     FunctionDeclaration(FunctionDeclarationExpression),
     BinaryOperation(BinaryOperationExpression),
     UnaryOperation(UnaryOperationExpression),
@@ -66,6 +67,12 @@ pub struct CallExpression {
 pub struct AccessorExpression {
     pub value: Box<ExpressionType>,
     pub key: Box<ExpressionType>,
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub struct PropertyExpression {
+    pub value: Box<ExpressionType>,
+    pub key: Box<IdentifierExpression>,
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -289,7 +296,11 @@ impl Parser {
                 ExpressionType::BinaryOperation(BinaryOperationExpression::new(expression, op, r));
         }
 
-        while let Some(x) = self.match_any(&[TokenKind::LeftBracket, TokenKind::LeftParenthesis]) {
+        while let Some(x) = self.match_any(&[
+            TokenKind::LeftBracket,
+            TokenKind::LeftParenthesis,
+            TokenKind::Period,
+        ]) {
             match x.kind {
                 TokenKind::LeftBracket => {
                     let key = self.parse_expression();
@@ -307,6 +318,14 @@ impl Parser {
                     expression = ExpressionType::FunctionCall(CallExpression {
                         value: Box::new(expression),
                         parameters: Parameters::new(parameters),
+                    });
+                }
+                TokenKind::Period => {
+                    let key = self.expect(TokenKind::Identifier);
+
+                    expression = ExpressionType::Property(PropertyExpression {
+                        value: Box::new(expression),
+                        key: Box::new(IdentifierExpression { name: key.value }),
                     });
                 }
                 _ => panic!("Reached invalid expression statement parsing"),
@@ -353,7 +372,7 @@ impl Parser {
                     values: self.parse_comma_separated_list(TokenKind::RightBracket),
                 }),
                 TokenKind::LeftCurly => self.parse_dictionary_expression(),
-                _ => panic!("Invalid token for simple expression parsing"),
+                x => panic!("Invalid token for simple expression parsing: {:?}", x),
             };
         }
 

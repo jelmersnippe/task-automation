@@ -26,14 +26,13 @@ impl DictionaryDeclaration {
         self.entries.borrow().contains_key(key)
     }
 
-    pub fn get(&self, key: &Rc<super::scope::DataType>) -> Rc<super::scope::DataType> {
-        let key_string = expect_string(&*key);
+    pub fn get(&self, key: &String) -> Rc<super::scope::DataType> {
         let binding = self.entries.borrow();
-        let value = binding.get(&key_string);
+        let value = binding.get(key);
 
         match value {
             Some(data) => Rc::clone(data),
-            None => Rc::new(DataType::Undefined()),
+            None => panic!("Dict does not have key '{}'", key),
         }
     }
 

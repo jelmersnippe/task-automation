@@ -9,7 +9,7 @@ use crate::{
         Parser,
         expressions::{
             CallExpression, ExpressionType, FunctionDeclarationExpression, IdentifierExpression,
-            LiteralType, Parameters, UnaryOperationExpression, UnaryOperator,
+            LiteralType, Parameters, PropertyExpression, UnaryOperationExpression, UnaryOperator,
         },
         statements::{
             AssignmentStatement, Block, ExpressionStatement, FunctionDeclarationStatement,
@@ -17,6 +17,30 @@ use crate::{
         },
     },
 };
+
+#[test]
+fn parses_property_accessor() {
+    let result = Parser::new(vec![
+        Token::new("foo", TokenKind::Identifier),
+        Token::new(".", TokenKind::Period),
+        Token::new("bar", TokenKind::Identifier),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![StatementType::Expression(ExpressionStatement::Inline(
+            ExpressionType::Property(PropertyExpression {
+                value: Box::new(ExpressionType::Identifier(IdentifierExpression {
+                    name: String::from("foo")
+                })),
+                key: Box::new(IdentifierExpression {
+                    name: String::from("bar")
+                })
+            })
+        ))]
+    )
+}
 
 #[test]
 fn parses_function_declaration_as_argument() {
