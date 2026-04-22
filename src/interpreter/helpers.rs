@@ -6,3 +6,16 @@ pub fn expect_string(data: &super::scope::DataType) -> String {
         _ => panic!("Only literals or functions returning literals can be converted to string"),
     }
 }
+
+pub fn expect_int(data: &super::scope::DataType) -> usize {
+    if let super::scope::DataType::Number(number) = data {
+        let i = number.round() as usize;
+        if *number as usize != i {
+            panic!("Number should be an integer. Received: '{}'", number);
+        }
+
+        return *number as usize;
+    }
+
+    panic!("Not an integer number");
+}

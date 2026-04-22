@@ -1,6 +1,9 @@
 use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 
-use crate::interpreter::{helpers::expect_string, scope::DataType};
+use crate::interpreter::{
+    helpers::{expect_int, expect_string},
+    scope::DataType,
+};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ListDeclaration {
@@ -70,11 +73,8 @@ impl ListDeclaration {
         }
     }
 
-    pub fn get(&self, index: f32) -> Rc<super::scope::DataType> {
-        let i = index.round() as usize;
-        if index.round() != index {
-            panic!("Index should be an integer. Received: '{}'", index);
-        }
+    pub fn get(&self, index: Rc<super::scope::DataType>) -> Rc<super::scope::DataType> {
+        let i = expect_int(&index);
 
         if i >= self.values.borrow().len() {
             panic!("Index out of bounds");
@@ -89,11 +89,8 @@ impl ListDeclaration {
         );
     }
 
-    pub fn set(&self, index: f32, value: Rc<super::scope::DataType>) {
-        let i = index.round() as usize;
-        if index.round() != index {
-            panic!("Index should be an integer. Received: '{}'", index);
-        }
+    pub fn set(&self, index: Rc<super::scope::DataType>, value: Rc<super::scope::DataType>) {
+        let i = expect_int(&index);
 
         if i >= self.values.borrow().len() {
             panic!("Index out of bounds");

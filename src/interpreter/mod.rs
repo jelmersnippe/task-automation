@@ -133,15 +133,10 @@ fn interpret_assignment(scope: &mut scope::Scope, assignment: &AssignmentStateme
             match storage.as_ref() {
                 DataType::List(list) => {
                     let key = interpret_expression(scope, &accessor_expression.key);
-
-                    match key.as_ref() {
-                        DataType::Number(index) => list.set(*index, value),
-                        _ => panic!("Invalid index for list"),
-                    };
+                    list.set(key, value);
                 }
                 DataType::Dictionary(dict) => {
                     let key = interpret_expression(scope, &accessor_expression.key);
-
                     dict.set(key, value);
                 }
                 _ => panic!("Invalid use of accessor"),
@@ -312,11 +307,7 @@ pub fn interpret_expression(
                 DataType::List(list) => {
                     let key = interpret_expression(scope, &accessor_expression.key);
 
-                    if let DataType::Number(index) = key.as_ref() {
-                        return list.get(*index);
-                    }
-
-                    panic!("List has to be accessed with a number. Found: {}", key);
+                    list.get(key)
                 }
                 DataType::Dictionary(dict) => {
                     let key = interpret_expression(scope, &accessor_expression.key);
