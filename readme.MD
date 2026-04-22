@@ -7,11 +7,14 @@ Optimizations:
 
 ## TODO:
 ### Core:
-- Arrays + objects
-- Support identifiers in scope (DataType::Reference). Pointing to an identifier should store a ref instead of a value
-- Support void/null type
+- .function calls (clear, has, delete) on dictionary
+- while loop
+- Task registry -> register_task + run
 
 ### Native functionality:
 - Window positioning (track pid?)
 - MacOS support
-- Run as daemon in the background
+
+### Other
+- Symlink / alias for running
+- Daemon

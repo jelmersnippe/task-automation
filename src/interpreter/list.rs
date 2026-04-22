@@ -1,5 +1,7 @@
 use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 
+use crate::interpreter::{helpers::expect_string, scope::DataType};
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct ListDeclaration {
     values: Rc<RefCell<Vec<Rc<super::scope::DataType>>>>,
@@ -15,6 +17,34 @@ impl DictionaryDeclaration {
         Self {
             entries: Rc::new(RefCell::new(entries)),
         }
+    }
+
+    pub fn has(&self, key: &String) -> bool {
+        self.entries.borrow().contains_key(key)
+    }
+
+    pub fn get(&self, key: &Rc<super::scope::DataType>) -> Rc<super::scope::DataType> {
+        let key_string = expect_string(&*key);
+        let binding = self.entries.borrow();
+        let value = binding.get(&key_string);
+
+        match value {
+            Some(data) => Rc::clone(data),
+            None => Rc::new(DataType::Undefined()),
+        }
+    }
+
+    pub fn set(&self, key: Rc<super::scope::DataType>, value: Rc<super::scope::DataType>) {
+        let key_string = expect_string(&*key);
+        self.entries.borrow_mut().insert(key_string, value);
+    }
+
+    pub fn delete(&self, key: &String) {
+        self.entries.borrow_mut().remove(key);
+    }
+
+    pub fn clear(&self) {
+        self.entries.borrow_mut().clear();
     }
 }
 

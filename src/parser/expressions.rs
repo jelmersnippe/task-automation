@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{fmt, rc::Rc};
 
 use super::Parser;
 use crate::{
@@ -39,6 +39,16 @@ pub enum LiteralType {
     String(String),
     Number(f32),
     Boolean(bool),
+}
+
+impl fmt::Display for LiteralType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            LiteralType::String(x) => write!(f, "{}", x),
+            LiteralType::Number(x) => write!(f, "{}", x),
+            LiteralType::Boolean(x) => write!(f, "{}", x),
+        }
+    }
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -439,7 +449,12 @@ impl Parser {
         while !self.r#match(TokenKind::RightCurly) {
             let key = self.parse_expression();
             match &key {
-                ExpressionType::Identifier(_) | ExpressionType::Literal(_) => keys.push(key),
+                ExpressionType::Identifier(identifier) => keys.push(ExpressionType::Literal(
+                    LiteralType::String(identifier.name.clone()),
+                )),
+                ExpressionType::Literal(x) => {
+                    keys.push(ExpressionType::Literal(LiteralType::String(x.to_string())))
+                }
                 ExpressionType::List(list) if list.values.len() == 1 => keys.push(key),
                 _ => panic!(
                     "Invalid key for dictionary. Expected identifier, literal or [] with single expression, received: '{:?}'",

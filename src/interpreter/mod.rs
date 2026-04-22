@@ -1,14 +1,15 @@
 pub(crate) mod builtin;
 pub(crate) mod function;
+pub(crate) mod helpers;
 pub(crate) mod list;
 pub(crate) mod scope;
 
-use std::rc::Rc;
+use std::{collections::HashMap, rc::Rc};
 
 use crate::{
     interpreter::{
         builtin::{execute_builtin, get_builtins},
-        list::ListDeclaration,
+        list::{DictionaryDeclaration, ListDeclaration},
         scope::DataType,
     },
     parser::{
@@ -126,7 +127,6 @@ fn interpret_assignment(scope: &mut scope::Scope, assignment: &AssignmentStateme
         ExpressionType::Identifier(identifier_expression) => {
             scope.update_variable(identifier_expression.name.clone(), value);
         }
-        // Will need a resolver function that runs untill we reach {value: identifier | list, key: x}
         ExpressionType::Accessor(accessor_expression) => {
             let storage = interpret_expression(scope, &accessor_expression.value);
 
@@ -138,6 +138,11 @@ fn interpret_assignment(scope: &mut scope::Scope, assignment: &AssignmentStateme
                         DataType::Number(index) => list.set(*index, value),
                         _ => panic!("Invalid index for list"),
                     };
+                }
+                DataType::Dictionary(dict) => {
+                    let key = interpret_expression(scope, &accessor_expression.key);
+
+                    dict.set(key, value);
                 }
                 _ => panic!("Invalid use of accessor"),
             };
@@ -297,21 +302,65 @@ pub fn interpret_expression(
         ExpressionType::List(list_expression) => Rc::new(scope::DataType::List(
             interpret_list_expression(scope, list_expression),
         )),
+        ExpressionType::Dictionary(dictionary_expression) => Rc::new(scope::DataType::Dictionary(
+            interpret_dictionary_expression(scope, dictionary_expression),
+        )),
         ExpressionType::Accessor(accessor_expression) => {
             let value = interpret_expression(scope, &accessor_expression.value);
 
-            if let DataType::List(list) = value.as_ref() {
-                let key = interpret_expression(scope, &accessor_expression.key);
+            match value.as_ref() {
+                DataType::List(list) => {
+                    let key = interpret_expression(scope, &accessor_expression.key);
 
-                if let DataType::Number(index) = key.as_ref() {
-                    return list.get(*index);
+                    if let DataType::Number(index) = key.as_ref() {
+                        return list.get(*index);
+                    }
+
+                    panic!("List has to be accessed with a number. Found: {}", key);
                 }
-            }
+                DataType::Dictionary(dict) => {
+                    let key = interpret_expression(scope, &accessor_expression.key);
 
-            panic!("Can't use accessor on {}", value);
+                    dict.get(&key)
+                }
+                _ => panic!("Can't use accessor on {}", value),
+            }
         }
-        ExpressionType::Dictionary(dictionary_expression) => todo!(),
     }
+}
+
+fn interpret_dictionary_expression(
+    scope: &scope::Scope<'_>,
+    dictionary_expression: &crate::parser::expressions::DictionaryExpression,
+) -> list::DictionaryDeclaration {
+    let mut keys: Vec<String> = vec![];
+
+    for key in dictionary_expression.keys.iter() {
+        let resolved_key = interpret_expression(scope, &key);
+
+        match resolved_key.as_ref() {
+            DataType::Number(x) => keys.push(x.to_string()),
+            DataType::String(x) => keys.push(x.clone()),
+            DataType::Boolean(x) => keys.push(x.to_string()),
+            _ => panic!("Can only use literals or functions returning literals as dictionary keys"),
+        }
+    }
+
+    let values: Vec<Rc<DataType>> = dictionary_expression
+        .values
+        .iter()
+        .map(|x| interpret_expression(scope, x))
+        .collect();
+
+    let entries: Vec<(String, Rc<DataType>)> = keys.into_iter().zip(values).collect();
+
+    let mut map = HashMap::new();
+
+    for (key, value) in entries {
+        map.insert(key, value);
+    }
+
+    DictionaryDeclaration::new(map)
 }
 
 fn interpret_list_expression(
