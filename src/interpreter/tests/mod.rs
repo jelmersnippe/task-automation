@@ -156,6 +156,22 @@ fn interprets_if_scoped_variables() {
 }
 
 #[test]
+fn interprets_function_call_inline() {
+    let dsl = "
+    var x = fn() {return 3}()
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("x")),
+        Rc::new(DataType::Number(3.0))
+    );
+}
+
+#[test]
 fn interprets_function_call_with_return_inside_if() {
     let dsl = "
     fn foo(bar) {
