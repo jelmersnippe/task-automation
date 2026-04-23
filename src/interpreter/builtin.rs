@@ -73,28 +73,18 @@ fn print(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
 
 // wt.exe wsl bash -c "cd ~/dev/task-automation && exec bash"
 fn spawn_terminal(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
-    let [path, cmd] = data.as_slice() else {
+    let [path, rest @ ..] = data.as_slice() else {
         panic!("spawn_terminal takes 1-2 arguments. Received: {:?}", data)
     };
     let mut command: String;
 
-    match path.as_ref() {
-        DataType::String(x) => command = format!("cd {}", x),
-        _ => panic!("Path has to be a string"),
-    }
+    command = format!("cd {}", expect_string(path));
 
-    if let Some(cmd) = data.iter().nth(1) {
-        let cmd_string;
+    let [cmd] = rest else {
+        panic!("spawn_terminal takes 1-2 arguments. Received: {:?}", data)
+    };
 
-        match cmd.as_ref() {
-            DataType::String(x) => cmd_string = x.clone(),
-            _ => panic!("Only string commands are supported"),
-        }
-
-        if !cmd_string.is_empty() {
-            command += format!(" && {}", cmd_string).as_str();
-        }
-    }
+    command += format!(" && {}", expect_string(cmd)).as_str();
 
     // Retain the terminal in bash mode
     command += " && exec bash";
