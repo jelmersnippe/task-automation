@@ -30,17 +30,16 @@ impl PartialEq for DataType {
 }
 
 impl DataType {
-    pub(crate) fn get_builtins(&self) -> Vec<Builtin> {
-        match self {
-            DataType::Dictionary(_) => {
-                vec![
-                    Builtin::new(String::from("has"), dict_has).bind(Rc::new(self.clone())),
-                    Builtin::new(String::from("delete"), dict_delete).bind(Rc::new(self.clone())),
-                    Builtin::new(String::from("clear"), dict_clear).bind(Rc::new(self.clone())),
-                ]
-            }
-            _ => vec![],
-        }
+    pub(crate) fn get_method(self: &Rc<DataType>, name: &str) -> Rc<DataType> {
+        Rc::new(DataType::Builtin(match self.as_ref() {
+            DataType::Dictionary(_) => match name {
+                "has" => Builtin::new("has", dict_has).bind(self.clone()),
+                "delete" => Builtin::new("delete", dict_delete).bind(self.clone()),
+                "clear" => Builtin::new("clear", dict_clear).bind(self.clone()),
+                _ => panic!("Method with name '{}' not found on dict", name),
+            },
+            _ => panic!("No methods available on {}", self),
+        }))
     }
 }
 
@@ -93,6 +92,7 @@ impl<'a> Scope<'a> {
     }
 
     pub fn update_variable(&mut self, identifier: String, data: Rc<DataType>) {
+        // TODO: Also check parents for update variable
         if !self.variables.contains_key(&identifier) {
             panic!("Identifier '{}' has not declared", &identifier);
         }

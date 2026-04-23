@@ -12,13 +12,13 @@ pub static BUILTINS: &[(&str, BuiltinFn)] = &[
 
 #[derive(Debug, Clone)]
 pub struct Builtin {
-    pub name: String,
+    pub name: &'static str,
     receiver: Option<Rc<DataType>>,
     function: BuiltinFn,
 }
 
 impl Builtin {
-    pub fn new(name: String, function: BuiltinFn) -> Self {
+    pub fn new(name: &'static str, function: BuiltinFn) -> Self {
         Self {
             name,
             function,

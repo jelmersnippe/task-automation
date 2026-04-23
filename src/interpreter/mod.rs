@@ -11,7 +11,7 @@ use crate::{
         builtin::{BUILTINS, Builtin},
         helpers::expect_string,
         list::{DictionaryDeclaration, ListDeclaration},
-        scope::{DataType, Scope},
+        scope::DataType,
     },
     parser::{
         expressions::{
@@ -38,7 +38,7 @@ impl Interpreter<'_> {
         for (k, v) in BUILTINS {
             scope.set_variable(
                 k.to_string(),
-                Rc::new(DataType::Builtin(Builtin::new(k.to_string(), v.clone()))),
+                Rc::new(DataType::Builtin(Builtin::new(k, v.clone()))),
             );
         }
 
@@ -320,19 +320,9 @@ pub fn interpret_expression(
         }
         ExpressionType::Property(property_expression) => {
             let value = interpret_expression(scope, &property_expression.value);
+            let property = property_expression.key.name.clone();
 
-            let builtins = value.get_builtins();
-
-            let mut property_scope = Scope::new(None);
-
-            for x in builtins {
-                property_scope.set_variable(x.name.clone(), Rc::new(DataType::Builtin(x)));
-            }
-
-            interpret_expression(
-                &property_scope,
-                &ExpressionType::Identifier(*property_expression.key.clone()),
-            )
+            value.get_method(&property)
         }
     }
 }

@@ -30,6 +30,47 @@ fn panics_on_accessing_undefined_key() {
 }
 
 #[test]
+fn interprets_property_scopes() {
+    let dsl = "
+    var test = 10
+    var x = {
+        a: 1,
+    }
+
+    var y = {
+        a: 2,
+        b: {
+            c: fn() {return test},
+        },
+    }
+
+    var foo = \"a\"
+    var bar = x.has(foo)
+
+    var baz = y[\"b\"][\"c\"]()
+
+    var a = y[\"b\"].has(\"c\")
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("bar")),
+        Rc::new(DataType::Boolean(true)),
+    );
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("baz")),
+        Rc::new(DataType::Number(10.0)),
+    );
+    assert_eq!(
+        interpreter.scope.get_variable(&String::from("a")),
+        Rc::new(DataType::Boolean(true)),
+    );
+}
+
+#[test]
 fn interprets_dictionary_builtins() {
     let dsl = "
     var x = {
