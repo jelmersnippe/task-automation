@@ -1,17 +1,46 @@
 use std::{collections::HashMap, fmt, rc::Rc};
 
-use crate::interpreter::builtin::{Builtin, dict_clear, dict_delete, dict_has};
+use crate::{
+    interpreter::{
+        builtin::{Builtin, dict_clear, dict_delete, dict_has},
+        function::FunctionDeclaration,
+    },
+    parser::expressions::Parameters,
+};
 
 #[derive(Debug, Clone)]
 pub enum DataType {
     Number(f32),
     String(String),
     Boolean(bool),
-    Function(super::function::FunctionDeclaration),
+    Function(Callable),
     List(super::list::ListDeclaration),
     Dictionary(super::list::DictionaryDeclaration),
-    Builtin(Builtin),
     Undefined(),
+}
+
+#[derive(Debug, Clone)]
+pub enum Callable {
+    BuiltIn(Builtin),
+    User(FunctionDeclaration),
+}
+
+impl fmt::Display for Callable {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Callable::BuiltIn(builtin) => write!(f, "{}", builtin),
+            Callable::User(function_declaration) => write!(f, "{}", function_declaration),
+        }
+    }
+}
+
+impl Callable {
+    pub fn execute(&self, parameters: &Parameters, scope: &super::scope::Scope) -> Rc<DataType> {
+        match self {
+            Callable::BuiltIn(builtin) => builtin.execute(parameters.resolve(scope)),
+            Callable::User(function_declaration) => function_declaration.execute(parameters, scope),
+        }
+    }
 }
 
 impl PartialEq for DataType {
@@ -20,7 +49,10 @@ impl PartialEq for DataType {
             (Self::Number(l0), Self::Number(r0)) => l0 == r0,
             (Self::String(l0), Self::String(r0)) => l0 == r0,
             (Self::Boolean(l0), Self::Boolean(r0)) => l0 == r0,
-            (Self::Function(l0), Self::Function(r0)) => l0 == r0,
+            (Self::Function(l0), Self::Function(r0)) => match (l0, r0) {
+                (Callable::User(f1), Callable::User(f2)) => f1 == f2,
+                _ => false,
+            },
             (Self::List(l0), Self::List(r0)) => l0 == r0,
             (Self::Dictionary(l0), Self::Dictionary(r0)) => l0 == r0,
             (Self::Undefined(), Self::Undefined()) => true,
@@ -31,7 +63,7 @@ impl PartialEq for DataType {
 
 impl DataType {
     pub(crate) fn get_method(self: &Rc<DataType>, name: &str) -> Rc<DataType> {
-        Rc::new(DataType::Builtin(match self.as_ref() {
+        Rc::new(DataType::Function(Callable::BuiltIn(match self.as_ref() {
             DataType::Dictionary(_) => match name {
                 "has" => Builtin::new("has", dict_has).bind(self.clone()),
                 "delete" => Builtin::new("delete", dict_delete).bind(self.clone()),
@@ -39,7 +71,7 @@ impl DataType {
                 _ => panic!("Method with name '{}' not found on dict", name),
             },
             _ => panic!("No methods available on {}", self),
-        }))
+        })))
     }
 }
 
@@ -53,7 +85,6 @@ impl fmt::Display for DataType {
             DataType::List(values) => format!("{}", values),
             DataType::Dictionary(entries) => format!("{}", entries),
             DataType::Undefined() => "undefined".to_string(),
-            DataType::Builtin(builtin) => format!("{:?}", builtin),
         };
         write!(f, "{}", string)
     }

@@ -2,7 +2,10 @@ use std::rc::Rc;
 
 use crate::{
     interpreter::{
-        Interpreter, function::FunctionDeclaration, list::ListDeclaration, scope::DataType,
+        Interpreter,
+        function::FunctionDeclaration,
+        list::ListDeclaration,
+        scope::{Callable, DataType},
     },
     lexer::lexer,
     parser::{
@@ -242,12 +245,14 @@ fn interpret_list_declaration() {
             ]))),
             Rc::new(DataType::Number(2.0)),
             Rc::new(DataType::Number(3.0)),
-            Rc::new(DataType::Function(FunctionDeclaration::new(
-                Some(String::from("foo")),
-                vec![],
-                vec![StatementType::Return(ExpressionType::Literal(
-                    LiteralType::Number(3.0)
-                ))]
+            Rc::new(DataType::Function(Callable::User(
+                FunctionDeclaration::new(
+                    Some(String::from("foo")),
+                    vec![],
+                    vec![StatementType::Return(ExpressionType::Literal(
+                        LiteralType::Number(3.0)
+                    ))]
+                )
             ))),
         ])))
     );

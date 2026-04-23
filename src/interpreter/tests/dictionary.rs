@@ -5,7 +5,7 @@ use crate::{
         Interpreter,
         function::FunctionDeclaration,
         list::{DictionaryDeclaration, ListDeclaration},
-        scope::DataType,
+        scope::{Callable, DataType},
     },
     lexer::lexer,
     parser::{
@@ -225,12 +225,14 @@ fn interprets_dictionary_declaration() {
                 (String::from("f"), Rc::new(DataType::Number(3.0))),
                 (
                     String::from("g"),
-                    Rc::new(DataType::Function(FunctionDeclaration::new(
-                        Some(String::from("foo")),
-                        vec![],
-                        vec![StatementType::Return(ExpressionType::Literal(
-                            LiteralType::Number(3.0)
-                        ))],
+                    Rc::new(DataType::Function(Callable::User(
+                        FunctionDeclaration::new(
+                            Some(String::from("foo")),
+                            vec![],
+                            vec![StatementType::Return(ExpressionType::Literal(
+                                LiteralType::Number(3.0)
+                            ))],
+                        )
                     )))
                 ),
             ])

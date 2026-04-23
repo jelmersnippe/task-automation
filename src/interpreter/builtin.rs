@@ -1,3 +1,4 @@
+use std::fmt;
 use std::process::{Command, Stdio};
 use std::rc::Rc;
 
@@ -17,6 +18,12 @@ pub struct Builtin {
     function: BuiltinFn,
 }
 
+impl fmt::Display for Builtin {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "builtin {}", self.name)
+    }
+}
+
 impl Builtin {
     pub fn new(name: &'static str, function: BuiltinFn) -> Self {
         Self {
@@ -26,7 +33,7 @@ impl Builtin {
         }
     }
 
-    pub fn bind(self, receiver: Rc<DataType>) -> Self {
+    pub fn bind(&self, receiver: Rc<DataType>) -> Self {
         Self {
             name: self.name,
             function: self.function,
@@ -42,11 +49,9 @@ impl Builtin {
 pub type BuiltinFn = fn(Option<Rc<DataType>>, Vec<Rc<DataType>>) -> Rc<DataType>;
 
 fn len(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
-    if data.len() != 1 {
+    let [arg] = data.as_slice() else {
         panic!("len only takes 1 argument. Received: {:?}", data)
-    }
-
-    let arg = data.iter().nth(0).unwrap();
+    };
 
     match arg.as_ref() {
         DataType::String(string) => Rc::new(DataType::Number(string.len() as f32)),
@@ -57,11 +62,9 @@ fn len(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
 }
 
 fn print(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
-    if data.len() != 1 {
+    let [arg] = data.as_slice() else {
         panic!("print only takes 1 argument. Received: {:?}", data)
-    }
-
-    let arg = data.iter().nth(0).unwrap();
+    };
 
     println!("{}", arg);
 
@@ -70,13 +73,11 @@ fn print(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
 
 // wt.exe wsl bash -c "cd ~/dev/task-automation && exec bash"
 fn spawn_terminal(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
-    if data.len() < 1 || data.len() > 3 {
-        panic!("spawn_terminal takes 1-3 arguments. Received: {:?}", data)
-    }
-
+    let [path, cmd] = data.as_slice() else {
+        panic!("spawn_terminal takes 1-2 arguments. Received: {:?}", data)
+    };
     let mut command: String;
 
-    let path = data.iter().nth(0).unwrap();
     match path.as_ref() {
         DataType::String(x) => command = format!("cd {}", x),
         _ => panic!("Path has to be a string"),
@@ -126,7 +127,7 @@ pub(crate) fn dict_has(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) 
 
     if let Some(x) = receiver {
         let arg = expect_string(data.iter().nth(0).unwrap());
-        let dict = expect_dict(&x);
+        let dict = expect_dict(x.as_ref());
 
         return Rc::new(DataType::Boolean(dict.has(&arg)));
     }
@@ -141,7 +142,7 @@ pub(crate) fn dict_delete(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>
 
     if let Some(x) = receiver {
         let arg = expect_string(data.iter().nth(0).unwrap());
-        let dict = expect_dict(&x);
+        let dict = expect_dict(x.as_ref());
 
         dict.delete(&arg);
 
@@ -157,7 +158,7 @@ pub(crate) fn dict_clear(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>
     }
 
     if let Some(x) = receiver {
-        let dict = expect_dict(&x);
+        let dict = expect_dict(x.as_ref());
 
         dict.clear();
 
