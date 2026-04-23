@@ -111,35 +111,31 @@ fn spawn_terminal(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataTy
 }
 
 pub(crate) fn dict_has(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
-    if data.len() != 1 {
-        panic!("get only takes 1 argument. received: {:?}", data)
-    }
+    let [key] = data.as_slice() else {
+        panic!("has only takes 1 argument. received: {:?}", data)
+    };
 
-    if let Some(x) = receiver {
-        let arg = expect_string(data.iter().nth(0).unwrap());
-        let dict = expect_dict(x.as_ref());
+    let x = receiver.expect("has can only be called on a dictionary");
 
-        return Rc::new(DataType::Boolean(dict.has(&arg)));
-    }
+    let arg = expect_string(key);
+    let dict = expect_dict(x.as_ref());
 
-    panic!("has can only be called on a dictionary");
+    return Rc::new(DataType::Boolean(dict.has(&arg)));
 }
 
 pub(crate) fn dict_delete(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
-    if data.len() != 1 {
+    let [key] = data.as_slice() else {
         panic!("delete only takes 1 argument. received: {:?}", data)
-    }
+    };
 
-    if let Some(x) = receiver {
-        let arg = expect_string(data.iter().nth(0).unwrap());
-        let dict = expect_dict(x.as_ref());
+    let x = receiver.expect("delete can only be called on a dictionary");
 
-        dict.delete(&arg);
+    let arg = expect_string(key);
+    let dict = expect_dict(x.as_ref());
 
-        return Rc::new(DataType::Undefined());
-    }
+    dict.delete(&arg);
 
-    panic!("has can only be called on a dictionary");
+    return Rc::new(DataType::Undefined());
 }
 
 pub(crate) fn dict_clear(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
@@ -147,13 +143,11 @@ pub(crate) fn dict_clear(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>
         panic!("clear takes no arguments. received: {:?}", data)
     }
 
-    if let Some(x) = receiver {
-        let dict = expect_dict(x.as_ref());
+    let x = receiver.expect("clear can only be called on a dictionary");
 
-        dict.clear();
+    let dict = expect_dict(x.as_ref());
 
-        return Rc::new(DataType::Undefined());
-    }
+    dict.clear();
 
-    panic!("has can only be called on a dictionary");
+    return Rc::new(DataType::Undefined());
 }
