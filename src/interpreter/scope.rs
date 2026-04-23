@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 
 use crate::{
     interpreter::{
@@ -35,10 +35,16 @@ impl fmt::Display for Callable {
 }
 
 impl Callable {
-    pub fn execute(&self, parameters: &Parameters, scope: &super::scope::Scope) -> Rc<DataType> {
+    pub fn execute(
+        &self,
+        parameters: &Parameters,
+        scope: Rc<RefCell<super::scope::Scope>>,
+    ) -> Rc<DataType> {
         match self {
-            Callable::BuiltIn(builtin) => builtin.execute(parameters.resolve(scope)),
-            Callable::User(function_declaration) => function_declaration.execute(parameters, scope),
+            Callable::BuiltIn(builtin) => builtin.execute(parameters.resolve(scope.clone())),
+            Callable::User(function_declaration) => {
+                function_declaration.execute(parameters, scope.clone())
+            }
         }
     }
 }
@@ -90,13 +96,13 @@ impl fmt::Display for DataType {
     }
 }
 
-pub struct Scope<'a> {
-    parent: Option<&'a Scope<'a>>,
+pub struct Scope {
+    parent: Option<Rc<RefCell<Scope>>>,
     variables: HashMap<String, Rc<DataType>>,
 }
 
-impl<'a> Scope<'a> {
-    pub fn new(parent: Option<&'a Scope<'a>>) -> Self {
+impl Scope {
+    pub fn new(parent: Option<Rc<RefCell<Scope>>>) -> Self {
         Self {
             parent: parent,
             variables: Default::default(),
@@ -105,11 +111,11 @@ impl<'a> Scope<'a> {
 
     pub fn get_variable(&self, identifier: &String) -> Rc<DataType> {
         if let Some(var) = self.variables.get(identifier) {
-            return Rc::clone(var);
+            return var.clone();
         }
 
-        match self.parent {
-            Some(parent) => parent.get_variable(identifier),
+        match &self.parent {
+            Some(parent) => parent.borrow().get_variable(identifier),
             None => Rc::new(DataType::Undefined()),
         }
     }
@@ -122,12 +128,14 @@ impl<'a> Scope<'a> {
         self.variables.insert(identifier, data);
     }
 
-    pub fn update_variable(&mut self, identifier: String, data: Rc<DataType>) {
-        // TODO: Also check parents for update variable
-        if !self.variables.contains_key(&identifier) {
-            panic!("Identifier '{}' has not declared", &identifier);
+    pub fn update_variable(&mut self, identifier: &String, data: Rc<DataType>) {
+        if !self.variables.contains_key(identifier) {
+            match &self.parent {
+                Some(parent) => parent.borrow_mut().update_variable(identifier, data),
+                None => panic!("Identifier '{}' has not declared", &identifier),
+            }
+        } else {
+            self.variables.insert(identifier.clone(), data);
         }
-
-        self.variables.insert(identifier, data);
     }
 }

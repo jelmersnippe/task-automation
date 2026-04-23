@@ -1,10 +1,10 @@
-use std::{fmt, rc::Rc};
+use std::{cell::RefCell, fmt, rc::Rc};
 
 use super::Parser;
 use crate::{
     interpreter::{
         interpret_expression,
-        scope::{self, DataType},
+        scope::{DataType, Scope},
     },
     lexer::lexer::{Token, TokenKind},
     parser::statements::Block,
@@ -85,11 +85,11 @@ impl Parameters {
         Self { values }
     }
 
-    pub fn resolve(&self, scope: &scope::Scope) -> Vec<Rc<DataType>> {
+    pub fn resolve(&self, scope: Rc<RefCell<Scope>>) -> Vec<Rc<DataType>> {
         return self
             .values
             .iter()
-            .map(|x| interpret_expression(scope, x))
+            .map(|x| interpret_expression(scope.clone(), x))
             .collect();
     }
 

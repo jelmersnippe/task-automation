@@ -1,7 +1,7 @@
-use std::{fmt, rc::Rc};
+use std::{cell::RefCell, fmt, rc::Rc};
 
 use crate::{
-    interpreter::scope::DataType,
+    interpreter::{DataType, Scope, StatementResult, execute_statements},
     parser::{expressions::Parameters, statements::StatementType},
 };
 
@@ -42,7 +42,7 @@ impl FunctionDeclaration {
         }
     }
 
-    pub fn execute(&self, parameters: &Parameters, scope: &super::scope::Scope) -> Rc<DataType> {
+    pub fn execute(&self, parameters: &Parameters, scope: Rc<RefCell<Scope>>) -> Rc<DataType> {
         let expected_arguments = self.arguments.len();
         let received_arguments = parameters.len();
 
@@ -53,18 +53,19 @@ impl FunctionDeclaration {
             );
         }
 
-        let mut function_scope = super::scope::Scope::new(Some(scope));
+        let function_scope = Rc::new(RefCell::new(Scope::new(Some(scope.clone()))));
 
         // Set arguments as available variables
         for (identifier, value) in self.arguments.iter().zip(parameters.resolve(scope)) {
-            function_scope.set_variable(identifier.clone(), value);
+            function_scope
+                .borrow_mut()
+                .set_variable(identifier.clone(), value);
         }
 
-        let return_value =
-            super::execute_statements(&mut function_scope, self.body.iter().collect());
+        let return_value = execute_statements(function_scope.clone(), self.body.iter().collect());
 
         match return_value {
-            super::StatementResult::Return(data_type) => data_type,
+            StatementResult::Return(data_type) => data_type,
             _ => Rc::new(DataType::Undefined()),
         }
     }

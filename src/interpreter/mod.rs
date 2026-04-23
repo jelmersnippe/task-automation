@@ -4,7 +4,7 @@ pub(crate) mod helpers;
 pub(crate) mod list;
 pub(crate) mod scope;
 
-use std::{collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
     interpreter::{
@@ -26,13 +26,13 @@ use crate::{
 #[cfg(test)]
 mod tests;
 
-pub struct Interpreter<'a> {
-    scope: Scope<'a>,
+pub struct Interpreter {
+    scope: Rc<RefCell<Scope>>,
     statements: Vec<StatementType>,
     pos: usize,
 }
 
-impl Interpreter<'_> {
+impl Interpreter {
     pub fn new(statements: Vec<StatementType>) -> Self {
         let mut scope = Scope::new(None);
 
@@ -47,7 +47,7 @@ impl Interpreter<'_> {
         }
 
         Self {
-            scope,
+            scope: Rc::new(RefCell::new(scope)),
             statements,
             pos: 0,
         }
@@ -56,7 +56,7 @@ impl Interpreter<'_> {
     pub fn interpret(&mut self) {
         while self.pos < self.statements.len() {
             let statement = self.statements[self.pos].clone();
-            interpret_statement(&mut self.scope, &statement);
+            interpret_statement(self.scope.clone(), &statement);
 
             self.pos += 1;
         }
@@ -68,14 +68,14 @@ pub enum StatementResult {
     Return(Rc<DataType>),
 }
 
-fn interpret_statement(scope: &mut Scope, statement: &StatementType) -> StatementResult {
+fn interpret_statement(scope: Rc<RefCell<Scope>>, statement: &StatementType) -> StatementResult {
     match statement {
         StatementType::VariableDeclaration(statement) => {
             let identifier = statement.identifier.clone();
             let value = statement.value.clone();
-            let expression = interpret_expression(scope, &value);
+            let expression = interpret_expression(scope.clone(), &value);
 
-            scope.set_variable(identifier, expression);
+            scope.borrow_mut().set_variable(identifier, expression);
             StatementResult::Void()
         }
         StatementType::FunctionDeclaration(statement) => {
@@ -83,7 +83,7 @@ fn interpret_statement(scope: &mut Scope, statement: &StatementType) -> Statemen
             let arguments = statement.arguments.iter().map(|x| x.name.clone()).collect();
             let statements = statement.body.statements.clone();
 
-            scope.set_variable(
+            scope.borrow_mut().set_variable(
                 identifier.clone(),
                 Rc::new(DataType::Function(Callable::User(
                     FunctionDeclaration::new(Some(identifier.clone()), arguments, statements),
@@ -93,10 +93,10 @@ fn interpret_statement(scope: &mut Scope, statement: &StatementType) -> Statemen
             StatementResult::Void()
         }
         StatementType::Return(expression) => {
-            StatementResult::Return(interpret_expression(scope, expression))
+            StatementResult::Return(interpret_expression(scope.clone(), expression))
         }
         StatementType::IfStatement(statement) => {
-            let condition_result = interpret_expression(scope, &statement.condition);
+            let condition_result = interpret_expression(scope.clone(), &statement.condition);
 
             match *condition_result {
                 DataType::Boolean(should_execute) => {
@@ -104,11 +104,9 @@ fn interpret_statement(scope: &mut Scope, statement: &StatementType) -> Statemen
                         return StatementResult::Void();
                     }
 
-                    let mut block_scope = Scope::new(Some(scope));
-                    let return_value = execute_statements(
-                        &mut block_scope,
-                        statement.body.statements.iter().collect(),
-                    );
+                    let block_scope = Rc::new(RefCell::new(Scope::new(Some(scope.clone()))));
+                    let return_value =
+                        execute_statements(block_scope, statement.body.statements.iter().collect());
 
                     return_value
                 }
@@ -120,7 +118,7 @@ fn interpret_statement(scope: &mut Scope, statement: &StatementType) -> Statemen
         }
         StatementType::Expression(statement) => match statement {
             ExpressionStatement::Assignment(assignment_statement) => {
-                interpret_assignment(scope, assignment_statement);
+                interpret_assignment(scope.clone(), assignment_statement);
                 StatementResult::Void()
             }
             ExpressionStatement::Inline(expression_type) => {
@@ -131,22 +129,24 @@ fn interpret_statement(scope: &mut Scope, statement: &StatementType) -> Statemen
     }
 }
 
-fn interpret_assignment(scope: &mut Scope, assignment: &AssignmentStatement) {
-    let value = interpret_expression(scope, &assignment.value);
+fn interpret_assignment(scope: Rc<RefCell<Scope>>, assignment: &AssignmentStatement) {
+    let value = interpret_expression(scope.clone(), &assignment.value);
     match &assignment.identifier {
         ExpressionType::Identifier(identifier_expression) => {
-            scope.update_variable(identifier_expression.name.clone(), value);
+            scope
+                .borrow_mut()
+                .update_variable(&identifier_expression.name, value);
         }
         ExpressionType::Accessor(accessor_expression) => {
-            let storage = interpret_expression(scope, &accessor_expression.value);
+            let storage = interpret_expression(scope.clone(), &accessor_expression.value);
 
             match storage.as_ref() {
                 DataType::List(list) => {
-                    let key = interpret_expression(scope, &accessor_expression.key);
+                    let key = interpret_expression(scope.clone(), &accessor_expression.key);
                     list.set(key, value);
                 }
                 DataType::Dictionary(dict) => {
-                    let key = interpret_expression(scope, &accessor_expression.key);
+                    let key = interpret_expression(scope.clone(), &accessor_expression.key);
                     dict.set(key, value);
                 }
                 _ => panic!("Invalid use of accessor"),
@@ -156,9 +156,12 @@ fn interpret_assignment(scope: &mut Scope, assignment: &AssignmentStatement) {
     }
 }
 
-fn interpret_binary_expression(scope: &Scope, expression: &BinaryOperationExpression) -> DataType {
-    let left = interpret_expression(scope, &expression.left);
-    let right = interpret_expression(scope, &expression.right);
+fn interpret_binary_expression(
+    scope: Rc<RefCell<Scope>>,
+    expression: &BinaryOperationExpression,
+) -> DataType {
+    let left = interpret_expression(scope.clone(), &expression.left);
+    let right = interpret_expression(scope.clone(), &expression.right);
 
     match left.as_ref() {
         DataType::Number(l) => match right.as_ref() {
@@ -246,17 +249,20 @@ fn interpret_binary_expression(scope: &Scope, expression: &BinaryOperationExpres
     }
 }
 
-fn execute_function(scope: &Scope, statement: &CallExpression) -> Rc<DataType> {
-    let value = interpret_expression(scope, &statement.value);
+fn execute_function(scope: Rc<RefCell<Scope>>, statement: &CallExpression) -> Rc<DataType> {
+    let value = interpret_expression(scope.clone(), &statement.value);
 
     if let DataType::Function(function_declaration) = value.as_ref() {
-        function_declaration.execute(&statement.parameters, scope)
+        function_declaration.execute(&statement.parameters, scope.clone())
     } else {
         panic!("Expression is not callable");
     }
 }
 
-pub fn interpret_expression(scope: &Scope, expression: &ExpressionType) -> Rc<DataType> {
+pub fn interpret_expression(
+    scope: Rc<RefCell<Scope>>,
+    expression: &ExpressionType,
+) -> Rc<DataType> {
     match expression {
         ExpressionType::Literal(literal_type) => match literal_type {
             LiteralType::String(x) => Rc::new(DataType::String(x.clone())),
@@ -264,7 +270,7 @@ pub fn interpret_expression(scope: &Scope, expression: &ExpressionType) -> Rc<Da
             LiteralType::Boolean(x) => Rc::new(DataType::Boolean(x.clone())),
         },
         ExpressionType::Identifier(identifier_expression) => {
-            scope.get_variable(&identifier_expression.name)
+            scope.borrow().get_variable(&identifier_expression.name)
         }
         ExpressionType::FunctionCall(function_call_expression) => {
             execute_function(scope, function_call_expression)
@@ -282,28 +288,28 @@ pub fn interpret_expression(scope: &Scope, expression: &ExpressionType) -> Rc<Da
             )))
         }
         ExpressionType::BinaryOperation(binary_operation_expression) => Rc::new(
-            interpret_binary_expression(scope, binary_operation_expression),
+            interpret_binary_expression(scope.clone(), binary_operation_expression),
         ),
         ExpressionType::UnaryOperation(unary_operation_expression) => Rc::new(
-            interpret_unary_expression(scope, unary_operation_expression),
+            interpret_unary_expression(scope.clone(), unary_operation_expression),
         ),
         ExpressionType::List(list_expression) => Rc::new(DataType::List(
-            interpret_list_expression(scope, list_expression),
+            interpret_list_expression(scope.clone(), list_expression),
         )),
         ExpressionType::Dictionary(dictionary_expression) => Rc::new(DataType::Dictionary(
-            interpret_dictionary_expression(scope, dictionary_expression),
+            interpret_dictionary_expression(scope.clone(), dictionary_expression),
         )),
         ExpressionType::Accessor(accessor_expression) => {
-            let value = interpret_expression(scope, &accessor_expression.value);
+            let value = interpret_expression(scope.clone(), &accessor_expression.value);
 
             match value.as_ref() {
                 DataType::List(list) => {
-                    let key = interpret_expression(scope, &accessor_expression.key);
+                    let key = interpret_expression(scope.clone(), &accessor_expression.key);
 
                     list.get(key)
                 }
                 DataType::Dictionary(dict) => {
-                    let key = interpret_expression(scope, &accessor_expression.key);
+                    let key = interpret_expression(scope.clone(), &accessor_expression.key);
 
                     dict.get(&expect_string(&key))
                 }
@@ -320,13 +326,13 @@ pub fn interpret_expression(scope: &Scope, expression: &ExpressionType) -> Rc<Da
 }
 
 fn interpret_dictionary_expression(
-    scope: &Scope<'_>,
+    scope: Rc<RefCell<Scope>>,
     dictionary_expression: &crate::parser::expressions::DictionaryExpression,
 ) -> list::DictionaryDeclaration {
     let mut keys: Vec<String> = vec![];
 
     for key in dictionary_expression.keys.iter() {
-        let resolved_key = interpret_expression(scope, &key);
+        let resolved_key = interpret_expression(scope.clone(), &key);
 
         match resolved_key.as_ref() {
             DataType::Number(x) => keys.push(x.to_string()),
@@ -339,7 +345,7 @@ fn interpret_dictionary_expression(
     let values: Vec<Rc<DataType>> = dictionary_expression
         .values
         .iter()
-        .map(|x| interpret_expression(scope, x))
+        .map(|x| interpret_expression(scope.clone(), x))
         .collect();
 
     let entries: Vec<(String, Rc<DataType>)> = keys.into_iter().zip(values).collect();
@@ -353,20 +359,26 @@ fn interpret_dictionary_expression(
     DictionaryDeclaration::new(map)
 }
 
-fn interpret_list_expression(scope: &Scope, list_expression: &ListExpression) -> ListDeclaration {
+fn interpret_list_expression(
+    scope: Rc<RefCell<Scope>>,
+    list_expression: &ListExpression,
+) -> ListDeclaration {
     let values = list_expression
         .values
         .iter()
-        .map(|x| interpret_expression(scope, x))
+        .map(|x| interpret_expression(scope.clone(), x))
         .collect();
 
     ListDeclaration::new(values)
 }
 
-fn execute_statements(scope: &mut Scope, statements: Vec<&StatementType>) -> StatementResult {
+fn execute_statements(
+    scope: Rc<RefCell<Scope>>,
+    statements: Vec<&StatementType>,
+) -> StatementResult {
     let mut executed_statements: Vec<StatementType> = vec![];
     for x in statements {
-        let statement_result = interpret_statement(scope, x);
+        let statement_result = interpret_statement(scope.clone(), x);
         executed_statements.push(x.clone());
 
         if let StatementResult::Return(_) = statement_result {
@@ -377,7 +389,10 @@ fn execute_statements(scope: &mut Scope, statements: Vec<&StatementType>) -> Sta
     StatementResult::Void()
 }
 
-fn interpret_unary_expression(scope: &Scope, expression: &UnaryOperationExpression) -> DataType {
+fn interpret_unary_expression(
+    scope: Rc<RefCell<Scope>>,
+    expression: &UnaryOperationExpression,
+) -> DataType {
     let value = interpret_expression(scope, &expression.expression);
 
     match *value {

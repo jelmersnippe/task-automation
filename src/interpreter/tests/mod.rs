@@ -23,6 +23,28 @@ use crate::{
 };
 
 #[test]
+fn interprets_scoped_variable_rebinding() {
+    let dsl = "
+    var x = 1
+
+    fn foo() {
+        x = 2
+    }
+
+    foo()
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.borrow().get_variable(&String::from("x")),
+        Rc::new(DataType::Number(2.0))
+    );
+}
+
+#[test]
 fn interprets_len_builtin() {
     let dsl = "
     var x = len(\"Hello\")
@@ -34,11 +56,11 @@ fn interprets_len_builtin() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("x")),
+        interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Number(5.0))
     );
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("y")),
+        interpreter.scope.borrow().get_variable(&String::from("y")),
         Rc::new(DataType::Number(3.0))
     );
 }
@@ -59,11 +81,11 @@ fn interprets_variable_rebinding() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("x")),
+        interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Number(3.0))
     );
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("y")),
+        interpreter.scope.borrow().get_variable(&String::from("y")),
         Rc::new(DataType::Number(5.0))
     );
 }
@@ -154,7 +176,7 @@ fn interprets_if_scoped_variables() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("x")),
+        interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::String(String::from("outer")))
     );
 }
@@ -170,7 +192,7 @@ fn interprets_function_call_inline() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("x")),
+        interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Number(3.0))
     );
 }
@@ -195,11 +217,11 @@ fn interprets_function_call_with_return_inside_if() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("x")),
+        interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Number(1.0))
     );
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("y")),
+        interpreter.scope.borrow().get_variable(&String::from("y")),
         Rc::new(DataType::Number(0.0))
     );
 }
@@ -218,7 +240,10 @@ fn interprets_function_call_with_arguments() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("foo")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("foo")),
         Rc::new(DataType::Function(Callable::User(
             FunctionDeclaration::new(
                 Some(String::from("foo")),
@@ -236,7 +261,7 @@ fn interprets_function_call_with_arguments() {
     );
 
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("x")),
+        interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Undefined())
     );
 }
@@ -255,7 +280,10 @@ fn interprets_function_call() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("foo")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("foo")),
         Rc::new(DataType::Function(Callable::User(
             FunctionDeclaration::new(
                 Some(String::from("foo")),
@@ -271,7 +299,7 @@ fn interprets_function_call() {
     );
 
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("x")),
+        interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Undefined())
     );
 }
@@ -287,7 +315,10 @@ fn interprets_function_declaration_with_return() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("foo")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("foo")),
         Rc::new(DataType::Function(Callable::User(
             FunctionDeclaration::new(
                 Some(String::from("foo")),
@@ -317,7 +348,10 @@ fn interprets_function_declaration_with_arguments() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("foo")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("foo")),
         Rc::new(DataType::Function(Callable::User(
             FunctionDeclaration::new(
                 Some(String::from("foo")),
@@ -337,7 +371,10 @@ fn interprets_function_declaration_as_variable() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("foo")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("foo")),
         Rc::new(DataType::Function(Callable::User(
             FunctionDeclaration::new(None, vec![], vec![])
         )))
@@ -353,7 +390,10 @@ fn interprets_function_declaration() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("foo")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("foo")),
         Rc::new(DataType::Function(Callable::User(
             FunctionDeclaration::new(Some(String::from("foo")), vec![], vec![])
         )))
@@ -372,7 +412,7 @@ fn interprets_variable_assignment_function() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("x")),
+        interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Function(Callable::User(
             FunctionDeclaration::new(None, vec![], vec![])
         )))
@@ -391,7 +431,7 @@ fn interprets_variable_assignment() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("x")),
+        interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Number(5.0))
     );
 }
@@ -405,7 +445,7 @@ fn interprets_variable_declaration_number() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("x")),
+        interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Number(3.0))
     );
 }
@@ -419,7 +459,7 @@ fn interprets_variable_declaration_string() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("x")),
+        interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::String(String::from("Hello")))
     );
 }
@@ -433,7 +473,7 @@ fn interprets_variable_declaration_bool() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("x")),
+        interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Boolean(true))
     );
 }
@@ -454,7 +494,7 @@ fn interprets_variable_declaration_scoped_2() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("x")),
+        interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Boolean(true))
     );
 }
@@ -475,7 +515,7 @@ fn interprets_variable_declaration_scoped() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter.scope.get_variable(&String::from("x")),
+        interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Boolean(true))
     );
 }
