@@ -1,6 +1,6 @@
 pub(crate) mod builtin;
+pub(crate) mod coerce;
 pub(crate) mod function;
-pub(crate) mod helpers;
 pub(crate) mod list;
 pub(crate) mod scope;
 
@@ -10,7 +10,6 @@ use crate::{
     interpreter::{
         builtin::{BUILTINS, Builtin},
         function::FunctionDeclaration,
-        helpers::expect_string,
         list::{DictionaryDeclaration, ListDeclaration},
         scope::{Callable, DataType, Scope},
     },
@@ -311,7 +310,7 @@ pub fn interpret_expression(
                 DataType::Dictionary(dict) => {
                     let key = interpret_expression(scope.clone(), &accessor_expression.key);
 
-                    dict.get(&expect_string(&key))
+                    dict.get(&coerce::expect_string(&key))
                 }
                 _ => panic!("Can't use accessor on {}", value),
             }
@@ -328,7 +327,7 @@ pub fn interpret_expression(
 fn interpret_dictionary_expression(
     scope: Rc<RefCell<Scope>>,
     dictionary_expression: &crate::parser::expressions::DictionaryExpression,
-) -> list::DictionaryDeclaration {
+) -> DictionaryDeclaration {
     let mut keys: Vec<String> = vec![];
 
     for key in dictionary_expression.keys.iter() {

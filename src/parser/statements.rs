@@ -1,13 +1,12 @@
 use super::Parser;
-use super::expressions;
+use super::expressions::{ExpressionType, IdentifierExpression};
 use crate::lexer::lexer::TokenKind;
-use crate::parser::expressions::ExpressionType;
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum StatementType {
     VariableDeclaration(VariableDeclarationStatement),
     FunctionDeclaration(FunctionDeclarationStatement),
-    Return(expressions::ExpressionType),
+    Return(ExpressionType),
     IfStatement(IfStatement),
     Expression(ExpressionStatement),
 }
@@ -26,25 +25,25 @@ pub struct Block {
 #[derive(PartialEq, Debug, Clone)]
 pub struct VariableDeclarationStatement {
     pub identifier: String,
-    pub value: expressions::ExpressionType,
+    pub value: ExpressionType,
 }
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct AssignmentStatement {
-    pub identifier: expressions::ExpressionType,
-    pub value: expressions::ExpressionType,
+    pub identifier: ExpressionType,
+    pub value: ExpressionType,
 }
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct FunctionDeclarationStatement {
     pub identifier: String,
-    pub arguments: Vec<expressions::IdentifierExpression>,
+    pub arguments: Vec<IdentifierExpression>,
     pub body: Block,
 }
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct IfStatement {
-    pub condition: expressions::ExpressionType,
+    pub condition: ExpressionType,
     pub body: Block,
 }
 
@@ -106,18 +105,18 @@ impl Parser {
         });
     }
 
-    fn parse_arguments(&mut self) -> Vec<expressions::IdentifierExpression> {
-        let mut arguments: Vec<expressions::IdentifierExpression> = vec![];
+    fn parse_arguments(&mut self) -> Vec<IdentifierExpression> {
+        let mut arguments: Vec<IdentifierExpression> = vec![];
 
         self.expect(TokenKind::LeftParenthesis);
 
         if !self.r#match(TokenKind::RightParenthesis) {
-            arguments.push(expressions::IdentifierExpression {
+            arguments.push(IdentifierExpression {
                 name: self.expect(TokenKind::Identifier).value,
             });
 
             while self.r#match(TokenKind::Comma) {
-                arguments.push(expressions::IdentifierExpression {
+                arguments.push(IdentifierExpression {
                     name: self.expect(TokenKind::Identifier).value,
                 });
             }

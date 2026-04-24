@@ -1,7 +1,10 @@
 use std::{cell::RefCell, fmt, rc::Rc};
 
 use crate::{
-    interpreter::{DataType, Scope, StatementResult, execute_statements},
+    interpreter::{
+        scope::{DataType, Scope},
+        StatementResult,
+    },
     parser::{expressions::Parameters, statements::StatementType},
 };
 
@@ -62,7 +65,7 @@ impl FunctionDeclaration {
                 .set_variable(identifier.clone(), value);
         }
 
-        let return_value = execute_statements(function_scope.clone(), self.body.iter().collect());
+        let return_value = super::execute_statements(function_scope.clone(), self.body.iter().collect());
 
         match return_value {
             StatementResult::Return(data_type) => data_type,

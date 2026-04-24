@@ -2,7 +2,7 @@ use std::fmt;
 use std::process::{Command, Stdio};
 use std::rc::Rc;
 
-use crate::interpreter::helpers::{expect_dict, expect_string};
+use crate::interpreter::coerce;
 use crate::interpreter::scope::DataType;
 
 pub static BUILTINS: &[(&str, BuiltinFn)] = &[
@@ -78,13 +78,13 @@ fn spawn_terminal(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataTy
     };
     let mut command: String;
 
-    command = format!("cd {}", expect_string(path));
+    command = format!("cd {}", coerce::expect_string(path));
 
     let [cmd] = rest else {
         panic!("spawn_terminal takes 1-2 arguments. Received: {:?}", data)
     };
 
-    command += format!(" && {}", expect_string(cmd)).as_str();
+    command += format!(" && {}", coerce::expect_string(cmd)).as_str();
 
     // Retain the terminal in bash mode
     command += " && exec bash";
@@ -117,8 +117,8 @@ pub(crate) fn dict_has(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) 
 
     let x = receiver.expect("has can only be called on a dictionary");
 
-    let arg = expect_string(key);
-    let dict = expect_dict(x.as_ref());
+    let arg = coerce::expect_string(key);
+    let dict = coerce::expect_dict(x.as_ref());
 
     return Rc::new(DataType::Boolean(dict.has(&arg)));
 }
@@ -130,8 +130,8 @@ pub(crate) fn dict_delete(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>
 
     let x = receiver.expect("delete can only be called on a dictionary");
 
-    let arg = expect_string(key);
-    let dict = expect_dict(x.as_ref());
+    let arg = coerce::expect_string(key);
+    let dict = coerce::expect_dict(x.as_ref());
 
     dict.delete(&arg);
 
@@ -145,7 +145,7 @@ pub(crate) fn dict_clear(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>
 
     let x = receiver.expect("clear can only be called on a dictionary");
 
-    let dict = expect_dict(x.as_ref());
+    let dict = coerce::expect_dict(x.as_ref());
 
     dict.clear();
 

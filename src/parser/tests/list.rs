@@ -105,7 +105,7 @@ fn parses_list_declaration_complex() {
                             body: Block { statements: vec![] }
                         }),
                         ExpressionType::Identifier(
-                            crate::parser::expressions::IdentifierExpression {
+                            IdentifierExpression {
                                 name: String::from("foo")
                             }
                         ),

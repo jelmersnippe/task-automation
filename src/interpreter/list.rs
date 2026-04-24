@@ -1,22 +1,19 @@
 use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 
-use crate::interpreter::{
-    helpers::{expect_int, expect_string},
-    scope::DataType,
-};
+use crate::interpreter::{coerce, scope::DataType};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ListDeclaration {
-    values: Rc<RefCell<Vec<Rc<super::scope::DataType>>>>,
+    values: Rc<RefCell<Vec<Rc<DataType>>>>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct DictionaryDeclaration {
-    entries: Rc<RefCell<HashMap<String, Rc<super::scope::DataType>>>>,
+    entries: Rc<RefCell<HashMap<String, Rc<DataType>>>>,
 }
 
 impl DictionaryDeclaration {
-    pub fn new(entries: HashMap<String, Rc<super::scope::DataType>>) -> Self {
+    pub fn new(entries: HashMap<String, Rc<DataType>>) -> Self {
         Self {
             entries: Rc::new(RefCell::new(entries)),
         }
@@ -26,7 +23,7 @@ impl DictionaryDeclaration {
         self.entries.borrow().contains_key(key)
     }
 
-    pub fn get(&self, key: &String) -> Rc<super::scope::DataType> {
+    pub fn get(&self, key: &String) -> Rc<DataType> {
         let binding = self.entries.borrow();
         let value = binding.get(key);
 
@@ -36,8 +33,8 @@ impl DictionaryDeclaration {
         }
     }
 
-    pub fn set(&self, key: Rc<super::scope::DataType>, value: Rc<super::scope::DataType>) {
-        let key_string = expect_string(&*key);
+    pub fn set(&self, key: Rc<DataType>, value: Rc<DataType>) {
+        let key_string = coerce::expect_string(&*key);
         self.entries.borrow_mut().insert(key_string, value);
     }
 
@@ -49,7 +46,7 @@ impl DictionaryDeclaration {
         self.entries.borrow_mut().clear();
     }
 
-    pub fn length(&self) -> Rc<super::scope::DataType> {
+    pub fn length(&self) -> Rc<DataType> {
         Rc::new(DataType::Number(self.entries.borrow().len() as f32))
     }
 }
@@ -70,14 +67,14 @@ impl fmt::Display for DictionaryDeclaration {
 }
 
 impl ListDeclaration {
-    pub fn new(values: Vec<Rc<super::scope::DataType>>) -> Self {
+    pub fn new(values: Vec<Rc<DataType>>) -> Self {
         Self {
             values: Rc::new(RefCell::new(values)),
         }
     }
 
-    pub fn get(&self, index: Rc<super::scope::DataType>) -> Rc<super::scope::DataType> {
-        let i = expect_int(&index);
+    pub fn get(&self, index: Rc<DataType>) -> Rc<DataType> {
+        let i = coerce::expect_int(&index);
 
         if i >= self.values.borrow().len() {
             panic!("Index out of bounds");
@@ -92,8 +89,8 @@ impl ListDeclaration {
         );
     }
 
-    pub fn set(&self, index: Rc<super::scope::DataType>, value: Rc<super::scope::DataType>) {
-        let i = expect_int(&index);
+    pub fn set(&self, index: Rc<DataType>, value: Rc<DataType>) {
+        let i = coerce::expect_int(&index);
 
         if i >= self.values.borrow().len() {
             panic!("Index out of bounds");
@@ -102,8 +99,8 @@ impl ListDeclaration {
         self.values.borrow_mut()[i] = value
     }
 
-    pub fn length(&self) -> Rc<super::scope::DataType> {
-        Rc::new(super::scope::DataType::Number(
+    pub fn length(&self) -> Rc<DataType> {
+        Rc::new(DataType::Number(
             self.values.borrow().len() as f32
         ))
     }

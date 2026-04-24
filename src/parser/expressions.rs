@@ -2,10 +2,7 @@ use std::{cell::RefCell, fmt, rc::Rc};
 
 use super::Parser;
 use crate::{
-    interpreter::{
-        interpret_expression,
-        scope::{DataType, Scope},
-    },
+    interpreter::{self, scope::{DataType, Scope}},
     lexer::lexer::{Token, TokenKind},
     parser::statements::Block,
 };
@@ -89,7 +86,7 @@ impl Parameters {
         return self
             .values
             .iter()
-            .map(|x| interpret_expression(scope.clone(), x))
+            .map(|x| interpreter::interpret_expression(scope.clone(), x))
             .collect();
     }
 

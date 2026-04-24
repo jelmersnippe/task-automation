@@ -2,8 +2,9 @@ use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 
 use crate::{
     interpreter::{
-        builtin::{Builtin, dict_clear, dict_delete, dict_has},
+        builtin::{self, Builtin},
         function::FunctionDeclaration,
+        list::{DictionaryDeclaration, ListDeclaration},
     },
     parser::expressions::Parameters,
 };
@@ -14,8 +15,8 @@ pub enum DataType {
     String(String),
     Boolean(bool),
     Function(Callable),
-    List(super::list::ListDeclaration),
-    Dictionary(super::list::DictionaryDeclaration),
+    List(ListDeclaration),
+    Dictionary(DictionaryDeclaration),
     Undefined(),
 }
 
@@ -38,7 +39,7 @@ impl Callable {
     pub fn execute(
         &self,
         parameters: &Parameters,
-        scope: Rc<RefCell<super::scope::Scope>>,
+        scope: Rc<RefCell<Scope>>,
     ) -> Rc<DataType> {
         match self {
             Callable::BuiltIn(builtin) => builtin.execute(parameters.resolve(scope.clone())),
@@ -71,9 +72,9 @@ impl DataType {
     pub(crate) fn get_method(self: &Rc<DataType>, name: &str) -> Rc<DataType> {
         Rc::new(DataType::Function(Callable::BuiltIn(match self.as_ref() {
             DataType::Dictionary(_) => match name {
-                "has" => Builtin::new("has", dict_has).bind(self.clone()),
-                "delete" => Builtin::new("delete", dict_delete).bind(self.clone()),
-                "clear" => Builtin::new("clear", dict_clear).bind(self.clone()),
+                "has" => Builtin::new("has", builtin::dict_has).bind(self.clone()),
+                "delete" => Builtin::new("delete", builtin::dict_delete).bind(self.clone()),
+                "clear" => Builtin::new("clear", builtin::dict_clear).bind(self.clone()),
                 _ => panic!("Method with name '{}' not found on dict", name),
             },
             _ => panic!("No methods available on {}", self),

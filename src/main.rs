@@ -3,7 +3,7 @@ use std::{
     io::{self, Write, stdin},
 };
 
-use crate::{interpreter::Interpreter, lexer::lexer::lexer, parser::Parser};
+use crate::{interpreter::Interpreter, parser::Parser};
 
 mod interpreter;
 mod lexer;
@@ -42,7 +42,7 @@ fn process_file(path: std::path::PathBuf) {
 }
 
 fn interpret(input: String) {
-    let tokens = lexer(input);
+    let tokens = lexer::lexer::lexer(input);
 
     let mut parser = Parser::new(tokens);
     let ast = parser.parse();
