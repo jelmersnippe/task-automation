@@ -1,4 +1,4 @@
-use crate::interpreter::DataType;
+use crate::{RuntimeContext, interpreter::DataType};
 use std::{fmt, rc::Rc};
 
 pub(crate) mod dictionary;
@@ -18,7 +18,7 @@ impl fmt::Display for Builtin {
     }
 }
 
-pub type BuiltinFn = fn(Option<Rc<DataType>>, Vec<Rc<DataType>>) -> Rc<DataType>;
+pub type BuiltinFn = fn(Option<Rc<DataType>>, Vec<Rc<DataType>>, &RuntimeContext) -> Rc<DataType>;
 
 impl Builtin {
     pub fn new(name: &'static str, function: BuiltinFn) -> Self {
@@ -37,7 +37,7 @@ impl Builtin {
         }
     }
 
-    pub fn execute(&self, parameters: Vec<Rc<DataType>>) -> Rc<DataType> {
-        (self.function)(self.receiver.clone(), parameters)
+    pub fn execute(&self, parameters: Vec<Rc<DataType>>, context: &RuntimeContext) -> Rc<DataType> {
+        (self.function)(self.receiver.clone(), parameters, context)
     }
 }

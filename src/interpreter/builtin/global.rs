@@ -3,10 +3,13 @@ use std::{
     rc::Rc,
 };
 
-use crate::interpreter::{
-    builtin::BuiltinFn,
-    coerce::{self, expect_string, expect_user_function},
-    scope::DataType,
+use crate::{
+    RuntimeContext,
+    interpreter::{
+        builtin::BuiltinFn,
+        coerce::{self, expect_string, expect_user_function},
+        scope::DataType,
+    },
 };
 
 pub static BUILTINS: &[(&str, BuiltinFn)] = &[
@@ -17,7 +20,7 @@ pub static BUILTINS: &[(&str, BuiltinFn)] = &[
     ("run", run),
 ];
 
-fn len(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
+fn len(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>, _: &RuntimeContext) -> Rc<DataType> {
     let [arg] = data.as_slice() else {
         panic!(
             "len only takes 1 argument. Received: {:?}",
@@ -36,7 +39,7 @@ fn len(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
     }
 }
 
-fn print(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
+fn print(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>, _: &RuntimeContext) -> Rc<DataType> {
     let [arg] = data.as_slice() else {
         panic!(
             "print only takes 1 argument. Received: {:?}",
@@ -53,7 +56,11 @@ fn print(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
 }
 
 // wt.exe wsl bash -c "cd ~/dev/task-automation && exec bash"
-fn spawn_terminal(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
+fn spawn_terminal(
+    _: Option<Rc<DataType>>,
+    data: Vec<Rc<DataType>>,
+    _: &RuntimeContext,
+) -> Rc<DataType> {
     let path = data.iter().nth(0).expect(
         format!(
             "spawn_terminal takes 1-2 arguments. Received: {:?}",
@@ -97,7 +104,11 @@ fn spawn_terminal(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataTy
     Rc::new(DataType::Undefined)
 }
 
-fn register_task(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
+fn register_task(
+    _: Option<Rc<DataType>>,
+    data: Vec<Rc<DataType>>,
+    context: &RuntimeContext,
+) -> Rc<DataType> {
     let [arg1, arg2] = data.as_slice() else {
         panic!(
             "register_task expects 2 arguments. Received: {:?}",
@@ -111,10 +122,14 @@ fn register_task(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataTyp
     let task_name = expect_string(arg1);
     let task_block = expect_user_function(arg2);
 
-    todo!();
+    context
+        .task_registry
+        .register(task_name, task_block.clone());
+
+    Rc::new(DataType::Undefined)
 }
 
-fn run(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
+fn run(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>, context: &RuntimeContext) -> Rc<DataType> {
     let [arg] = data.as_slice() else {
         panic!(
             "run expects 1 argument. Received: {:?}",
@@ -127,5 +142,8 @@ fn run(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
 
     let task = expect_string(arg);
 
-    todo!();
+    // TODO: Propogate error
+    let _ = context.task_registry.run(task, context);
+
+    Rc::new(DataType::Undefined)
 }

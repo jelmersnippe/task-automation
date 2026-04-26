@@ -1,8 +1,15 @@
 use std::rc::Rc;
 
-use crate::interpreter::{coerce, scope::DataType};
+use crate::{
+    RuntimeContext,
+    interpreter::{coerce, scope::DataType},
+};
 
-pub(crate) fn has(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
+pub(crate) fn has(
+    receiver: Option<Rc<DataType>>,
+    data: Vec<Rc<DataType>>,
+    _: &RuntimeContext,
+) -> Rc<DataType> {
     let [key] = data.as_slice() else {
         panic!(
             "has only takes 1 argument. received: {:?}",
@@ -21,7 +28,11 @@ pub(crate) fn has(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc
     Rc::new(DataType::Boolean(dict.has(&arg)))
 }
 
-pub(crate) fn delete(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
+pub(crate) fn delete(
+    receiver: Option<Rc<DataType>>,
+    data: Vec<Rc<DataType>>,
+    _: &RuntimeContext,
+) -> Rc<DataType> {
     let [key] = data.as_slice() else {
         panic!(
             "delete only takes 1 argument. received: {:?}",
@@ -42,7 +53,11 @@ pub(crate) fn delete(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) ->
     Rc::new(DataType::Undefined)
 }
 
-pub(crate) fn clear(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
+pub(crate) fn clear(
+    receiver: Option<Rc<DataType>>,
+    data: Vec<Rc<DataType>>,
+    _: &RuntimeContext,
+) -> Rc<DataType> {
     if !data.is_empty() {
         panic!(
             "clear takes no arguments. received: {:?}",

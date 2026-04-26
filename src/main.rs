@@ -14,7 +14,7 @@ mod lexer;
 mod parser;
 mod task_management;
 
-struct RuntimeContext {
+pub struct RuntimeContext {
     pub task_registry: TaskRegistry,
 }
 
@@ -48,8 +48,8 @@ fn main() -> std::io::Result<()> {
                 process_file(&file, &runtime_context)?;
             }
 
-            // TODO: Actually try to run the provided task
-            todo!()
+            // TODO: Propogate error
+            let _ = runtime_context.task_registry.run(arg2, &runtime_context);
         }
         _ => {}
     }

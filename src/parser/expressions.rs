@@ -1,11 +1,7 @@
-use std::{fmt, rc::Rc};
+use std::fmt;
 
 use super::Parser;
 use crate::{
-    interpreter::{
-        self,
-        scope::{DataType, Scope},
-    },
     lexer::{Token, TokenKind},
     parser::statements::Block,
 };

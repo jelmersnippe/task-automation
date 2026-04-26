@@ -46,7 +46,7 @@ impl Callable {
     ) -> Rc<DataType> {
         match self {
             Callable::BuiltIn(builtin) => {
-                builtin.execute(parameters.resolve(scope.clone(), context))
+                builtin.execute(parameters.resolve(scope.clone(), context), context)
             }
             Callable::User(function_declaration) => {
                 function_declaration.execute(parameters.resolve(scope.clone(), context), context)

@@ -1,8 +1,15 @@
 use std::rc::Rc;
 
-use crate::interpreter::{coerce, scope::DataType};
+use crate::{
+    RuntimeContext,
+    interpreter::{coerce, scope::DataType},
+};
 
-pub(crate) fn clear(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
+pub(crate) fn clear(
+    receiver: Option<Rc<DataType>>,
+    data: Vec<Rc<DataType>>,
+    _: &RuntimeContext,
+) -> Rc<DataType> {
     if !data.is_empty() {
         panic!(
             "clear takes no arguments. received: {}",
@@ -22,7 +29,11 @@ pub(crate) fn clear(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> 
     Rc::new(DataType::Undefined)
 }
 
-pub(crate) fn push(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
+pub(crate) fn push(
+    receiver: Option<Rc<DataType>>,
+    data: Vec<Rc<DataType>>,
+    _: &RuntimeContext,
+) -> Rc<DataType> {
     let [data] = data.as_slice() else {
         panic!(
             "delete only takes 1 argument. received: {}",
@@ -42,7 +53,11 @@ pub(crate) fn push(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> R
     Rc::new(DataType::Undefined)
 }
 
-pub(crate) fn pop(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
+pub(crate) fn pop(
+    receiver: Option<Rc<DataType>>,
+    data: Vec<Rc<DataType>>,
+    _: &RuntimeContext,
+) -> Rc<DataType> {
     if !data.is_empty() {
         panic!(
             "pop takes no arguments. received: {}",

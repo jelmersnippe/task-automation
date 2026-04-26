@@ -1,9 +1,9 @@
-use std::{collections::HashMap, fmt, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt};
 
 use crate::{RuntimeContext, interpreter::function::FunctionDeclaration};
 
 pub struct TaskRegistry {
-    tasks: HashMap<&'static str, Rc<FunctionDeclaration>>,
+    tasks: RefCell<HashMap<String, FunctionDeclaration>>,
 }
 
 impl TaskRegistry {
@@ -13,23 +13,20 @@ impl TaskRegistry {
         }
     }
 
-    pub fn register(&mut self, name: &'static str, task: Rc<FunctionDeclaration>) {
-        if self.tasks.contains_key(name) {
+    pub fn register(&self, name: String, task: FunctionDeclaration) {
+        if self.tasks.borrow().contains_key(name.as_str()) {
             println!(
                 "Hey buddy! Task '{}' was already registered, but I'll override it for you. I hope you know what you're doing :)",
                 name
             );
         }
 
-        self.tasks.insert(name, task);
+        self.tasks.borrow_mut().insert(name, task);
     }
 
-    pub fn run(
-        &mut self,
-        name: &'static str,
-        context: &RuntimeContext,
-    ) -> Result<(), TaskRunError> {
-        let task = self.tasks.get(name);
+    pub fn run(&self, name: String, context: &RuntimeContext) -> Result<(), TaskRunError> {
+        let tasks = self.tasks.borrow();
+        let task = tasks.get(&name);
 
         match task {
             Some(task) => task.execute(vec![], context),
@@ -47,7 +44,7 @@ impl TaskRegistry {
 
 #[derive(Debug)]
 pub struct TaskRunError {
-    task: &'static str,
+    task: String,
     reason: &'static str,
 }
 
