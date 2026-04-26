@@ -9,7 +9,7 @@ use crate::{
         Parser,
         expressions::{
             CallExpression, ExpressionType, FunctionDeclarationExpression, IdentifierExpression,
-            LiteralType, Parameters, PropertyExpression, UnaryOperationExpression, UnaryOperator,
+            LiteralType, PropertyExpression, UnaryOperationExpression, UnaryOperator,
         },
         statements::{
             AssignmentStatement, Block, ExpressionStatement, FunctionDeclarationStatement,
@@ -230,12 +230,12 @@ fn parses_function_declaration_as_argument() {
                 value: Box::new(ExpressionType::Identifier(IdentifierExpression {
                     name: String::from("inlineFunctionCall")
                 })),
-                parameters: Parameters::new(vec![ExpressionType::FunctionDeclaration(
+                parameters: vec![ExpressionType::FunctionDeclaration(
                     FunctionDeclarationExpression {
                         parameters: vec![],
                         body: Block { statements: vec![] }
                     }
-                )])
+                )]
             })
         ))]
     )
@@ -262,7 +262,7 @@ fn parses_function_call_expression_without_arguments() {
                     value: Box::new(ExpressionType::Identifier(IdentifierExpression {
                         name: String::from("greet")
                     })),
-                    parameters: Parameters::new(vec![])
+                    parameters: vec![]
                 })
             }
         )]
@@ -295,11 +295,11 @@ fn parses_function_call_expression_with_literal_arguments() {
                     value: Box::new(ExpressionType::Identifier(IdentifierExpression {
                         name: String::from("greet")
                     })),
-                    parameters: Parameters::new(vec![
+                    parameters: vec![
                         ExpressionType::Literal(LiteralType::Number(5 as f32)),
                         ExpressionType::Literal(LiteralType::String(String::from("Hello World"))),
                         ExpressionType::Literal(LiteralType::Boolean(true))
-                    ])
+                    ]
                 })
             }
         )]
@@ -328,11 +328,9 @@ fn parses_function_call_expression_with_identifier_argument() {
                     value: Box::new(ExpressionType::Identifier(IdentifierExpression {
                         name: String::from("greet")
                     })),
-                    parameters: Parameters::new(vec![ExpressionType::Identifier(
-                        IdentifierExpression {
-                            name: String::from("x")
-                        }
-                    )])
+                    parameters: vec![ExpressionType::Identifier(IdentifierExpression {
+                        name: String::from("x")
+                    })]
                 })
             }
         )]
@@ -355,7 +353,7 @@ fn parses_function_call_statement_without_arguments() {
                 value: Box::new(ExpressionType::Identifier(IdentifierExpression {
                     name: String::from("greet")
                 })),
-                parameters: Parameters::new(vec![])
+                parameters: vec![]
             })
         ))]
     )
@@ -382,11 +380,11 @@ fn parses_function_call_statement_with_literal_arguments() {
                 value: Box::new(ExpressionType::Identifier(IdentifierExpression {
                     name: String::from("greet")
                 })),
-                parameters: Parameters::new(vec![
+                parameters: vec![
                     ExpressionType::Literal(LiteralType::Number(5 as f32)),
                     ExpressionType::Literal(LiteralType::String(String::from("Hello World"))),
                     ExpressionType::Literal(LiteralType::Boolean(true))
-                ])
+                ]
             })
         ))]
     )
@@ -409,11 +407,9 @@ fn parses_function_call_statement_with_identifier_argument() {
                 value: Box::new(ExpressionType::Identifier(IdentifierExpression {
                     name: String::from("greet")
                 })),
-                parameters: Parameters::new(vec![ExpressionType::Identifier(
-                    IdentifierExpression {
-                        name: String::from("x")
-                    }
-                )])
+                parameters: vec![ExpressionType::Identifier(IdentifierExpression {
+                    name: String::from("x")
+                })]
             })
         ))]
     )

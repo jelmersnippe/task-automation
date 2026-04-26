@@ -1,10 +1,6 @@
 use std::rc::Rc;
 
-use crate::{
-    interpreter::{Interpreter, list::ListDeclaration, scope::DataType},
-    lexer,
-    parser::Parser,
-};
+use crate::interpreter::{list::ListDeclaration, scope::DataType, tests::run};
 
 #[test]
 fn interprets_while_with_condition() {
@@ -15,10 +11,7 @@ fn interprets_while_with_condition() {
         x = x + 1
     }
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
@@ -39,10 +32,7 @@ fn interprets_while_with_false() {
         }
     }
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
@@ -64,10 +54,7 @@ fn interprets_while_with_continue() {
         y = y + 1
     }
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
@@ -93,10 +80,7 @@ fn interprets_while_with_break() {
         y = y + 1
     }
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
@@ -124,10 +108,7 @@ fn interprets_while_with_nested_continue() {
         y.push(x)
     }
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
@@ -157,10 +138,7 @@ fn interprets_while_with_nested_break() {
         }
     }
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),

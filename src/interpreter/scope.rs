@@ -1,13 +1,14 @@
 use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 
 use crate::{
+    RuntimeContext,
     interpreter::{
+        Parameters,
         builtin::{self, Builtin},
         dictionary::DictionaryDeclaration,
         function::FunctionDeclaration,
         list::ListDeclaration,
     },
-    parser::expressions::Parameters,
 };
 
 #[derive(Debug, Clone)]
@@ -37,11 +38,18 @@ impl fmt::Display for Callable {
 }
 
 impl Callable {
-    pub fn execute(&self, parameters: &Parameters, scope: Rc<RefCell<Scope>>) -> Rc<DataType> {
+    pub fn execute(
+        &self,
+        parameters: &Parameters,
+        scope: Rc<RefCell<Scope>>,
+        context: &RuntimeContext,
+    ) -> Rc<DataType> {
         match self {
-            Callable::BuiltIn(builtin) => builtin.execute(parameters.resolve(scope.clone())),
+            Callable::BuiltIn(builtin) => {
+                builtin.execute(parameters.resolve(scope.clone(), context))
+            }
             Callable::User(function_declaration) => {
-                function_declaration.execute(parameters.resolve(scope.clone()))
+                function_declaration.execute(parameters.resolve(scope.clone(), context), context)
             }
         }
     }

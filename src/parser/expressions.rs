@@ -1,4 +1,4 @@
-use std::{cell::RefCell, fmt, rc::Rc};
+use std::{fmt, rc::Rc};
 
 use super::Parser;
 use crate::{
@@ -62,7 +62,7 @@ pub struct IdentifierExpression {
 #[derive(PartialEq, Debug, Clone)]
 pub struct CallExpression {
     pub value: Box<ExpressionType>,
-    pub parameters: Parameters,
+    pub parameters: Vec<ExpressionType>,
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -75,29 +75,6 @@ pub struct AccessorExpression {
 pub struct PropertyExpression {
     pub value: Box<ExpressionType>,
     pub key: Box<IdentifierExpression>,
-}
-
-#[derive(PartialEq, Debug, Clone)]
-pub struct Parameters {
-    values: Vec<ExpressionType>,
-}
-
-impl Parameters {
-    pub fn new(values: Vec<ExpressionType>) -> Self {
-        Self { values }
-    }
-
-    pub fn resolve(&self, scope: Rc<RefCell<Scope>>) -> Vec<Rc<DataType>> {
-        return self
-            .values
-            .iter()
-            .map(|x| interpreter::interpret_expression(scope.clone(), x))
-            .collect();
-    }
-
-    pub fn len(&self) -> usize {
-        return self.values.len();
-    }
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -319,7 +296,7 @@ impl Parser {
 
                     expression = ExpressionType::FunctionCall(CallExpression {
                         value: Box::new(expression),
-                        parameters: Parameters::new(parameters),
+                        parameters: parameters,
                     });
                 }
                 TokenKind::Period => {
@@ -419,9 +396,7 @@ impl Parser {
 
         ExpressionType::FunctionCall(CallExpression {
             value: Box::new(self.parse_identifier_expression(identifier_token)),
-            parameters: Parameters::new(
-                self.parse_comma_separated_list(TokenKind::RightParenthesis),
-            ),
+            parameters: self.parse_comma_separated_list(TokenKind::RightParenthesis),
         })
     }
 

@@ -2,14 +2,12 @@ use std::rc::Rc;
 
 use crate::{
     interpreter::{
-        Interpreter,
         function::FunctionDeclaration,
         list::ListDeclaration,
         scope::{Callable, DataType},
+        tests::run,
     },
-    lexer,
     parser::{
-        Parser,
         expressions::{ExpressionType, LiteralType},
         statements::StatementType,
     },
@@ -21,11 +19,7 @@ fn interprets_clear() {
     var x = [1]
     x.clear()
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
@@ -39,11 +33,7 @@ fn interprets_pop() {
     var x = [1]
     var y = x.pop()
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
@@ -61,11 +51,7 @@ fn interprets_push() {
     var x = [1]
     x.push(2)
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
@@ -86,11 +72,7 @@ fn interprets_array_reference_overwrite() {
     var y = foo()
     y = [9, 9, 9]
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-
+    let interpreter = run(dsl);
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::List(ListDeclaration::new(vec![
@@ -119,11 +101,7 @@ fn interprets_array_reference_assignment() {
     var y = foo()
     y[0] = 5
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-
+    let interpreter = run(dsl);
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::List(ListDeclaration::new(vec![
@@ -152,11 +130,7 @@ fn interpret_accessor_function_call() {
     var x = [foo];
     var y = x[0]()
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("y")),
@@ -175,11 +149,7 @@ fn interpret_function_call_accessor_assignment() {
 
     foo()[0] = 2
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
@@ -195,11 +165,7 @@ fn interpret_list_assignment_nested() {
     var x = [[1]]
     x[0][0] = 2
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
@@ -215,11 +181,7 @@ fn interpret_list_assignment() {
     var x = [1]
     x[0] = 2
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
@@ -235,11 +197,7 @@ fn interpret_list_accessor_nested() {
     var x = [[1]]
     var y = x[0][0]
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
@@ -259,11 +217,7 @@ fn interpret_list_accessor() {
     var x = [1]
     var y = x[0]
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
@@ -287,11 +241,7 @@ fn interpret_list_declaration() {
     var y = 2
     var x = [1, \"Hello\", true, [1, 2, 3], y, foo(), foo]
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
@@ -325,11 +275,7 @@ fn interpret_list_declaration_empty() {
     let dsl = "
     var x = []
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),

@@ -1,6 +1,7 @@
 use std::{cell::RefCell, fmt, rc::Rc};
 
 use crate::{
+    RuntimeContext,
     interpreter::{
         StatementResult,
         scope::{DataType, Scope},
@@ -59,7 +60,7 @@ impl FunctionDeclaration {
         }
     }
 
-    pub fn execute(&self, parameters: Vec<Rc<DataType>>) -> Rc<DataType> {
+    pub fn execute(&self, parameters: Vec<Rc<DataType>>, context: &RuntimeContext) -> Rc<DataType> {
         let expected_arguments = self.arguments.len();
         let received_arguments = parameters.len();
 
@@ -82,7 +83,7 @@ impl FunctionDeclaration {
         }
 
         let return_value =
-            super::execute_statements(function_scope.clone(), self.body.iter().collect());
+            super::execute_statements(function_scope.clone(), self.body.iter().collect(), context);
         match return_value {
             StatementResult::Return(data_type) => data_type,
             StatementResult::Void => Rc::new(DataType::Undefined),

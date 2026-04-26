@@ -5,7 +5,7 @@ use crate::{
         expressions::{
             AccessorExpression, BinaryOperationExpression, BinaryOperator, CallExpression,
             ExpressionType, FunctionDeclarationExpression, IdentifierExpression, ListExpression,
-            LiteralType, Parameters, UnaryOperationExpression, UnaryOperator,
+            LiteralType, UnaryOperationExpression, UnaryOperator,
         },
         statements::{
             AssignmentStatement, Block, ExpressionStatement, StatementType,
@@ -111,7 +111,7 @@ fn parses_list_declaration_complex() {
                             value: Box::new(ExpressionType::Identifier(IdentifierExpression {
                                 name: String::from("bar")
                             })),
-                            parameters: Parameters::new(vec![])
+                            parameters: vec![]
                         }),
                         ExpressionType::List(ListExpression { values: vec![] }),
                         ExpressionType::BinaryOperation(BinaryOperationExpression::new(

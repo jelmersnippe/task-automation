@@ -2,15 +2,13 @@ use std::{collections::HashMap, rc::Rc};
 
 use crate::{
     interpreter::{
-        Interpreter,
         dictionary::DictionaryDeclaration,
         function::FunctionDeclaration,
         list::ListDeclaration,
         scope::{Callable, DataType},
+        tests::run,
     },
-    lexer,
     parser::{
-        Parser,
         expressions::{ExpressionType, LiteralType},
         statements::StatementType,
     },
@@ -24,10 +22,7 @@ fn panics_on_accessing_undefined_key() {
     }
     x[\"a\"]
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
+    run(dsl);
 }
 
 #[test]
@@ -52,10 +47,7 @@ fn interprets_property_scopes() {
 
     var a = y[\"b\"].has(\"c\")
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter
@@ -97,10 +89,7 @@ fn interprets_dictionary_builtins() {
     var e = x.has(\"b\")
     var f = len(x)
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("a")),
@@ -143,10 +132,7 @@ fn interprets_dictionary_assignment() {
     }
     x[\"b\"] = 3
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
@@ -171,10 +157,7 @@ fn interprets_dictionary_accessor() {
     var foo = \"b\"
     var bar = x[foo]
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("y")),
@@ -203,10 +186,7 @@ fn interprets_dictionary_declaration() {
         g: foo,
     }
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),

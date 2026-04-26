@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use std::{
     env,
@@ -6,6 +6,7 @@ use std::{
     io::{self, Write, stdin},
 };
 
+use crate::task_management::TaskRegistry;
 use crate::{interpreter::Interpreter, parser::Parser};
 
 mod interpreter;
@@ -13,13 +14,27 @@ mod lexer;
 mod parser;
 mod task_management;
 
+struct RuntimeContext {
+    pub task_registry: TaskRegistry,
+}
+
+impl RuntimeContext {
+    pub fn new() -> Self {
+        Self {
+            task_registry: TaskRegistry::new(),
+        }
+    }
+}
+
 fn main() -> std::io::Result<()> {
+    let runtime_context = RuntimeContext::new();
+
     let arg = std::env::args()
         .nth(1)
         .expect("Expected 'repl' or 'run' with a task name");
 
     match arg.as_str() {
-        "repl" => repl(),
+        "repl" => repl(&runtime_context),
         "run" => {
             let arg2 = std::env::args()
                 .nth(2)
@@ -27,7 +42,11 @@ fn main() -> std::io::Result<()> {
             let arg3 = std::env::args().nth(3);
 
             let cwd = env::current_dir()?; // Path
-            let _ = process_dir(&cwd, arg3 == Some("-r".to_string()));
+            let dsl_files = get_dsl_files_from_dir(&cwd, arg3 == Some("-r".to_string()))?;
+
+            for file in dsl_files {
+                process_file(&file, &runtime_context)?;
+            }
 
             // TODO: Actually try to run the provided task
             todo!()
@@ -38,52 +57,57 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn process_dir(dir: &Path, recursive: bool) -> std::io::Result<()> {
+fn get_dsl_files_from_dir(dir: &Path, recursive: bool) -> std::io::Result<Vec<PathBuf>> {
     println!("Processing dir {}", dir.display());
+
+    let mut dsl_files = vec![];
 
     for entry in fs::read_dir(dir)? {
         let path = entry?.path();
 
         if recursive && path.is_dir() {
-            process_dir(&path, recursive)?;
+            let nested_dsl_files = get_dsl_files_from_dir(&path, recursive)?;
+            dsl_files = [dsl_files, nested_dsl_files].concat();
             continue;
         }
 
         if path.extension().and_then(|ext| ext.to_str()) == Some("dsl") {
-            process_file(&path)?;
+            dsl_files.push(path);
         }
     }
 
-    Ok(())
+    Ok(dsl_files)
 }
 
-fn repl() {
+fn repl(runtime_context: &RuntimeContext) {
     loop {
         let mut dsl = String::new();
         print!("> ");
         let _ = io::stdout().flush();
         let _ = stdin().read_line(&mut dsl);
 
-        interpret(dsl);
+        interpret(dsl, runtime_context);
     }
 }
 
-fn process_file(path: &std::path::Path) -> std::io::Result<()> {
+fn process_file(path: &std::path::Path, runtime_context: &RuntimeContext) -> std::io::Result<()> {
     println!("Processing file {}", path.display());
 
     let dsl = read_to_string(path)?;
 
-    interpret(dsl);
+    interpret(dsl, runtime_context);
 
     Ok(())
 }
 
-fn interpret(input: String) {
+pub fn interpret(input: String, runtime_context: &RuntimeContext) -> Interpreter {
     let tokens = lexer::lexer(input);
 
     let mut parser = Parser::new(tokens);
     let ast = parser.parse();
 
     let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
+    interpreter.interpret(runtime_context);
+
+    interpreter
 }

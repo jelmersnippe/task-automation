@@ -5,20 +5,24 @@ mod r#while;
 use std::rc::Rc;
 
 use crate::{
+    RuntimeContext, interpret,
     interpreter::{
         Interpreter,
         function::FunctionDeclaration,
         scope::{Callable, DataType},
     },
-    lexer,
     parser::{
-        Parser,
         expressions::{
             BinaryOperationExpression, BinaryOperator, ExpressionType, IdentifierExpression,
         },
         statements::StatementType,
     },
 };
+
+pub fn run(dsl: &'static str) -> Interpreter {
+    let runtime_context = RuntimeContext::new();
+    return interpret(dsl.to_string(), &runtime_context);
+}
 
 #[test]
 #[should_panic]
@@ -28,11 +32,7 @@ fn panics_on_if_with_continue() {
         continue
     }
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-
-    interpreter.interpret();
+    run(dsl);
 }
 
 #[test]
@@ -43,11 +43,7 @@ fn panics_on_if_with_break() {
         break
     }
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-
-    interpreter.interpret();
+    run(dsl);
 }
 
 #[test]
@@ -61,35 +57,11 @@ fn interprets_scoped_variable_rebinding() {
 
     foo()
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Number(2.0))
-    );
-}
-
-#[test]
-fn interprets_len_builtin() {
-    let dsl = "
-    var x = len(\"Hello\")
-    var y = len([1,2,3])
-    ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-
-    assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
-        Rc::new(DataType::Number(5.0))
-    );
-    assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("y")),
-        Rc::new(DataType::Number(3.0))
     );
 }
 
@@ -103,10 +75,7 @@ fn interprets_variable_rebinding() {
     var y = foo()
     y = 5
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
+    let interpreter = run(dsl);
 
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
@@ -123,11 +92,7 @@ fn interpret_builtin_print() {
     let dsl = "
     print(\"foo\")
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-
-    interpreter.interpret();
+    run(dsl);
 }
 
 #[test]
@@ -136,11 +101,7 @@ fn panics_on_no_arguments_to_print() {
     let dsl = "
     print()
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-
-    interpreter.interpret();
+    run(dsl);
 }
 
 #[test]
@@ -149,11 +110,7 @@ fn panics_on_too_many_arguments_to_print() {
     let dsl = "
     print(\"foo\", 3)
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-
-    interpreter.interpret();
+    run(dsl);
 }
 
 #[test]
@@ -162,11 +119,7 @@ fn panics_on_overriding_builtin() {
     let dsl = "
     var print = 3
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-
-    interpreter.interpret();
+    run(dsl);
 }
 
 #[test]
@@ -180,11 +133,7 @@ fn panics_on_function_call_with_nested_continue() {
     }
     foo()
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-
-    interpreter.interpret();
+    run(dsl);
 }
 
 #[test]
@@ -198,11 +147,7 @@ fn panics_on_function_call_with_nested_break() {
     }
     foo()
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-
-    interpreter.interpret();
+    run(dsl);
 }
 
 #[test]
@@ -214,11 +159,7 @@ fn panics_on_function_call_with_break() {
     }
     foo()
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-
-    interpreter.interpret();
+    run(dsl);
 }
 
 #[test]
@@ -230,11 +171,7 @@ fn panics_on_function_call_with_continue() {
     }
     foo()
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-
-    interpreter.interpret();
+    run(dsl);
 }
 
 #[test]
@@ -246,11 +183,7 @@ fn panics_on_function_call_with_invalid_arguments() {
     }
     foo()
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-
-    interpreter.interpret();
+    run(dsl);
 }
 
 #[test]
@@ -266,11 +199,7 @@ fn interprets_if_scoped_variables() {
         }
     }
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-
+    let interpreter = run(dsl);
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::String(String::from("outer")))
@@ -282,11 +211,7 @@ fn interprets_function_call_inline() {
     let dsl = "
     var x = fn() {return 3}()
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-
+    let interpreter = run(dsl);
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Number(3.0))
@@ -307,11 +232,7 @@ fn interprets_function_call_with_return_inside_if() {
     var x = foo(true)
     var y = foo(false)
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-
+    let interpreter = run(dsl);
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Number(1.0))
@@ -330,11 +251,7 @@ fn interprets_function_call_with_arguments() {
     }
     var x = foo(1)
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-
+    let interpreter = run(dsl);
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Number(1.0))
@@ -349,11 +266,7 @@ fn interprets_function_call() {
     }
     var x = foo()
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-
+    let interpreter = run(dsl);
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Number(3.0))
@@ -365,11 +278,7 @@ fn interprets_function_declaration_with_return() {
     let dsl = "fn foo(bar, baz) {
         return bar + baz
     }";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-
+    let interpreter = run(dsl);
     assert_eq!(
         interpreter
             .scope
@@ -399,11 +308,7 @@ fn interprets_function_declaration_with_return() {
 #[test]
 fn interprets_function_declaration_with_arguments() {
     let dsl = "fn foo(bar, baz) {}";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-
+    let interpreter = run(dsl);
     assert_eq!(
         interpreter
             .scope
@@ -423,11 +328,7 @@ fn interprets_function_declaration_with_arguments() {
 #[test]
 fn interprets_function_declaration_as_variable() {
     let dsl = "var foo = fn() {}";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-
+    let interpreter = run(dsl);
     assert_eq!(
         interpreter
             .scope
@@ -442,11 +343,7 @@ fn interprets_function_declaration_as_variable() {
 #[test]
 fn interprets_function_declaration() {
     let dsl = "fn foo() {}";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-
+    let interpreter = run(dsl);
     assert_eq!(
         interpreter
             .scope
@@ -469,11 +366,7 @@ fn interprets_variable_assignment_function() {
     var x = 3
     x = fn() {}
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-
+    let interpreter = run(dsl);
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Function(Callable::User(
@@ -488,11 +381,7 @@ fn interprets_variable_assignment() {
     var x = 3
     x = 5
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-
+    let interpreter = run(dsl);
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Number(5.0))
@@ -502,11 +391,7 @@ fn interprets_variable_assignment() {
 #[test]
 fn interprets_variable_declaration_number() {
     let dsl = "var x = 3";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-
+    let interpreter = run(dsl);
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Number(3.0))
@@ -516,11 +401,7 @@ fn interprets_variable_declaration_number() {
 #[test]
 fn interprets_variable_declaration_string() {
     let dsl = "var x = \"Hello\"";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-
+    let interpreter = run(dsl);
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::String(String::from("Hello")))
@@ -530,11 +411,7 @@ fn interprets_variable_declaration_string() {
 #[test]
 fn interprets_variable_declaration_bool() {
     let dsl = "var x = true";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-
+    let interpreter = run(dsl);
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Boolean(true))
@@ -551,11 +428,7 @@ fn interprets_variable_declaration_scoped_2() {
     var x = true
     foo()
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-
+    let interpreter = run(dsl);
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Boolean(true))
@@ -572,11 +445,7 @@ fn interprets_variable_declaration_scoped() {
     foo()
     var x = true
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-
+    let interpreter = run(dsl);
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Boolean(true))
@@ -590,10 +459,7 @@ fn panics_on_variable_declaration_existing() {
     var x = true
     var x = false
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
+    run(dsl);
 }
 
 #[test]
@@ -603,8 +469,5 @@ fn panics_on_function_declaration_existing() {
     fn foo() {}
     fn foo() {}
     ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
+    run(dsl);
 }
