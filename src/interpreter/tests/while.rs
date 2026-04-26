@@ -139,6 +139,7 @@ fn interprets_while_with_nested_continue() {
             Rc::new(DataType::Number(2.0)),
             Rc::new(DataType::Number(3.0)),
             Rc::new(DataType::Number(4.0)),
+            Rc::new(DataType::Number(5.0)),
         ])))
     );
 }

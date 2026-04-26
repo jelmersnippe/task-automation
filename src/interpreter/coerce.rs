@@ -1,5 +1,6 @@
-use crate::interpreter::list::DictionaryDeclaration;
-use crate::interpreter::scope::DataType;
+use crate::interpreter::{
+    dictionary::DictionaryDeclaration, list::ListDeclaration, scope::DataType,
+};
 
 pub fn expect_string(data: &DataType) -> String {
     match data {
@@ -14,6 +15,13 @@ pub fn expect_dict(data: &DataType) -> &DictionaryDeclaration {
     match data {
         DataType::Dictionary(x) => x,
         _ => panic!("Expected a dictionary"),
+    }
+}
+
+pub fn expect_list(data: &DataType) -> &ListDeclaration {
+    match data {
+        DataType::List(x) => x,
+        _ => panic!("Expected a list"),
     }
 }
 

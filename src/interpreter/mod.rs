@@ -1,5 +1,6 @@
 pub(crate) mod builtin;
 pub(crate) mod coerce;
+pub(crate) mod dictionary;
 pub(crate) mod function;
 pub(crate) mod list;
 pub(crate) mod scope;
@@ -8,9 +9,10 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
     interpreter::{
-        builtin::{BUILTINS, Builtin},
+        builtin::{Builtin, global::BUILTINS},
+        dictionary::DictionaryDeclaration,
         function::FunctionDeclaration,
-        list::{DictionaryDeclaration, ListDeclaration},
+        list::ListDeclaration,
         scope::{Callable, DataType, Scope},
     },
     parser::{

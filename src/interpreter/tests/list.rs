@@ -16,6 +16,67 @@ use crate::{
 };
 
 #[test]
+fn interprets_clear() {
+    let dsl = "
+    var x = [1]
+    x.clear()
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.borrow().get_variable(&String::from("x")),
+        Rc::new(DataType::List(ListDeclaration::new(vec![])))
+    );
+}
+
+#[test]
+fn interprets_pop() {
+    let dsl = "
+    var x = [1]
+    var y = x.pop()
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.borrow().get_variable(&String::from("x")),
+        Rc::new(DataType::List(ListDeclaration::new(vec![])))
+    );
+    assert_eq!(
+        interpreter.scope.borrow().get_variable(&String::from("y")),
+        Rc::new(DataType::Number(1.0)),
+    );
+}
+
+#[test]
+fn interprets_push() {
+    let dsl = "
+    var x = [1]
+    x.push(2)
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.borrow().get_variable(&String::from("x")),
+        Rc::new(DataType::List(ListDeclaration::new(vec![
+            Rc::new(DataType::Number(1.0)),
+            Rc::new(DataType::Number(2.0))
+        ])))
+    );
+}
+
+#[test]
 fn interprets_array_reference_overwrite() {
     let dsl = "
     var x = [1,2,3]

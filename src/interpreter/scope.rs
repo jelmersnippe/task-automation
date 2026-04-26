@@ -3,8 +3,9 @@ use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 use crate::{
     interpreter::{
         builtin::{self, Builtin},
+        dictionary::DictionaryDeclaration,
         function::FunctionDeclaration,
-        list::{DictionaryDeclaration, ListDeclaration},
+        list::ListDeclaration,
     },
     parser::expressions::Parameters,
 };
@@ -68,10 +69,16 @@ impl DataType {
     pub(crate) fn get_method(self: &Rc<DataType>, name: &str) -> Rc<DataType> {
         Rc::new(DataType::Function(Callable::BuiltIn(match self.as_ref() {
             DataType::Dictionary(_) => match name {
-                "has" => Builtin::new("has", builtin::dict_has).bind(self.clone()),
-                "delete" => Builtin::new("delete", builtin::dict_delete).bind(self.clone()),
-                "clear" => Builtin::new("clear", builtin::dict_clear).bind(self.clone()),
+                "has" => Builtin::new("has", builtin::dictionary::has).bind(self.clone()),
+                "delete" => Builtin::new("delete", builtin::dictionary::delete).bind(self.clone()),
+                "clear" => Builtin::new("clear", builtin::dictionary::clear).bind(self.clone()),
                 _ => panic!("Method with name '{}' not found on dict", name),
+            },
+            DataType::List(_) => match name {
+                "pop" => Builtin::new("pop", builtin::list::pop).bind(self.clone()),
+                "push" => Builtin::new("push", builtin::list::push).bind(self.clone()),
+                "clear" => Builtin::new("clear", builtin::list::clear).bind(self.clone()),
+                _ => panic!("Method with name '{}' not found on list", name),
             },
             _ => panic!("No methods available on {}", self),
         })))

@@ -3,8 +3,9 @@ use std::{collections::HashMap, rc::Rc};
 use crate::{
     interpreter::{
         Interpreter,
+        dictionary::DictionaryDeclaration,
         function::FunctionDeclaration,
-        list::{DictionaryDeclaration, ListDeclaration},
+        list::ListDeclaration,
         scope::{Callable, DataType},
     },
     lexer,
