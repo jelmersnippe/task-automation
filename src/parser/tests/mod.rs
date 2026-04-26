@@ -19,6 +19,97 @@ use crate::{
 };
 
 #[test]
+#[should_panic]
+fn panics_on_continue_in_fn_in_loop() {
+    Parser::new(vec![
+        Token::new("while", TokenKind::While),
+        Token::new("(", TokenKind::LeftParenthesis),
+        Token::new("true", TokenKind::True),
+        Token::new(")", TokenKind::RightParenthesis),
+        Token::new("{", TokenKind::LeftCurly),
+        Token::new("fn", TokenKind::Fn),
+        Token::new("(", TokenKind::LeftParenthesis),
+        Token::new(")", TokenKind::RightParenthesis),
+        Token::new("{", TokenKind::LeftCurly),
+        Token::new("continue", TokenKind::Continue),
+        Token::new("}", TokenKind::RightCurly),
+        Token::new("}", TokenKind::RightCurly),
+    ])
+    .parse();
+}
+
+#[test]
+#[should_panic]
+fn panics_on_break_in_fn_in_loop() {
+    Parser::new(vec![
+        Token::new("while", TokenKind::While),
+        Token::new("(", TokenKind::LeftParenthesis),
+        Token::new("true", TokenKind::True),
+        Token::new(")", TokenKind::RightParenthesis),
+        Token::new("{", TokenKind::LeftCurly),
+        Token::new("fn", TokenKind::Fn),
+        Token::new("(", TokenKind::LeftParenthesis),
+        Token::new(")", TokenKind::RightParenthesis),
+        Token::new("{", TokenKind::LeftCurly),
+        Token::new("break", TokenKind::Break),
+        Token::new("}", TokenKind::RightCurly),
+        Token::new("}", TokenKind::RightCurly),
+    ])
+    .parse();
+}
+
+#[test]
+#[should_panic]
+fn panics_on_continue_outside_loop() {
+    Parser::new(vec![Token::new("continue", TokenKind::Continue)]).parse();
+}
+
+#[test]
+#[should_panic]
+fn panics_on_break_outside_loop() {
+    Parser::new(vec![Token::new("break", TokenKind::Break)]).parse();
+}
+
+#[test]
+fn parses_break_and_continue() {
+    let result = Parser::new(vec![
+        Token::new("while", TokenKind::While),
+        Token::new("(", TokenKind::LeftParenthesis),
+        Token::new("true", TokenKind::True),
+        Token::new(")", TokenKind::RightParenthesis),
+        Token::new("{", TokenKind::LeftCurly),
+        Token::new("break", TokenKind::Break),
+        Token::new("}", TokenKind::RightCurly),
+        Token::new("while", TokenKind::While),
+        Token::new("(", TokenKind::LeftParenthesis),
+        Token::new("true", TokenKind::True),
+        Token::new(")", TokenKind::RightParenthesis),
+        Token::new("{", TokenKind::LeftCurly),
+        Token::new("continue", TokenKind::Continue),
+        Token::new("}", TokenKind::RightCurly),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![
+            StatementType::While(While {
+                condition: ExpressionType::Literal(LiteralType::Boolean(true)),
+                body: Block {
+                    statements: vec![StatementType::Break]
+                }
+            }),
+            StatementType::While(While {
+                condition: ExpressionType::Literal(LiteralType::Boolean(true)),
+                body: Block {
+                    statements: vec![StatementType::Continue]
+                }
+            })
+        ]
+    )
+}
+
+#[test]
 fn parses_undefined() {
     let result = Parser::new(vec![Token::new("undefined", TokenKind::Undefined)]).parse();
 

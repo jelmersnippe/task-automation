@@ -7,6 +7,8 @@ pub enum StatementType {
     VariableDeclaration(VariableDeclarationStatement),
     FunctionDeclaration(FunctionDeclarationStatement),
     Return(ExpressionType),
+    Break,
+    Continue,
     IfStatement(IfStatement),
     While(While),
     Expression(ExpressionStatement),
@@ -69,6 +71,20 @@ impl Parser {
                 TokenKind::Return => self.parse_return_statement(),
                 TokenKind::If => self.parse_if_statement(),
                 TokenKind::While => self.parse_while_statement(),
+                TokenKind::Break => {
+                    if self.loop_depth == 0 {
+                        panic!("Break is not supported outside of loops")
+                    }
+                    self.next();
+                    StatementType::Break
+                }
+                TokenKind::Continue => {
+                    if self.loop_depth == 0 {
+                        panic!("Continue is not supported outside of loops")
+                    }
+                    self.next();
+                    StatementType::Continue
+                }
                 _ => self.parse_expression_statement(),
             };
         }
@@ -181,7 +197,9 @@ impl Parser {
         self.expect(TokenKind::RightParenthesis);
 
         self.expect(TokenKind::LeftCurly);
+        self.loop_depth += 1;
         let body = self.parse_block();
+        self.loop_depth -= 1;
 
         return StatementType::While(While { condition, body });
     }

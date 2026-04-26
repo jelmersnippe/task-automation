@@ -1,7 +1,6 @@
 mod dictionary;
-#[cfg(test)]
-#[cfg(test)]
 mod list;
+mod r#while;
 
 use std::rc::Rc;
 
@@ -9,7 +8,6 @@ use crate::{
     interpreter::{
         Interpreter,
         function::FunctionDeclaration,
-        list::ListDeclaration,
         scope::{Callable, DataType},
     },
     lexer,
@@ -17,113 +15,39 @@ use crate::{
         Parser,
         expressions::{
             BinaryOperationExpression, BinaryOperator, ExpressionType, IdentifierExpression,
-            LiteralType,
         },
-        statements::{StatementType, VariableDeclarationStatement},
+        statements::StatementType,
     },
 };
 
 #[test]
-fn interprets_while_with_continue() {
+#[should_panic]
+fn panics_on_if_with_continue() {
     let dsl = "
-    var x = 0
-    var y = []
-
-    while (x < 5) {
-        x = x + 1
-
-        if (x == 1) {
-            continue
-        }
-        
-        y.push(x)
+    if (true) {
+        continue
     }
     ";
     let tokens = lexer::lexer(String::from(dsl));
     let ast = Parser::new(tokens).parse();
     let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
 
-    assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
-        Rc::new(DataType::Number(5.0))
-    );
-    assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("y")),
-        Rc::new(DataType::List(ListDeclaration::new(vec![
-            Rc::new(DataType::Number(2.0)),
-            Rc::new(DataType::Number(3.0)),
-            Rc::new(DataType::Number(4.0)),
-        ])))
-    );
+    interpreter.interpret();
 }
 
 #[test]
-fn interprets_while_with_break() {
+#[should_panic]
+fn panics_on_if_with_break() {
     let dsl = "
-    var x = 0
-
-    while (true) {
-        x = x + 1
-
-        if (x >= 5) {
-            break
-        }
+    if (true) {
+        break
     }
     ";
     let tokens = lexer::lexer(String::from(dsl));
     let ast = Parser::new(tokens).parse();
     let mut interpreter = Interpreter::new(ast);
+
     interpreter.interpret();
-
-    assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
-        Rc::new(DataType::Number(5.0))
-    );
-}
-
-#[test]
-fn interprets_while_with_condition() {
-    let dsl = "
-    var x = 0
-
-    while (x < 3) {
-        x = x + 1
-    }
-    ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-
-    assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
-        Rc::new(DataType::Number(3.0))
-    );
-}
-
-#[test]
-fn interprets_while_with_false() {
-    let dsl = "
-    var x = 0
-
-    while (false) {
-        x = x + 1
-
-        if (x >= 5) {
-            break
-        }
-    }
-    ";
-    let tokens = lexer::lexer(String::from(dsl));
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-
-    assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
-        Rc::new(DataType::Number(0.0))
-    );
 }
 
 #[test]
@@ -237,6 +161,74 @@ fn panics_on_too_many_arguments_to_print() {
 fn panics_on_overriding_builtin() {
     let dsl = "
     var print = 3
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+
+    interpreter.interpret();
+}
+
+#[test]
+#[should_panic = "Continue is not supported outside of loops"]
+fn panics_on_function_call_with_nested_continue() {
+    let dsl = "
+    fn foo() {
+        if (true) {
+            continue
+        }
+    }
+    foo()
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+
+    interpreter.interpret();
+}
+
+#[test]
+#[should_panic = "Break is not supported outside of loops"]
+fn panics_on_function_call_with_nested_break() {
+    let dsl = "
+    fn foo() {
+        if (true) {
+            break
+        }
+    }
+    foo()
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+
+    interpreter.interpret();
+}
+
+#[test]
+#[should_panic = "Break is not supported outside of loops"]
+fn panics_on_function_call_with_break() {
+    let dsl = "
+    fn foo() {
+        break
+    }
+    foo()
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+
+    interpreter.interpret();
+}
+
+#[test]
+#[should_panic = "Continue is not supported outside of loops"]
+fn panics_on_function_call_with_continue() {
+    let dsl = "
+    fn foo() {
+        continue
+    }
+    foo()
     ";
     let tokens = lexer::lexer(String::from(dsl));
     let ast = Parser::new(tokens).parse();

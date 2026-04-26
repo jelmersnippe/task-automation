@@ -9,11 +9,16 @@ use crate::lexer::{Token, TokenKind};
 pub struct Parser {
     tokens: Vec<Token>,
     pos: usize,
+    loop_depth: i32,
 }
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, pos: 0 }
+        Self {
+            tokens,
+            pos: 0,
+            loop_depth: 0,
+        }
     }
 
     pub fn parse(&mut self) -> Vec<statements::StatementType> {

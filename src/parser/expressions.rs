@@ -404,18 +404,25 @@ impl Parser {
         if is_function_declaration {
             let parameters = self.parse_parameters();
             self.expect(TokenKind::LeftCurly);
+
+            // Fn does not support break/continue. Pretend we are not in a loop while parsing body
+            let prev_loop_depth = self.loop_depth;
+            self.loop_depth = 0;
+            let body = self.parse_block();
+            self.loop_depth = prev_loop_depth;
+
             return ExpressionType::FunctionDeclaration(FunctionDeclarationExpression {
-                parameters: parameters,
-                body: self.parse_block(),
+                parameters,
+                body,
             });
         }
 
-        return ExpressionType::FunctionCall(CallExpression {
+        ExpressionType::FunctionCall(CallExpression {
             value: Box::new(self.parse_identifier_expression(identifier_token)),
             parameters: Parameters::new(
                 self.parse_comma_separated_list(TokenKind::RightParenthesis),
             ),
-        });
+        })
     }
 
     fn parse_parameters(&mut self) -> Vec<IdentifierExpression> {

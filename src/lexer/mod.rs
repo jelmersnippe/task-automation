@@ -15,6 +15,8 @@ pub enum TokenKind {
     If,
     Else,
     While,
+    Break,
+    Continue,
 
     // Literals
     String,
@@ -66,6 +68,8 @@ fn lookup_keyword(s: &String) -> Option<TokenKind> {
         "if" => Some(TokenKind::If),
         "else" => Some(TokenKind::Else),
         "while" => Some(TokenKind::While),
+        "break" => Some(TokenKind::Break),
+        "continue" => Some(TokenKind::Continue),
         "undefined" => Some(TokenKind::Undefined),
         _ => None,
     }

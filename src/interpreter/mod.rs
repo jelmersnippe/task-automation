@@ -63,7 +63,9 @@ impl Interpreter {
 }
 
 pub enum StatementResult {
-    Void(),
+    Void,
+    Break,
+    Continue,
     Return(Rc<DataType>),
 }
 
@@ -75,7 +77,7 @@ fn interpret_statement(scope: Rc<RefCell<Scope>>, statement: &StatementType) -> 
             let expression = interpret_expression(scope.clone(), &value);
 
             scope.borrow_mut().set_variable(identifier, expression);
-            StatementResult::Void()
+            StatementResult::Void
         }
         StatementType::FunctionDeclaration(statement) => {
             let identifier = statement.identifier.clone();
@@ -89,7 +91,7 @@ fn interpret_statement(scope: Rc<RefCell<Scope>>, statement: &StatementType) -> 
                 ))),
             );
 
-            StatementResult::Void()
+            StatementResult::Void
         }
         StatementType::Return(expression) => {
             StatementResult::Return(interpret_expression(scope.clone(), expression))
@@ -98,9 +100,10 @@ fn interpret_statement(scope: Rc<RefCell<Scope>>, statement: &StatementType) -> 
             let condition_result = interpret_expression(scope.clone(), &statement.condition);
 
             match *condition_result {
+                // TODO: is_truthy helper instead of strict boolean check
                 DataType::Boolean(should_execute) => {
                     if !should_execute {
-                        return StatementResult::Void();
+                        return StatementResult::Void;
                     }
 
                     let block_scope = Rc::new(RefCell::new(Scope::new(Some(scope.clone()))));
@@ -118,36 +121,48 @@ fn interpret_statement(scope: Rc<RefCell<Scope>>, statement: &StatementType) -> 
         StatementType::Expression(statement) => match statement {
             ExpressionStatement::Assignment(assignment_statement) => {
                 interpret_assignment(scope.clone(), assignment_statement);
-                StatementResult::Void()
+                StatementResult::Void
             }
             ExpressionStatement::Inline(expression_type) => {
                 interpret_expression(scope, expression_type);
-                StatementResult::Void()
+                StatementResult::Void
             }
         },
-        StatementType::While(statement) => loop {
-            let condition_result = interpret_expression(scope.clone(), &statement.condition);
+        StatementType::While(statement) => {
+            loop {
+                let condition_result = interpret_expression(scope.clone(), &statement.condition);
 
-            match *condition_result {
-                DataType::Boolean(should_execute) => {
-                    if !should_execute {
-                        return StatementResult::Void();
+                match *condition_result {
+                    DataType::Boolean(should_execute) => {
+                        if !should_execute {
+                            return StatementResult::Void;
+                        }
+
+                        let block_scope = Rc::new(RefCell::new(Scope::new(Some(scope.clone()))));
+                        let return_value = execute_statements(
+                            block_scope,
+                            statement.body.statements.iter().collect(),
+                        );
+
+                        match return_value {
+                            StatementResult::Return(_) => {
+                                return return_value;
+                            }
+                            StatementResult::Break => break,
+                            _ => {}
+                        }
                     }
-
-                    let block_scope = Rc::new(RefCell::new(Scope::new(Some(scope.clone()))));
-                    let return_value =
-                        execute_statements(block_scope, statement.body.statements.iter().collect());
-
-                    if let StatementResult::Return(_) = return_value {
-                        return return_value;
-                    }
+                    _ => panic!(
+                        "Condition '{:?}' of if statement does not result in a boolean",
+                        &statement.condition
+                    ),
                 }
-                _ => panic!(
-                    "Condition '{:?}' of if statement does not result in a boolean",
-                    &statement.condition
-                ),
             }
-        },
+
+            StatementResult::Void
+        }
+        StatementType::Break => StatementResult::Break,
+        StatementType::Continue => StatementResult::Continue,
     }
 }
 
@@ -404,12 +419,17 @@ fn execute_statements(
         let statement_result = interpret_statement(scope.clone(), x);
         executed_statements.push(x.clone());
 
-        if let StatementResult::Return(_) = statement_result {
-            return statement_result;
+        match statement_result {
+            StatementResult::Return(_) => {
+                return statement_result;
+            }
+            StatementResult::Continue => return StatementResult::Continue,
+            StatementResult::Break => return StatementResult::Break,
+            _ => {}
         }
     }
 
-    StatementResult::Void()
+    StatementResult::Void
 }
 
 fn interpret_unary_expression(

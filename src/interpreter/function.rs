@@ -67,10 +67,12 @@ impl FunctionDeclaration {
 
         let return_value =
             super::execute_statements(function_scope.clone(), self.body.iter().collect());
-
         match return_value {
             StatementResult::Return(data_type) => data_type,
-            _ => Rc::new(DataType::Undefined),
+            StatementResult::Void => Rc::new(DataType::Undefined),
+            // Break and Continue are disallowed in Parser. This is just safety
+            StatementResult::Break => panic!("Break is not supported in function body"),
+            StatementResult::Continue => panic!("Continue is not supported in function body"),
         }
     }
 }
