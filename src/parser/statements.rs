@@ -1,6 +1,6 @@
 use super::Parser;
 use super::expressions::{ExpressionType, IdentifierExpression};
-use crate::lexer::lexer::TokenKind;
+use crate::lexer::TokenKind;
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum StatementType {

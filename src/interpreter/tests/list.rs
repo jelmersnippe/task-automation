@@ -7,7 +7,7 @@ use crate::{
         list::ListDeclaration,
         scope::{Callable, DataType},
     },
-    lexer::lexer,
+    lexer,
     parser::{
         Parser,
         expressions::{ExpressionType, LiteralType},

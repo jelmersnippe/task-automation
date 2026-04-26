@@ -1,4 +1,4 @@
-use crate::lexer::lexer::{self, Token, TokenKind};
+use crate::lexer::{self, Token, TokenKind};
 
 #[test]
 fn tokenizes_if_else_statement() {

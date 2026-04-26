@@ -2,8 +2,11 @@ use std::{cell::RefCell, fmt, rc::Rc};
 
 use super::Parser;
 use crate::{
-    interpreter::{self, scope::{DataType, Scope}},
-    lexer::lexer::{Token, TokenKind},
+    interpreter::{
+        self,
+        scope::{DataType, Scope},
+    },
+    lexer::{Token, TokenKind},
     parser::statements::Block,
 };
 

@@ -11,7 +11,7 @@ use crate::{
         function::FunctionDeclaration,
         scope::{Callable, DataType},
     },
-    lexer::lexer,
+    lexer,
     parser::{
         Parser,
         expressions::{

@@ -42,7 +42,7 @@ fn process_file(path: std::path::PathBuf) {
 }
 
 fn interpret(input: String) {
-    let tokens = lexer::lexer::lexer(input);
+    let tokens = lexer::lexer(input);
 
     let mut parser = Parser::new(tokens);
     let ast = parser.parse();

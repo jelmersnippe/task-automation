@@ -4,7 +4,7 @@ pub(crate) mod statements;
 #[cfg(test)]
 mod tests;
 
-use crate::lexer::lexer::{Token, TokenKind};
+use crate::lexer::{Token, TokenKind};
 
 pub struct Parser {
     tokens: Vec<Token>,

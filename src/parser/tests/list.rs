@@ -1,5 +1,5 @@
 use crate::{
-    lexer::lexer::{Token, TokenKind},
+    lexer::{Token, TokenKind},
     parser::{
         Parser,
         expressions::{
@@ -104,11 +104,9 @@ fn parses_list_declaration_complex() {
                             parameters: vec![],
                             body: Block { statements: vec![] }
                         }),
-                        ExpressionType::Identifier(
-                            IdentifierExpression {
-                                name: String::from("foo")
-                            }
-                        ),
+                        ExpressionType::Identifier(IdentifierExpression {
+                            name: String::from("foo")
+                        }),
                         ExpressionType::FunctionCall(CallExpression {
                             value: Box::new(ExpressionType::Identifier(IdentifierExpression {
                                 name: String::from("bar")
