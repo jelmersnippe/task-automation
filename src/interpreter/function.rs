@@ -5,14 +5,22 @@ use crate::{
         StatementResult,
         scope::{DataType, Scope},
     },
-    parser::{expressions::Parameters, statements::StatementType},
+    parser::statements::StatementType,
 };
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct FunctionDeclaration {
     name: Option<String>,
     arguments: Vec<String>,
     body: Vec<StatementType>,
+    scope: Rc<RefCell<Scope>>,
+}
+
+impl PartialEq for FunctionDeclaration {
+    fn eq(&self, other: &Self) -> bool {
+        // scope intentionally ignored due to circular deps
+        self.name == other.name && self.arguments == other.arguments && self.body == other.body
+    }
 }
 
 impl fmt::Display for FunctionDeclaration {
@@ -37,15 +45,21 @@ impl fmt::Display for FunctionDeclaration {
 }
 
 impl FunctionDeclaration {
-    pub fn new(name: Option<String>, arguments: Vec<String>, body: Vec<StatementType>) -> Self {
+    pub fn new(
+        name: Option<String>,
+        arguments: Vec<String>,
+        body: Vec<StatementType>,
+        scope: Rc<RefCell<Scope>>,
+    ) -> Self {
         Self {
             name,
             body,
             arguments,
+            scope,
         }
     }
 
-    pub fn execute(&self, parameters: &Parameters, scope: Rc<RefCell<Scope>>) -> Rc<DataType> {
+    pub fn execute(&self, parameters: Vec<Rc<DataType>>) -> Rc<DataType> {
         let expected_arguments = self.arguments.len();
         let received_arguments = parameters.len();
 
@@ -56,10 +70,12 @@ impl FunctionDeclaration {
             );
         }
 
-        let function_scope = Rc::new(RefCell::new(Scope::new(Some(scope.clone()))));
+        println!("Creating function scope");
+        let function_scope = Rc::new(RefCell::new(Scope::new(Some(self.scope.clone()))));
 
+        println!("Resolving params");
         // Set arguments as available variables
-        for (identifier, value) in self.arguments.iter().zip(parameters.resolve(scope)) {
+        for (identifier, value) in self.arguments.iter().zip(parameters) {
             function_scope
                 .borrow_mut()
                 .set_variable(identifier.clone(), value);

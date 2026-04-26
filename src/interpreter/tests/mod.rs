@@ -390,6 +390,7 @@ fn interprets_function_declaration_with_return() {
                         })
                     )
                 ))],
+                interpreter.scope.clone()
             )
         )))
     );
@@ -412,7 +413,8 @@ fn interprets_function_declaration_with_arguments() {
             FunctionDeclaration::new(
                 Some(String::from("foo")),
                 vec![String::from("bar"), String::from("baz")],
-                vec![]
+                vec![],
+                interpreter.scope.clone()
             )
         )))
     );
@@ -432,7 +434,7 @@ fn interprets_function_declaration_as_variable() {
             .borrow()
             .get_variable(&String::from("foo")),
         Rc::new(DataType::Function(Callable::User(
-            FunctionDeclaration::new(None, vec![], vec![])
+            FunctionDeclaration::new(None, vec![], vec![], interpreter.scope.clone())
         )))
     );
 }
@@ -451,7 +453,12 @@ fn interprets_function_declaration() {
             .borrow()
             .get_variable(&String::from("foo")),
         Rc::new(DataType::Function(Callable::User(
-            FunctionDeclaration::new(Some(String::from("foo")), vec![], vec![])
+            FunctionDeclaration::new(
+                Some(String::from("foo")),
+                vec![],
+                vec![],
+                interpreter.scope.clone()
+            )
         )))
     );
 }
@@ -470,7 +477,7 @@ fn interprets_variable_assignment_function() {
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
         Rc::new(DataType::Function(Callable::User(
-            FunctionDeclaration::new(None, vec![], vec![])
+            FunctionDeclaration::new(None, vec![], vec![], interpreter.scope.clone())
         )))
     );
 }

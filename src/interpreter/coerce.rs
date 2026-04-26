@@ -1,5 +1,8 @@
 use crate::interpreter::{
-    dictionary::DictionaryDeclaration, list::ListDeclaration, scope::DataType,
+    dictionary::DictionaryDeclaration,
+    function::FunctionDeclaration,
+    list::ListDeclaration,
+    scope::{Callable, DataType},
 };
 
 pub fn expect_string(data: &DataType) -> String {
@@ -9,6 +12,14 @@ pub fn expect_string(data: &DataType) -> String {
         DataType::Boolean(x) => x.to_string(),
         _ => panic!("Expected a string"),
     }
+}
+
+pub fn expect_user_function(data: &DataType) -> &FunctionDeclaration {
+    if let DataType::Function(Callable::User(x)) = data {
+        return x;
+    }
+
+    panic!("Can only use user defined functions")
 }
 
 pub fn expect_dict(data: &DataType) -> &DictionaryDeclaration {

@@ -4,7 +4,13 @@ use crate::interpreter::{coerce, scope::DataType};
 
 pub(crate) fn clear(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
     if !data.is_empty() {
-        panic!("clear takes no arguments. received: {:?}", data)
+        panic!(
+            "clear takes no arguments. received: {}",
+            data.iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
     }
 
     let x = receiver.expect("clear can only be called on a list");
@@ -18,7 +24,13 @@ pub(crate) fn clear(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> 
 
 pub(crate) fn push(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
     let [data] = data.as_slice() else {
-        panic!("delete only takes 1 argument. received: {:?}", data)
+        panic!(
+            "delete only takes 1 argument. received: {}",
+            data.iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
     };
 
     let x = receiver.expect("clear can only be called on a list");
@@ -32,7 +44,13 @@ pub(crate) fn push(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> R
 
 pub(crate) fn pop(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
     if !data.is_empty() {
-        panic!("pop takes no arguments. received: {:?}", data)
+        panic!(
+            "pop takes no arguments. received: {}",
+            data.iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
     }
 
     let x = receiver.expect("clear can only be called on a list");

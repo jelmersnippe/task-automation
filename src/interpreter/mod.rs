@@ -89,7 +89,12 @@ fn interpret_statement(scope: Rc<RefCell<Scope>>, statement: &StatementType) -> 
             scope.borrow_mut().set_variable(
                 identifier.clone(),
                 Rc::new(DataType::Function(Callable::User(
-                    FunctionDeclaration::new(Some(identifier.clone()), arguments, statements),
+                    FunctionDeclaration::new(
+                        Some(identifier.clone()),
+                        arguments,
+                        statements,
+                        scope.clone(),
+                    ),
                 ))),
             );
 
@@ -324,7 +329,7 @@ pub fn interpret_expression(
             let statements = function_declaration_expression.body.statements.clone();
 
             Rc::new(DataType::Function(Callable::User(
-                FunctionDeclaration::new(None, arguments, statements),
+                FunctionDeclaration::new(None, arguments, statements, scope.clone()),
             )))
         }
         ExpressionType::BinaryOperation(binary_operation_expression) => Rc::new(

@@ -3,17 +3,29 @@ use std::{
     rc::Rc,
 };
 
-use crate::interpreter::{builtin::BuiltinFn, coerce, scope::DataType};
+use crate::interpreter::{
+    builtin::BuiltinFn,
+    coerce::{self, expect_string, expect_user_function},
+    scope::DataType,
+};
 
 pub static BUILTINS: &[(&str, BuiltinFn)] = &[
     ("print", print),
     ("len", len),
     ("spawn_terminal", spawn_terminal),
+    ("register_task", register_task),
+    ("run", run),
 ];
 
 fn len(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
     let [arg] = data.as_slice() else {
-        panic!("len only takes 1 argument. Received: {:?}", data)
+        panic!(
+            "len only takes 1 argument. Received: {:?}",
+            data.iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
     };
 
     match arg.as_ref() {
@@ -26,7 +38,13 @@ fn len(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
 
 fn print(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
     let [arg] = data.as_slice() else {
-        panic!("print only takes 1 argument. Received: {:?}", data)
+        panic!(
+            "print only takes 1 argument. Received: {:?}",
+            data.iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
     };
 
     println!("{}", arg);
@@ -36,18 +54,24 @@ fn print(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
 
 // wt.exe wsl bash -c "cd ~/dev/task-automation && exec bash"
 fn spawn_terminal(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
-    let [path, rest @ ..] = data.as_slice() else {
-        panic!("spawn_terminal takes 1-2 arguments. Received: {:?}", data)
-    };
+    let path = data.iter().nth(0).expect(
+        format!(
+            "spawn_terminal takes 1-2 arguments. Received: {:?}",
+            data.iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+        .as_str(),
+    );
+
     let mut command: String;
 
     command = format!("cd {}", coerce::expect_string(path));
 
-    let [cmd] = rest else {
-        panic!("spawn_terminal takes 1-2 arguments. Received: {:?}", data)
-    };
-
-    command += format!(" && {}", coerce::expect_string(cmd)).as_str();
+    if let [_, cmd] = data.as_slice() {
+        command += format!(" && {}", coerce::expect_string(cmd)).as_str();
+    }
 
     // Retain the terminal in bash mode
     command += " && exec bash";
@@ -71,4 +95,37 @@ fn spawn_terminal(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataTy
     }
 
     Rc::new(DataType::Undefined)
+}
+
+fn register_task(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
+    let [arg1, arg2] = data.as_slice() else {
+        panic!(
+            "register_task expects 2 arguments. Received: {:?}",
+            data.iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    };
+
+    let task_name = expect_string(arg1);
+    let task_block = expect_user_function(arg2);
+
+    todo!();
+}
+
+fn run(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
+    let [arg] = data.as_slice() else {
+        panic!(
+            "run expects 1 argument. Received: {:?}",
+            data.iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    };
+
+    let task = expect_string(arg);
+
+    todo!();
 }

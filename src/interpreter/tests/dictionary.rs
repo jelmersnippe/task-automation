@@ -242,6 +242,7 @@ fn interprets_dictionary_declaration() {
                             vec![StatementType::Return(ExpressionType::Literal(
                                 LiteralType::Number(3.0)
                             ))],
+                            interpreter.scope.clone()
                         )
                     )))
                 ),

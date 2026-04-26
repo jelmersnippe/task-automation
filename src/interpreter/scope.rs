@@ -41,7 +41,7 @@ impl Callable {
         match self {
             Callable::BuiltIn(builtin) => builtin.execute(parameters.resolve(scope.clone())),
             Callable::User(function_declaration) => {
-                function_declaration.execute(parameters, scope.clone())
+                function_declaration.execute(parameters.resolve(scope.clone()))
             }
         }
     }
@@ -100,6 +100,7 @@ impl fmt::Display for DataType {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Scope {
     parent: Option<Rc<RefCell<Scope>>>,
     variables: HashMap<String, Rc<DataType>>,

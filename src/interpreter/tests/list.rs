@@ -312,7 +312,8 @@ fn interpret_list_declaration() {
                     vec![],
                     vec![StatementType::Return(ExpressionType::Literal(
                         LiteralType::Number(3.0)
-                    ))]
+                    ))],
+                    interpreter.scope.clone()
                 )
             ))),
         ])))
