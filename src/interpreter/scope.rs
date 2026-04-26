@@ -17,7 +17,7 @@ pub enum DataType {
     Function(Callable),
     List(ListDeclaration),
     Dictionary(DictionaryDeclaration),
-    Undefined(),
+    Undefined,
 }
 
 #[derive(Debug, Clone)]
@@ -36,11 +36,7 @@ impl fmt::Display for Callable {
 }
 
 impl Callable {
-    pub fn execute(
-        &self,
-        parameters: &Parameters,
-        scope: Rc<RefCell<Scope>>,
-    ) -> Rc<DataType> {
+    pub fn execute(&self, parameters: &Parameters, scope: Rc<RefCell<Scope>>) -> Rc<DataType> {
         match self {
             Callable::BuiltIn(builtin) => builtin.execute(parameters.resolve(scope.clone())),
             Callable::User(function_declaration) => {
@@ -62,7 +58,7 @@ impl PartialEq for DataType {
             },
             (Self::List(l0), Self::List(r0)) => l0 == r0,
             (Self::Dictionary(l0), Self::Dictionary(r0)) => l0 == r0,
-            (Self::Undefined(), Self::Undefined()) => true,
+            (Self::Undefined, Self::Undefined) => true,
             _ => false,
         }
     }
@@ -91,7 +87,7 @@ impl fmt::Display for DataType {
             DataType::Function(function_declaration) => format!("{}", function_declaration),
             DataType::List(values) => format!("{}", values),
             DataType::Dictionary(entries) => format!("{}", entries),
-            DataType::Undefined() => "undefined".to_string(),
+            DataType::Undefined => "undefined".to_string(),
         };
         write!(f, "{}", string)
     }
@@ -100,6 +96,17 @@ impl fmt::Display for DataType {
 pub struct Scope {
     parent: Option<Rc<RefCell<Scope>>>,
     variables: HashMap<String, Rc<DataType>>,
+}
+
+impl fmt::Display for Scope {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{{\n")?;
+
+        for (k, v) in self.variables.iter() {
+            write!(f, "{}: {},\n", k, v)?;
+        }
+        write!(f, "}}")
+    }
 }
 
 impl Scope {
@@ -117,7 +124,7 @@ impl Scope {
 
         match &self.parent {
             Some(parent) => parent.borrow().get_variable(identifier),
-            None => Rc::new(DataType::Undefined()),
+            None => panic!("Variable '{}' is not declared", identifier),
         }
     }
 

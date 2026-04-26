@@ -106,7 +106,7 @@ fn interprets_dictionary_builtins() {
         Rc::new(DataType::Boolean(true)),
     );
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("a")),
+        interpreter.scope.borrow().get_variable(&String::from("b")),
         Rc::new(DataType::Boolean(true)),
     );
     assert_eq!(

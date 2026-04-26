@@ -40,6 +40,7 @@ pub enum LiteralType {
     String(String),
     Number(f32),
     Boolean(bool),
+    Undefined,
 }
 
 impl fmt::Display for LiteralType {
@@ -48,6 +49,7 @@ impl fmt::Display for LiteralType {
             LiteralType::String(x) => write!(f, "{}", x),
             LiteralType::Number(x) => write!(f, "{}", x),
             LiteralType::Boolean(x) => write!(f, "{}", x),
+            LiteralType::Undefined => write!(f, "undefined",),
         }
     }
 }
@@ -366,6 +368,7 @@ impl Parser {
                 TokenKind::String => ExpressionType::Literal(LiteralType::String(token.value)),
                 TokenKind::True => ExpressionType::Literal(LiteralType::Boolean(true)),
                 TokenKind::False => ExpressionType::Literal(LiteralType::Boolean(false)),
+                TokenKind::Undefined => ExpressionType::Literal(LiteralType::Undefined),
                 TokenKind::Identifier => self.parse_identifier_expression(token),
                 TokenKind::Fn => self.parse_function_expression(token),
                 TokenKind::LeftBracket => ExpressionType::List(ListExpression {

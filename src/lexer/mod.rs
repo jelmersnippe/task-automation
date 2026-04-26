@@ -21,6 +21,7 @@ pub enum TokenKind {
     Number,
     True,
     False,
+    Undefined,
 
     // Comparison Operators
     Bang,
@@ -65,6 +66,7 @@ fn lookup_keyword(s: &String) -> Option<TokenKind> {
         "if" => Some(TokenKind::If),
         "else" => Some(TokenKind::Else),
         "while" => Some(TokenKind::While),
+        "undefined" => Some(TokenKind::Undefined),
         _ => None,
     }
 }

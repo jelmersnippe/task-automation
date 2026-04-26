@@ -2,8 +2,8 @@ use std::{cell::RefCell, fmt, rc::Rc};
 
 use crate::{
     interpreter::{
-        scope::{DataType, Scope},
         StatementResult,
+        scope::{DataType, Scope},
     },
     parser::{expressions::Parameters, statements::StatementType},
 };
@@ -65,11 +65,12 @@ impl FunctionDeclaration {
                 .set_variable(identifier.clone(), value);
         }
 
-        let return_value = super::execute_statements(function_scope.clone(), self.body.iter().collect());
+        let return_value =
+            super::execute_statements(function_scope.clone(), self.body.iter().collect());
 
         match return_value {
             StatementResult::Return(data_type) => data_type,
-            _ => Rc::new(DataType::Undefined()),
+            _ => Rc::new(DataType::Undefined),
         }
     }
 }

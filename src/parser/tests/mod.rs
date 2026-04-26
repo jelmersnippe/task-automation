@@ -19,6 +19,18 @@ use crate::{
 };
 
 #[test]
+fn parses_undefined() {
+    let result = Parser::new(vec![Token::new("undefined", TokenKind::Undefined)]).parse();
+
+    assert_eq!(
+        result,
+        vec![StatementType::Expression(ExpressionStatement::Inline(
+            ExpressionType::Literal(LiteralType::Undefined)
+        )),]
+    )
+}
+
+#[test]
 fn parses_while_statement() {
     let result = Parser::new(vec![
         Token::new("while", TokenKind::While),

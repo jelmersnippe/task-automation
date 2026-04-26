@@ -125,7 +125,29 @@ fn interpret_statement(scope: Rc<RefCell<Scope>>, statement: &StatementType) -> 
                 StatementResult::Void()
             }
         },
-        StatementType::While(_) => todo!(),
+        StatementType::While(statement) => loop {
+            let condition_result = interpret_expression(scope.clone(), &statement.condition);
+
+            match *condition_result {
+                DataType::Boolean(should_execute) => {
+                    if !should_execute {
+                        return StatementResult::Void();
+                    }
+
+                    let block_scope = Rc::new(RefCell::new(Scope::new(Some(scope.clone()))));
+                    let return_value =
+                        execute_statements(block_scope, statement.body.statements.iter().collect());
+
+                    if let StatementResult::Return(_) = return_value {
+                        return return_value;
+                    }
+                }
+                _ => panic!(
+                    "Condition '{:?}' of if statement does not result in a boolean",
+                    &statement.condition
+                ),
+            }
+        },
     }
 }
 
@@ -268,6 +290,7 @@ pub fn interpret_expression(
             LiteralType::String(x) => Rc::new(DataType::String(x.clone())),
             LiteralType::Number(x) => Rc::new(DataType::Number(x.clone())),
             LiteralType::Boolean(x) => Rc::new(DataType::Boolean(x.clone())),
+            LiteralType::Undefined => Rc::new(DataType::Undefined),
         },
         ExpressionType::Identifier(identifier_expression) => {
             scope.borrow().get_variable(&identifier_expression.name)

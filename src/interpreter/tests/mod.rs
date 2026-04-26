@@ -1,5 +1,5 @@
-#[cfg(test)]
 mod dictionary;
+#[cfg(test)]
 #[cfg(test)]
 mod list;
 
@@ -9,6 +9,7 @@ use crate::{
     interpreter::{
         Interpreter,
         function::FunctionDeclaration,
+        list::ListDeclaration,
         scope::{Callable, DataType},
     },
     lexer,
@@ -21,6 +22,109 @@ use crate::{
         statements::{StatementType, VariableDeclarationStatement},
     },
 };
+
+#[test]
+fn interprets_while_with_continue() {
+    let dsl = "
+    var x = 0
+    var y = []
+
+    while (x < 5) {
+        x = x + 1
+
+        if (x == 1) {
+            continue
+        }
+        
+        y.push(x)
+    }
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.borrow().get_variable(&String::from("x")),
+        Rc::new(DataType::Number(5.0))
+    );
+    assert_eq!(
+        interpreter.scope.borrow().get_variable(&String::from("y")),
+        Rc::new(DataType::List(ListDeclaration::new(vec![
+            Rc::new(DataType::Number(2.0)),
+            Rc::new(DataType::Number(3.0)),
+            Rc::new(DataType::Number(4.0)),
+        ])))
+    );
+}
+
+#[test]
+fn interprets_while_with_break() {
+    let dsl = "
+    var x = 0
+
+    while (true) {
+        x = x + 1
+
+        if (x >= 5) {
+            break
+        }
+    }
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.borrow().get_variable(&String::from("x")),
+        Rc::new(DataType::Number(5.0))
+    );
+}
+
+#[test]
+fn interprets_while_with_condition() {
+    let dsl = "
+    var x = 0
+
+    while (x < 3) {
+        x = x + 1
+    }
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.borrow().get_variable(&String::from("x")),
+        Rc::new(DataType::Number(3.0))
+    );
+}
+
+#[test]
+fn interprets_while_with_false() {
+    let dsl = "
+    var x = 0
+
+    while (false) {
+        x = x + 1
+
+        if (x >= 5) {
+            break
+        }
+    }
+    ";
+    let tokens = lexer::lexer(String::from(dsl));
+    let ast = Parser::new(tokens).parse();
+    let mut interpreter = Interpreter::new(ast);
+    interpreter.interpret();
+
+    assert_eq!(
+        interpreter.scope.borrow().get_variable(&String::from("x")),
+        Rc::new(DataType::Number(0.0))
+    );
+}
 
 #[test]
 fn interprets_scoped_variable_rebinding() {
@@ -230,9 +334,9 @@ fn interprets_function_call_with_return_inside_if() {
 fn interprets_function_call_with_arguments() {
     let dsl = "
     fn foo(bar) {
-        var x = bar
+        return bar
     }
-    foo(1)
+    var x = foo(1)
     ";
     let tokens = lexer::lexer(String::from(dsl));
     let ast = Parser::new(tokens).parse();
@@ -240,29 +344,8 @@ fn interprets_function_call_with_arguments() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter
-            .scope
-            .borrow()
-            .get_variable(&String::from("foo")),
-        Rc::new(DataType::Function(Callable::User(
-            FunctionDeclaration::new(
-                Some(String::from("foo")),
-                vec![String::from("bar")],
-                vec![StatementType::VariableDeclaration(
-                    VariableDeclarationStatement {
-                        identifier: String::from("x"),
-                        value: ExpressionType::Identifier(IdentifierExpression {
-                            name: String::from("bar")
-                        })
-                    }
-                )]
-            )
-        )))
-    );
-
-    assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
-        Rc::new(DataType::Undefined())
+        Rc::new(DataType::Number(1.0))
     );
 }
 
@@ -270,9 +353,9 @@ fn interprets_function_call_with_arguments() {
 fn interprets_function_call() {
     let dsl = "
     fn foo() {
-        var x = 3
+        return 3
     }
-    foo()
+    var x = foo()
     ";
     let tokens = lexer::lexer(String::from(dsl));
     let ast = Parser::new(tokens).parse();
@@ -280,27 +363,8 @@ fn interprets_function_call() {
     interpreter.interpret();
 
     assert_eq!(
-        interpreter
-            .scope
-            .borrow()
-            .get_variable(&String::from("foo")),
-        Rc::new(DataType::Function(Callable::User(
-            FunctionDeclaration::new(
-                Some(String::from("foo")),
-                vec![],
-                vec![StatementType::VariableDeclaration(
-                    VariableDeclarationStatement {
-                        identifier: String::from("x"),
-                        value: ExpressionType::Literal(LiteralType::Number(3.0))
-                    }
-                )]
-            )
-        )))
-    );
-
-    assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
-        Rc::new(DataType::Undefined())
+        Rc::new(DataType::Number(3.0))
     );
 }
 

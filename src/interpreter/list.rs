@@ -100,9 +100,7 @@ impl ListDeclaration {
     }
 
     pub fn length(&self) -> Rc<DataType> {
-        Rc::new(DataType::Number(
-            self.values.borrow().len() as f32
-        ))
+        Rc::new(DataType::Number(self.values.borrow().len() as f32))
     }
 }
 

@@ -68,7 +68,7 @@ fn print(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
 
     println!("{}", arg);
 
-    Rc::new(DataType::Undefined())
+    Rc::new(DataType::Undefined)
 }
 
 // wt.exe wsl bash -c "cd ~/dev/task-automation && exec bash"
@@ -107,7 +107,7 @@ fn spawn_terminal(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataTy
         _ => {}
     }
 
-    Rc::new(DataType::Undefined())
+    Rc::new(DataType::Undefined)
 }
 
 pub(crate) fn dict_has(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
@@ -135,7 +135,7 @@ pub(crate) fn dict_delete(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>
 
     dict.delete(&arg);
 
-    return Rc::new(DataType::Undefined());
+    return Rc::new(DataType::Undefined);
 }
 
 pub(crate) fn dict_clear(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>) -> Rc<DataType> {
@@ -149,5 +149,5 @@ pub(crate) fn dict_clear(receiver: Option<Rc<DataType>>, data: Vec<Rc<DataType>>
 
     dict.clear();
 
-    return Rc::new(DataType::Undefined());
+    return Rc::new(DataType::Undefined);
 }
