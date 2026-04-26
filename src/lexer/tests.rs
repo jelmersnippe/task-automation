@@ -307,7 +307,7 @@ fn tokenizes_identifiers() {
 
 #[test]
 fn tokenizes_keywords() {
-    let result = lexer::lexer(String::from("var fn return true false if else"));
+    let result = lexer::lexer(String::from("var fn return true false if else while"));
 
     assert_eq!(
         result,
@@ -319,6 +319,7 @@ fn tokenizes_keywords() {
             Token::new("false", TokenKind::False),
             Token::new("if", TokenKind::If),
             Token::new("else", TokenKind::Else),
+            Token::new("while", TokenKind::While),
         ]
     );
 }

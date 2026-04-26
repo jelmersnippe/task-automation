@@ -14,6 +14,7 @@ pub enum TokenKind {
     Return,
     If,
     Else,
+    While,
 
     // Literals
     String,
@@ -63,6 +64,7 @@ fn lookup_keyword(s: &String) -> Option<TokenKind> {
         "return" => Some(TokenKind::Return),
         "if" => Some(TokenKind::If),
         "else" => Some(TokenKind::Else),
+        "while" => Some(TokenKind::While),
         _ => None,
     }
 }

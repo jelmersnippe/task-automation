@@ -8,6 +8,7 @@ pub enum StatementType {
     FunctionDeclaration(FunctionDeclarationStatement),
     Return(ExpressionType),
     IfStatement(IfStatement),
+    While(While),
     Expression(ExpressionStatement),
 }
 
@@ -47,6 +48,12 @@ pub struct IfStatement {
     pub body: Block,
 }
 
+#[derive(PartialEq, Debug, Clone)]
+pub struct While {
+    pub condition: ExpressionType,
+    pub body: Block,
+}
+
 impl Parser {
     pub(crate) fn parse_statement(&mut self) -> StatementType {
         if let Some(token) = self.peek() {
@@ -61,6 +68,7 @@ impl Parser {
                 }
                 TokenKind::Return => self.parse_return_statement(),
                 TokenKind::If => self.parse_if_statement(),
+                TokenKind::While => self.parse_while_statement(),
                 _ => self.parse_expression_statement(),
             };
         }
@@ -163,5 +171,18 @@ impl Parser {
         let body = self.parse_block();
 
         return StatementType::IfStatement(IfStatement { condition, body });
+    }
+
+    fn parse_while_statement(&mut self) -> StatementType {
+        self.expect(TokenKind::While);
+
+        self.expect(TokenKind::LeftParenthesis);
+        let condition = self.parse_expression();
+        self.expect(TokenKind::RightParenthesis);
+
+        self.expect(TokenKind::LeftCurly);
+        let body = self.parse_block();
+
+        return StatementType::While(While { condition, body });
     }
 }

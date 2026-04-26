@@ -13,10 +13,74 @@ use crate::{
         },
         statements::{
             AssignmentStatement, Block, ExpressionStatement, FunctionDeclarationStatement,
-            StatementType, VariableDeclarationStatement,
+            IfStatement, StatementType, VariableDeclarationStatement, While,
         },
     },
 };
+
+#[test]
+fn parses_while_statement() {
+    let result = Parser::new(vec![
+        Token::new("while", TokenKind::While),
+        Token::new("(", TokenKind::LeftParenthesis),
+        Token::new("true", TokenKind::True),
+        Token::new(")", TokenKind::RightParenthesis),
+        Token::new("{", TokenKind::LeftCurly),
+        Token::new("var", TokenKind::Var),
+        Token::new("x", TokenKind::Identifier),
+        Token::new("=", TokenKind::Assign),
+        Token::new("true", TokenKind::True),
+        Token::new("}", TokenKind::RightCurly),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![StatementType::While(While {
+            condition: ExpressionType::Literal(LiteralType::Boolean(true)),
+            body: Block {
+                statements: vec![StatementType::VariableDeclaration(
+                    VariableDeclarationStatement {
+                        identifier: String::from("x"),
+                        value: ExpressionType::Literal(LiteralType::Boolean(true))
+                    }
+                ),]
+            },
+        })]
+    )
+}
+
+#[test]
+fn parses_if_statement() {
+    let result = Parser::new(vec![
+        Token::new("if", TokenKind::If),
+        Token::new("(", TokenKind::LeftParenthesis),
+        Token::new("true", TokenKind::True),
+        Token::new(")", TokenKind::RightParenthesis),
+        Token::new("{", TokenKind::LeftCurly),
+        Token::new("var", TokenKind::Var),
+        Token::new("x", TokenKind::Identifier),
+        Token::new("=", TokenKind::Assign),
+        Token::new("true", TokenKind::True),
+        Token::new("}", TokenKind::RightCurly),
+    ])
+    .parse();
+
+    assert_eq!(
+        result,
+        vec![StatementType::IfStatement(IfStatement {
+            condition: ExpressionType::Literal(LiteralType::Boolean(true)),
+            body: Block {
+                statements: vec![StatementType::VariableDeclaration(
+                    VariableDeclarationStatement {
+                        identifier: String::from("x"),
+                        value: ExpressionType::Literal(LiteralType::Boolean(true))
+                    }
+                ),]
+            },
+        })]
+    )
+}
 
 #[test]
 fn parses_property_accessor() {

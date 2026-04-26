@@ -125,6 +125,7 @@ fn interpret_statement(scope: Rc<RefCell<Scope>>, statement: &StatementType) -> 
                 StatementResult::Void()
             }
         },
+        StatementType::While(_) => todo!(),
     }
 }
 
