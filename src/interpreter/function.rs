@@ -71,10 +71,8 @@ impl FunctionDeclaration {
             );
         }
 
-        println!("Creating function scope");
         let function_scope = Rc::new(RefCell::new(Scope::new(Some(self.scope.clone()))));
 
-        println!("Resolving params");
         // Set arguments as available variables
         for (identifier, value) in self.arguments.iter().zip(parameters) {
             function_scope

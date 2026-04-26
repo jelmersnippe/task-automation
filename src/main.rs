@@ -58,8 +58,6 @@ fn main() -> std::io::Result<()> {
 }
 
 fn get_dsl_files_from_dir(dir: &Path, recursive: bool) -> std::io::Result<Vec<PathBuf>> {
-    println!("Processing dir {}", dir.display());
-
     let mut dsl_files = vec![];
 
     for entry in fs::read_dir(dir)? {
