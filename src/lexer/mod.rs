@@ -175,163 +175,171 @@ fn text_to_token(text: String) -> Option<Token> {
     }
 }
 
-pub fn lexer(text: String) -> Vec<Token> {
-    let mut tokens: Vec<Token> = Vec::new();
-    let mut current: String = String::new();
+pub struct Lexer {}
 
-    // Add a new line to ensure final char gets parsed
-    let corrected_text = text.trim().to_string() + "\n";
-    let mut chars = corrected_text.chars().into_iter().peekable();
+impl Lexer {
+    pub fn new() -> Self {
+        Self {}
+    }
 
-    while let Some(char) = chars.next() {
-        // We are processing a likely string
-        if let Some(first_char) = current.chars().nth(0)
-            && first_char == '"'
-        {
-            current.push(char);
+    pub fn tokenize(&self, text: String) -> Vec<Token> {
+        let mut tokens: Vec<Token> = Vec::new();
+        let mut current: String = String::new();
 
-            if char == '"'
-                && let Some(token) = text_to_token(current.clone())
+        // Add a new line to ensure final char gets parsed
+        let corrected_text = text.trim().to_string() + "\n";
+        let mut chars = corrected_text.chars().into_iter().peekable();
+
+        while let Some(char) = chars.next() {
+            // We are processing a likely string
+            if let Some(first_char) = current.chars().nth(0)
+                && first_char == '"'
             {
+                current.push(char);
+
+                if char == '"'
+                    && let Some(token) = text_to_token(current.clone())
+                {
+                    tokens.push(token);
+                    current.clear();
+                }
+
+                continue;
+            }
+
+            // Decimal point with trailing digit
+            if char == '.'
+                && let Some(next) = chars.peek()
+                && is_digit(*next)
+            {
+                current.push(char);
+                continue;
+            }
+
+            // Decimal point with leading digit
+            // Treat leading . as digit to turn a number like 1..1 illegal
+            if char == '.'
+                && current.len() > 0
+                && let Some(prev) = current.chars().nth(current.len() - 1)
+                && (is_digit(prev) || prev == '.')
+            {
+                current.push(char);
+                continue;
+            }
+
+            if is_digit(char) || is_letter(char) || char == '"' {
+                current.push(char);
+                continue;
+            }
+
+            // If char is a space and we are currently processing a likely string
+            if char == ' '
+                && let Some(first_char) = current.chars().nth(0)
+                && first_char == '"'
+            {
+                current.push(char);
+                continue;
+            }
+
+            if let Some(token) = text_to_token(current.clone()) {
                 tokens.push(token);
                 current.clear();
             }
 
-            continue;
-        }
+            if let Some(kind) = lookup_char(char) {
+                tokens.push(Token::new(char, kind));
+                continue;
+            }
 
-        // Decimal point with trailing digit
-        if char == '.'
-            && let Some(next) = chars.peek()
-            && is_digit(*next)
-        {
-            current.push(char);
-            continue;
-        }
+            if char == '!' {
+                if let Some(next_token) = chars.peek()
+                    && *next_token == '='
+                {
+                    tokens.push(Token::new("!=", TokenKind::NotEqual));
+                    chars.next();
+                } else {
+                    tokens.push(Token::new("!", TokenKind::Bang));
+                }
 
-        // Decimal point with leading digit
-        // Treat leading . as digit to turn a number like 1..1 illegal
-        if char == '.'
-            && current.len() > 0
-            && let Some(prev) = current.chars().nth(current.len() - 1)
-            && (is_digit(prev) || prev == '.')
-        {
-            current.push(char);
-            continue;
-        }
+                continue;
+            }
 
-        if is_digit(char) || is_letter(char) || char == '"' {
-            current.push(char);
-            continue;
-        }
+            if char == '&' || char == '|' {
+                if let Some(next_token) = chars.peek()
+                    && *next_token == char
+                {
+                    let token = if char == '&' {
+                        Token::new("&&", TokenKind::And)
+                    } else {
+                        Token::new("||", TokenKind::Or)
+                    };
+                    tokens.push(token);
+                    chars.next();
+                } else {
+                    panic!(
+                        "Invalid logical operator. Found '{}', expected '{}{}'",
+                        char, char, char
+                    );
+                }
 
-        // If char is a space and we are currently processing a likely string
-        if char == ' '
-            && let Some(first_char) = current.chars().nth(0)
-            && first_char == '"'
-        {
-            current.push(char);
-            continue;
-        }
+                continue;
+            }
 
-        if let Some(token) = text_to_token(current.clone()) {
-            tokens.push(token);
+            // Use lookahead for > and < char to process operators
+            if char == '>' || char == '<' {
+                let token_kind = if char == '>' {
+                    TokenKind::GreaterThan
+                } else {
+                    TokenKind::LessThan
+                };
+                let mut token = Token::new(char, token_kind);
+
+                match chars.peek() {
+                    Some(next_char) => match next_char {
+                        '=' => {
+                            token = if char == '>' {
+                                Token::new(">=", TokenKind::GreaterOrEqual)
+                            } else {
+                                Token::new("<=", TokenKind::LessOrEqual)
+                            };
+                            chars.next();
+                        }
+                        _ => {}
+                    },
+                    None => {}
+                };
+                tokens.push(token);
+
+                continue;
+            }
+
+            // Use lookahead for = char to process operators
+            if char == '=' {
+                let mut token = Token::new(char, TokenKind::Assign);
+
+                match chars.peek() {
+                    Some(next_char) => match next_char {
+                        '=' => {
+                            token = Token::new("==", TokenKind::Equal);
+                            chars.next();
+                        }
+                        _ => {}
+                    },
+                    None => {}
+                };
+                tokens.push(token);
+
+                continue;
+            }
+
+            if is_break_char(char) {
+                continue;
+            }
+
+            tokens.push(Token::new(char, TokenKind::Illegal));
             current.clear();
         }
 
-        if let Some(kind) = lookup_char(char) {
-            tokens.push(Token::new(char, kind));
-            continue;
-        }
-
-        if char == '!' {
-            if let Some(next_token) = chars.peek()
-                && *next_token == '='
-            {
-                tokens.push(Token::new("!=", TokenKind::NotEqual));
-                chars.next();
-            } else {
-                tokens.push(Token::new("!", TokenKind::Bang));
-            }
-
-            continue;
-        }
-
-        if char == '&' || char == '|' {
-            if let Some(next_token) = chars.peek()
-                && *next_token == char
-            {
-                let token = if char == '&' {
-                    Token::new("&&", TokenKind::And)
-                } else {
-                    Token::new("||", TokenKind::Or)
-                };
-                tokens.push(token);
-                chars.next();
-            } else {
-                panic!(
-                    "Invalid logical operator. Found '{}', expected '{}{}'",
-                    char, char, char
-                );
-            }
-
-            continue;
-        }
-
-        // Use lookahead for > and < char to process operators
-        if char == '>' || char == '<' {
-            let token_kind = if char == '>' {
-                TokenKind::GreaterThan
-            } else {
-                TokenKind::LessThan
-            };
-            let mut token = Token::new(char, token_kind);
-
-            match chars.peek() {
-                Some(next_char) => match next_char {
-                    '=' => {
-                        token = if char == '>' {
-                            Token::new(">=", TokenKind::GreaterOrEqual)
-                        } else {
-                            Token::new("<=", TokenKind::LessOrEqual)
-                        };
-                        chars.next();
-                    }
-                    _ => {}
-                },
-                None => {}
-            };
-            tokens.push(token);
-
-            continue;
-        }
-
-        // Use lookahead for = char to process operators
-        if char == '=' {
-            let mut token = Token::new(char, TokenKind::Assign);
-
-            match chars.peek() {
-                Some(next_char) => match next_char {
-                    '=' => {
-                        token = Token::new("==", TokenKind::Equal);
-                        chars.next();
-                    }
-                    _ => {}
-                },
-                None => {}
-            };
-            tokens.push(token);
-
-            continue;
-        }
-
-        if is_break_char(char) {
-            continue;
-        }
-
-        tokens.push(Token::new(char, TokenKind::Illegal));
-        current.clear();
+        return tokens;
     }
-
-    return tokens;
 }

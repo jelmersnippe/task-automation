@@ -8,6 +8,7 @@ use std::{
 };
 
 use crate::interpreter::scope::DataType;
+use crate::lexer::Lexer;
 use crate::task_management::TaskRegistry;
 use crate::{interpreter::Interpreter, parser::Parser};
 
@@ -155,7 +156,7 @@ fn process_file(path: &std::path::Path, runtime_context: &RuntimeContext) -> std
 }
 
 pub fn interpret(input: String, runtime_context: &RuntimeContext) -> Interpreter {
-    let tokens = lexer::lexer(input);
+    let tokens = Lexer::new().tokenize(input);
 
     let mut parser = Parser::new(tokens);
     let ast = parser.parse();

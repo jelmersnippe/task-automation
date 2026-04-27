@@ -1,8 +1,8 @@
-use crate::lexer::{self, Token, TokenKind};
+use crate::lexer::{Lexer, Token, TokenKind};
 
 #[test]
 fn tokenizes_if_else_statement() {
-    let result = lexer::lexer(String::from("if(x == 5) {} else {}"));
+    let result = Lexer::new().tokenize(String::from("if(x == 5) {} else {}"));
 
     assert_eq!(
         result,
@@ -24,7 +24,7 @@ fn tokenizes_if_else_statement() {
 
 #[test]
 fn tokenizes_function_call_without_arguments() {
-    let result = lexer::lexer(String::from("greet()"));
+    let result = Lexer::new().tokenize(String::from("greet()"));
 
     assert_eq!(
         result,
@@ -38,7 +38,7 @@ fn tokenizes_function_call_without_arguments() {
 
 #[test]
 fn tokenizes_function_call_with_arguments() {
-    let result = lexer::lexer(String::from("greet(arg1, arg2)"));
+    let result = Lexer::new().tokenize(String::from("greet(arg1, arg2)"));
 
     assert_eq!(
         result,
@@ -55,7 +55,7 @@ fn tokenizes_function_call_with_arguments() {
 
 #[test]
 fn tokenizes_function_declaration_without_arguments() {
-    let result = lexer::lexer(String::from("fn greet() {}"));
+    let result = Lexer::new().tokenize(String::from("fn greet() {}"));
 
     assert_eq!(
         result,
@@ -72,7 +72,7 @@ fn tokenizes_function_declaration_without_arguments() {
 
 #[test]
 fn tokenizes_function_declaration_with_return() {
-    let result = lexer::lexer(String::from("fn greet() {return 5}"));
+    let result = Lexer::new().tokenize(String::from("fn greet() {return 5}"));
 
     assert_eq!(
         result,
@@ -91,7 +91,7 @@ fn tokenizes_function_declaration_with_return() {
 
 #[test]
 fn tokenizes_function_declaration_with_single_argument() {
-    let result = lexer::lexer(String::from("fn greet(arg1) {}"));
+    let result = Lexer::new().tokenize(String::from("fn greet(arg1) {}"));
 
     assert_eq!(
         result,
@@ -109,7 +109,7 @@ fn tokenizes_function_declaration_with_single_argument() {
 
 #[test]
 fn tokenizes_function_declaration_with_multiple_arguments() {
-    let result = lexer::lexer(String::from("fn greet(arg1, arg2) {}"));
+    let result = Lexer::new().tokenize(String::from("fn greet(arg1, arg2) {}"));
 
     assert_eq!(
         result,
@@ -129,7 +129,7 @@ fn tokenizes_function_declaration_with_multiple_arguments() {
 
 #[test]
 fn tokenizes_arithmetic_operators() {
-    let result = lexer::lexer(String::from("+-/*"));
+    let result = Lexer::new().tokenize(String::from("+-/*"));
 
     assert_eq!(
         result,
@@ -144,7 +144,7 @@ fn tokenizes_arithmetic_operators() {
 
 #[test]
 fn does_not_parse_inverted_not_equal() {
-    let result = lexer::lexer(String::from("=!"));
+    let result = Lexer::new().tokenize(String::from("=!"));
 
     assert_eq!(
         result,
@@ -157,7 +157,7 @@ fn does_not_parse_inverted_not_equal() {
 
 #[test]
 fn tokenizes_logical_operators() {
-    let result = lexer::lexer(String::from("&&||"));
+    let result = Lexer::new().tokenize(String::from("&&||"));
 
     assert_eq!(
         result,
@@ -170,7 +170,7 @@ fn tokenizes_logical_operators() {
 
 #[test]
 fn tokenizes_comparison_operators() {
-    let result = lexer::lexer(String::from("==><!=!>=<="));
+    let result = Lexer::new().tokenize(String::from("==><!=!>=<="));
 
     assert_eq!(
         result,
@@ -188,7 +188,7 @@ fn tokenizes_comparison_operators() {
 
 #[test]
 fn tokenizes_equal_and_assign() {
-    let result = lexer::lexer(String::from("= == ="));
+    let result = Lexer::new().tokenize(String::from("= == ="));
 
     assert_eq!(
         result,
@@ -202,7 +202,7 @@ fn tokenizes_equal_and_assign() {
 
 #[test]
 fn tokenizes_number_variable_assignment() {
-    let result = lexer::lexer(String::from("var x = 5"));
+    let result = Lexer::new().tokenize(String::from("var x = 5"));
 
     assert_eq!(
         result,
@@ -217,7 +217,7 @@ fn tokenizes_number_variable_assignment() {
 
 #[test]
 fn tokenizes_boolean_variable_assignment() {
-    let result = lexer::lexer(String::from("var x = true; var y = false"));
+    let result = Lexer::new().tokenize(String::from("var x = true; var y = false"));
 
     assert_eq!(
         result,
@@ -236,7 +236,7 @@ fn tokenizes_boolean_variable_assignment() {
 
 #[test]
 fn tokenizes_strings() {
-    let result = lexer::lexer(String::from("\"Hello \" \"Running: \""));
+    let result = Lexer::new().tokenize(String::from("\"Hello \" \"Running: \""));
 
     assert_eq!(
         result,
@@ -249,7 +249,7 @@ fn tokenizes_strings() {
 
 #[test]
 fn tokenizes_string_variable_assignment() {
-    let result = lexer::lexer(String::from("var x = \"Hello World\""));
+    let result = Lexer::new().tokenize(String::from("var x = \"Hello World\""));
 
     assert_eq!(
         result,
@@ -264,7 +264,7 @@ fn tokenizes_string_variable_assignment() {
 
 #[test]
 fn tokenizes_numbers() {
-    let result = lexer::lexer(String::from("1 1.1 .1"));
+    let result = Lexer::new().tokenize(String::from("1 1.1 .1"));
 
     assert_eq!(
         result,
@@ -278,21 +278,21 @@ fn tokenizes_numbers() {
 
 #[test]
 fn does_not_parse_number_with_multiple_decimal_separators() {
-    let result = lexer::lexer(String::from("1..1"));
+    let result = Lexer::new().tokenize(String::from("1..1"));
 
     assert_eq!(result, vec![Token::new("1..1", TokenKind::Illegal)]);
 }
 
 #[test]
 fn does_not_parse_identifier_starting_with_number() {
-    let result = lexer::lexer(String::from("1foo"));
+    let result = Lexer::new().tokenize(String::from("1foo"));
 
     assert_eq!(result, vec![Token::new("1foo", TokenKind::Illegal)]);
 }
 
 #[test]
 fn tokenizes_identifiers() {
-    let result = lexer::lexer(String::from("foo _foo fo_o foo_"));
+    let result = Lexer::new().tokenize(String::from("foo _foo fo_o foo_"));
 
     assert_eq!(
         result,
@@ -307,7 +307,7 @@ fn tokenizes_identifiers() {
 
 #[test]
 fn tokenizes_keywords() {
-    let result = lexer::lexer(String::from(
+    let result = Lexer::new().tokenize(String::from(
         "var fn return true false if else while break continue undefined",
     ));
 
@@ -331,7 +331,7 @@ fn tokenizes_keywords() {
 
 #[test]
 fn tokenizes_separators_and_punctuators() {
-    let result = lexer::lexer(String::from("()[]{},.:"));
+    let result = Lexer::new().tokenize(String::from("()[]{},.:"));
 
     assert_eq!(
         result,
@@ -351,7 +351,7 @@ fn tokenizes_separators_and_punctuators() {
 
 #[test]
 fn ignores_break_chars() {
-    let result = lexer::lexer(String::from(" ;\n\t\r"));
+    let result = Lexer::new().tokenize(String::from(" ;\n\t\r"));
 
     assert_eq!(result, vec![]);
 }
