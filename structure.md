@@ -35,27 +35,6 @@ The existing `.dsl` files in `dsl/` are natural candidates to drive these tests.
 
 ---
 
-### 6. `main.rs` Mixes Concerns (Low Priority)
-
-`main.rs` currently handles argument parsing, the REPL loop, file reading, and the lex → parse → interpret pipeline all in one place. When the pipeline grows (error handling, a compilation step, task resolution), this file will accumulate unrelated changes.
-
-**Fix:** Extract the pipeline into a dedicated `runner.rs` module. `main.rs` should only handle I/O and argument dispatch; the pipeline is an internal concern.
-
-```rust
-// main.rs after
-fn main() {
-    let arg = std::env::args().nth(1).expect("...");
-    if arg == "repl" { repl(); return; }
-    runner::run_file(std::path::PathBuf::from(arg));
-}
-
-// runner.rs
-pub fn run(input: String) { ... }
-pub fn run_file(path: PathBuf) { ... }
-```
-
----
-
 ## Target Structure
 
 This is the recommended layout as the project grows toward the task registry goal:
@@ -105,7 +84,5 @@ tests/                          ← crate-level integration tests (full pipeline
 
 The issues above are not independent — some must come before others to avoid doing work twice.
 
-2. **Split `scope.rs` into `value.rs` + `scope.rs`** — unblocks cleaner imports everywhere
-4. **Extract `runner.rs` from `main.rs`** — small, enables integration tests
 5. **Add integration tests** — validates that refactors haven't broken anything, gives confidence for the steps below
 6. **Split `builtins/`** — do this when the number of builtins justifies it, or when the task registry work begins
