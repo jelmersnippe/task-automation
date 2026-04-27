@@ -1,6 +1,6 @@
 use std::{cell::RefCell, fmt, rc::Rc};
 
-use crate::interpreter::{coerce, scope::DataType};
+use crate::interpreter::{coerce, datatype::DataType};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ListDeclaration {

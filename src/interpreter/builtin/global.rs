@@ -8,7 +8,7 @@ use crate::{
     interpreter::{
         builtin::BuiltinFn,
         coerce::{self, expect_string, expect_user_function},
-        scope::DataType,
+        datatype::DataType,
     },
 };
 

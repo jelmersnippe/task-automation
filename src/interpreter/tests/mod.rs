@@ -8,8 +8,8 @@ use crate::{
     RuntimeContext, interpret,
     interpreter::{
         Interpreter,
+        datatype::{Callable, DataType},
         function::FunctionDeclaration,
-        scope::{Callable, DataType},
     },
     parser::{
         expressions::{

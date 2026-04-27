@@ -2,10 +2,10 @@ use std::{collections::HashMap, rc::Rc};
 
 use crate::{
     interpreter::{
+        datatype::{Callable, DataType},
         dictionary::DictionaryDeclaration,
         function::FunctionDeclaration,
         list::ListDeclaration,
-        scope::{Callable, DataType},
         tests::run,
     },
     parser::{

@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::interpreter::{list::ListDeclaration, scope::DataType, tests::run};
+use crate::interpreter::{datatype::DataType, list::ListDeclaration, tests::run};
 
 #[test]
 fn interprets_while_with_condition() {

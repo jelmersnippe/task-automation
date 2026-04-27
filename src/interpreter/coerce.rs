@@ -1,8 +1,8 @@
 use crate::interpreter::{
+    datatype::{Callable, DataType},
     dictionary::DictionaryDeclaration,
     function::FunctionDeclaration,
     list::ListDeclaration,
-    scope::{Callable, DataType},
 };
 
 pub fn expect_string(data: &DataType) -> String {

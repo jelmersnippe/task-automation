@@ -7,7 +7,7 @@ use std::{
     io::{self, Write, stdin},
 };
 
-use crate::interpreter::scope::DataType;
+use crate::interpreter::datatype::DataType;
 use crate::lexer::Lexer;
 use crate::task_management::TaskRegistry;
 use crate::{interpreter::Interpreter, parser::Parser};

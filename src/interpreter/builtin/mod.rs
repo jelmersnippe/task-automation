@@ -1,4 +1,4 @@
-use crate::{RuntimeContext, interpreter::DataType};
+use crate::{RuntimeContext, interpreter::datatype::DataType};
 use std::{fmt, rc::Rc};
 
 pub(crate) mod dictionary;

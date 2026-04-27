@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 
 use crate::{
     RuntimeContext,
-    interpreter::{function::FunctionDeclaration, scope::DataType},
+    interpreter::{datatype::DataType, function::FunctionDeclaration},
 };
 
 pub struct TaskRegistry {

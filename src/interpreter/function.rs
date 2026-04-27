@@ -2,10 +2,7 @@ use std::{cell::RefCell, fmt, rc::Rc};
 
 use crate::{
     RuntimeContext,
-    interpreter::{
-        StatementResult,
-        scope::{DataType, Scope},
-    },
+    interpreter::{StatementResult, datatype::DataType, scope::Scope},
     parser::statements::StatementType,
 };
 

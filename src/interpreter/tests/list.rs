@@ -2,9 +2,9 @@ use std::rc::Rc;
 
 use crate::{
     interpreter::{
+        datatype::{Callable, DataType},
         function::FunctionDeclaration,
         list::ListDeclaration,
-        scope::{Callable, DataType},
         tests::run,
     },
     parser::{

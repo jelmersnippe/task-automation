@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use crate::{
     RuntimeContext,
-    interpreter::{coerce, scope::DataType},
+    interpreter::{coerce, datatype::DataType},
 };
 
 pub(crate) fn has(

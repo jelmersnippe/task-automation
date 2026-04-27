@@ -1,5 +1,6 @@
 pub(crate) mod builtin;
 pub(crate) mod coerce;
+pub(crate) mod datatype;
 pub(crate) mod dictionary;
 pub(crate) mod function;
 pub(crate) mod list;
@@ -11,10 +12,11 @@ use crate::{
     RuntimeContext,
     interpreter::{
         builtin::{Builtin, global::BUILTINS},
+        datatype::{Callable, DataType},
         dictionary::DictionaryDeclaration,
         function::FunctionDeclaration,
         list::ListDeclaration,
-        scope::{Callable, DataType, Scope},
+        scope::Scope,
     },
     parser::{
         expressions::{
