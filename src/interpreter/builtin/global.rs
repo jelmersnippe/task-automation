@@ -130,20 +130,24 @@ fn register_task(
 }
 
 fn run(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>, context: &RuntimeContext) -> Rc<DataType> {
-    let [arg] = data.as_slice() else {
-        panic!(
+    let arg = data.iter().nth(0).expect(
+        format!(
             "run expects 1 argument. Received: {:?}",
             data.iter()
                 .map(|x| x.to_string())
                 .collect::<Vec<_>>()
                 .join(", ")
         )
-    };
+        .as_str(),
+    );
+
+    // TODO: Validate string values
+    let task_args: Vec<Rc<DataType>> = data[1..].iter().cloned().collect();
 
     let task = expect_string(arg);
 
     // TODO: Propogate error
-    let _ = context.task_registry.run(task, context);
+    let _ = context.task_registry.run(task, task_args, context);
 
     Rc::new(DataType::Undefined)
 }

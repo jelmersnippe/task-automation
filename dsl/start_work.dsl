@@ -1,14 +1,16 @@
-fn open_main_terminal() {
+fn task(name, function) {
+    register_task(name, function)
+}
+
+task("editor_terminal", fn() {
     spawn_terminal("~/dev/task-automation", "git fetch && git pull && cargo build && nvim .")
-}
+})
 
-fn open_secondary_terminal() {
+task("secondary_terminal", fn() {
     spawn_terminal("~/dev/task-automation")
-}
+})
 
-fn start_work() {
-    open_main_terminal()
-    open_secondary_terminal()
-}
-
-register_task("start_work", start_work)
+task("start_work", fn() {
+    run("editor_terminal")
+    run("secondary_terminal")
+})

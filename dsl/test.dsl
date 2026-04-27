@@ -130,3 +130,8 @@ print(simple_list[0])
 
 var complex_list = [outer(5), outer]
 print(complex_list)
+
+register_task("test", fn(arg) {
+    print(arg)
+})
+
