@@ -193,30 +193,6 @@ The `matches!` macro checks a pattern without binding variables, which is exactl
 
 ---
 
-## 13. Move `RefCell` Inside `Scope` (High Priority)
-
-Currently the entire `Scope` struct is wrapped at every call site as `Rc<RefCell<Scope>>`. This is broader than necessary: `parent` is set once at construction and never reassigned — only `variables` is ever mutated. The `RefCell` boundary should be as narrow as possible.
-
-**The change:**
-
-```rust
-pub struct Scope {
-    parent: Option<Rc<Scope>>,
-    variables: RefCell<HashMap<String, Rc<DataType>>>,
-}
-```
-
-**What this unlocks:**
-
-- `Rc<RefCell<Scope>>` everywhere becomes `Rc<Scope>` — the most visible win
-- All three methods (`get_variable`, `set_variable`, `update_variable`) can take `&self` instead of `&mut self`, since mutation goes through the inner `RefCell`
-- `.borrow()` and `.borrow_mut()` disappear from all call sites — they move inside the methods where they belong
-- The recursive parent call in `update_variable` goes from `parent.borrow_mut().update_variable(...)` to just `parent.update_variable(...)`
-
-`ListDeclaration` and `DictionaryDeclaration` already use this exact pattern in the codebase — `Scope` should follow suit.
-
----
-
 ## 14. Type Aliases for Shared Reference Types (Medium Priority)
 
 Even after item 13, `Rc<RefCell<>>` or similar compound types may remain in other parts of the codebase. Writing these types out in full at every function signature makes the code harder to scan and harder to refactor.
@@ -261,16 +237,3 @@ The rule of thumb:
 
 Reducing `RefCell` usage where it isn't needed makes borrow errors compile-time rather than runtime panics, which is always preferable in Rust.
 
----
-
-## 17. Arena / Index-Based Scope (Low Priority — Long Term)
-
-The root cause of `Rc<RefCell<>>` on `Scope` is shared ownership: child scopes hold a reference back to their parent. An alternative that avoids shared ownership entirely is an **arena** approach:
-
-- Store all `Scope` instances in a single `Vec<Scope>` (the arena)
-- Instead of `Rc<Scope>`, pass around a `usize` index into the arena
-- Parent references become `Option<usize>` — a plain integer, no smart pointer needed
-
-No `Rc`, no `RefCell`, no runtime borrow checking. The tradeoff is that the arena must be passed explicitly wherever scopes are accessed, which adds a parameter to many functions.
-
-This is a significant architectural change and not worth doing now, but it is the idiomatic direction for interpreter implementations in Rust.

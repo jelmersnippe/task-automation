@@ -38,42 +38,6 @@ let [arg] = expect_args::<1>("print", data);
 
 ---
 
-## 2. Test setup pipeline
-
-**Where:** `interpreter/tests/mod.rs`, `interpreter/tests/list.rs`, `interpreter/tests/dictionary.rs`
-
-The same three-step pipeline appears 30+ times:
-
-```rust
-let tokens = Lexer::new(/* dsl string */).tokenize();
-let ast = Parser::new(tokens).parse();
-let mut interpreter = Interpreter::new(ast);
-interpreter.interpret();
-```
-
-**Fix idea:** A `run` helper in the test module:
-
-```rust
-fn run(dsl: &str) -> Interpreter {
-    let tokens = Lexer::new(dsl.to_string()).tokenize();
-    let ast = Parser::new(tokens).parse();
-    let mut interpreter = Interpreter::new(ast);
-    interpreter.interpret();
-    interpreter
-}
-```
-
-Every test then becomes:
-
-```rust
-let interpreter = run("let x = 1 + 2");
-// assert on interpreter.scope ...
-```
-
-This also means if the pipeline ever changes (e.g. a new compilation step is added), you update one place instead of 30.
-
----
-
 ## 3. `Rc::new(DataType::Undefined())` at the end of void builtins
 
 **Where:** Every void builtin in `interpreter/builtin.rs`
@@ -192,7 +156,6 @@ A longer-term fix would be to unify `LiteralType` and `DataType` or derive one f
 | # | Pattern | Occurrences | Suggested fix |
 |---|---------|-------------|---------------|
 | 1 | Builtin arg validation | ~10 builtins | `expect_args::<N>()` helper |
-| 2 | Lex → parse → interpret pipeline in tests | 30+ | `run(dsl: &str) -> Interpreter` helper |
 | 3 | `Rc::new(DataType::Undefined())` | ~10 builtins | `undefined()` helper |
 | 4 | Dict key resolution reimplemented inline | 1 | Call existing `expect_string` helper |
 | 5 | Intermediate `Vec` before `HashMap` | 1 | Collect directly into `HashMap` |
