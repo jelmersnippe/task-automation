@@ -10,6 +10,7 @@ use crate::{
         list::ListDeclaration,
         scope::Scope,
     },
+    modules::{Module, ModuleFunction},
 };
 
 #[derive(Debug, Clone)]
@@ -20,12 +21,14 @@ pub enum DataType {
     Function(Callable),
     List(ListDeclaration),
     Dictionary(DictionaryDeclaration),
+    Module(Module),
     Undefined,
 }
 
 #[derive(Debug, Clone)]
 pub enum Callable {
     BuiltIn(Builtin),
+    Module(ModuleFunction),
     User(FunctionDeclaration),
 }
 
@@ -34,6 +37,7 @@ impl fmt::Display for Callable {
         match self {
             Callable::BuiltIn(builtin) => write!(f, "{}", builtin),
             Callable::User(function_declaration) => write!(f, "{}", function_declaration),
+            Callable::Module(module) => write!(f, "{}", module),
         }
     }
 }
@@ -51,6 +55,9 @@ impl Callable {
             }
             Callable::User(function_declaration) => {
                 function_declaration.execute(parameters.resolve(scope.clone(), context), context)
+            }
+            Callable::Module(module_fn) => {
+                module_fn.execute(parameters.resolve(scope.clone(), context), context)
             }
         }
     }
@@ -76,21 +83,35 @@ impl PartialEq for DataType {
 
 impl DataType {
     pub(crate) fn get_method(self: &Rc<DataType>, name: &str) -> Rc<DataType> {
-        Rc::new(DataType::Function(Callable::BuiltIn(match self.as_ref() {
-            DataType::Dictionary(_) => match name {
+        Rc::new(DataType::Function(match self.as_ref() {
+            DataType::Dictionary(_) => Callable::BuiltIn(match name {
                 "has" => Builtin::new("has", builtin::dictionary::has).bind(self.clone()),
                 "delete" => Builtin::new("delete", builtin::dictionary::delete).bind(self.clone()),
                 "clear" => Builtin::new("clear", builtin::dictionary::clear).bind(self.clone()),
-                _ => panic!("Method with name '{}' not found on dict", name),
-            },
-            DataType::List(_) => match name {
+                _ => panic!("Function with name '{}' not found on dict", name),
+            }),
+            DataType::List(_) => Callable::BuiltIn(match name {
                 "pop" => Builtin::new("pop", builtin::list::pop).bind(self.clone()),
                 "push" => Builtin::new("push", builtin::list::push).bind(self.clone()),
                 "clear" => Builtin::new("clear", builtin::list::clear).bind(self.clone()),
-                _ => panic!("Method with name '{}' not found on list", name),
-            },
+                _ => panic!("Function with name '{}' not found on list", name),
+            }),
+            DataType::Module(module) => {
+                let module_fn = module.functions.get(name);
+
+                match module_fn {
+                    Some(function) => Callable::Module(ModuleFunction {
+                        name: name.to_string(),
+                        function: *function,
+                    }),
+                    _ => panic!(
+                        "Function with name '{}' not found on module {}",
+                        name, module.name
+                    ),
+                }
+            }
             _ => panic!("No methods available on {}", self),
-        })))
+        }))
     }
 }
 
@@ -103,6 +124,7 @@ impl fmt::Display for DataType {
             DataType::Function(function_declaration) => format!("{}", function_declaration),
             DataType::List(values) => format!("{}", values),
             DataType::Dictionary(entries) => format!("{}", entries),
+            DataType::Module(module) => format!("{}", module),
             DataType::Undefined => "undefined".to_string(),
         };
         write!(f, "{}", string)

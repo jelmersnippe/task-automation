@@ -1,26 +1,31 @@
+use crate::modules::{ModuleRegistry, git_module};
 use crate::runner::{repl, run};
 use crate::task_management::TaskRegistry;
 
 mod interpreter;
 mod lexer;
+mod modules;
 mod parser;
 mod runner;
 mod task_management;
 
 pub struct RuntimeContext {
     pub task_registry: TaskRegistry,
+    pub module_registry: ModuleRegistry,
 }
 
 impl RuntimeContext {
     pub fn new() -> Self {
         Self {
             task_registry: TaskRegistry::new(),
+            module_registry: ModuleRegistry::new(),
         }
     }
 }
 
 fn main() -> std::io::Result<()> {
-    let runtime_context = RuntimeContext::new();
+    let mut runtime_context = RuntimeContext::new();
+    runtime_context.module_registry.register(git_module());
 
     let arg = std::env::args()
         .nth(1)

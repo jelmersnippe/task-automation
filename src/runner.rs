@@ -130,7 +130,7 @@ pub fn interpret(input: String, runtime_context: &RuntimeContext) -> Interpreter
     let mut parser = Parser::new(tokens);
     let ast = parser.parse();
 
-    let mut interpreter = Interpreter::new(ast);
+    let mut interpreter = Interpreter::new(ast, runtime_context);
     interpreter.interpret(runtime_context);
 
     interpreter

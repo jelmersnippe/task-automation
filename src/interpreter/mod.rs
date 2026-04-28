@@ -37,7 +37,7 @@ pub struct Interpreter {
 }
 
 impl Interpreter {
-    pub fn new(statements: Vec<StatementType>) -> Self {
+    pub fn new(statements: Vec<StatementType>, context: &RuntimeContext) -> Self {
         let mut scope = Scope::new(None);
 
         for (k, v) in BUILTINS {
@@ -47,6 +47,13 @@ impl Interpreter {
                     k,
                     v.clone(),
                 )))),
+            );
+        }
+
+        for module in &context.module_registry.modules {
+            scope.set_variable(
+                module.name.clone(),
+                Rc::new(DataType::Module(module.clone())),
             );
         }
 
