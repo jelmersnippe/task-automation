@@ -95,31 +95,31 @@ let map: HashMap<String, Rc<DataType>> = pairs
 
 ---
 
-## 6. `DataType::Function(Callable::User(...))` constructor
+## 6. Unified Callable Construction (Updated)
 
-**Where:** `interpreter/mod.rs`, `interpreter/function.rs`
+**Where:** Function construction throughout the codebase
 
-Constructing a user-defined function value requires three levels of nesting:
-
-```rust
-DataType::Function(Callable::User(UserFunction {
-    parameters: ...,
-    body: ...,
-    scope: ...,
-}))
-```
-
-This is verbose and the internals (`Callable`, `UserFunction`) are an implementation detail callers shouldn't have to know about.
-
-**Fix idea:** A static constructor method on `DataType`:
+With the function call system unification (see FUNCTION_UNIFICATION_PLAN.md), user functions, built-ins, and module functions all use the same execution signature. Constructing callable values previously required nested constructor calls that exposed implementation details:
 
 ```rust
-impl DataType {
-    pub fn user_function(parameters: Vec<String>, body: Vec<StatementType>, scope: Rc<Scope>) -> Self {
-        DataType::Function(Callable::User(UserFunction { parameters, body, scope }))
-    }
-}
+// Old approach (to be replaced)
+DataType::Function(Callable::User(UserFunction { parameters, body, scope }))
 ```
+
+**Fix idea:** Use unified callable factories that handle adaptation internally:
+
+```rust
+// For user functions (adapted to unified signature)
+Callable::new_user(func_decl)
+
+// For built-in functions (already match unified signature)  
+Callable::new_builtin(builtin_fn)
+
+// For module functions (adapted to unified signature)
+Callable::new_module(module_fn)
+```
+
+This eliminates the need for nested constructor calls and provides a uniform interface for all callable types. The `Callable::new_*` methods encapsulate the appropriate adaptation layer, hiding implementation details from callers.
 
 ---
 
@@ -146,6 +146,8 @@ This works if `DataType` implements `Display` (which it does). One branch replac
 Both types implement `Display` with a `match` that maps each variant to a string. The structure is essentially identical.
 
 This one is harder to de-duplicate mechanically, but it's worth knowing they exist as a pair — if you add a new literal type, you need to update both `Display` implementations, which is easy to forget.
+
+> NOTE: With the function call unification plan (see FUNCTION_UNIFICATION_PLAN.md), Display implementations for callable types will be further simplified as all callables use a unified internal representation. The core issue of duplicated logic between LiteralType and DataType Display impls remains relevant for non-callable types, but callable Display logic will be centralized.
 
 A longer-term fix would be to unify `LiteralType` and `DataType` or derive one from the other, but that's an architectural change. For now, just be aware of the coupling.
 

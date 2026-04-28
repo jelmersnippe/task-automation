@@ -11,10 +11,12 @@
 
 - [ ] Replace `f32` with `f64` for number storage to reduce precision loss, or introduce separate `Int` and `Float` variants in `DataType` for more principled numeric handling.
 - [ ] Replace `panic!` throughout with `Result<T, E>` and a custom `InterpreterError` enum, using `?` for propagation — this is idiomatic Rust and makes errors recoverable.
+  
+  > NOTE: This item requires coordination with the function unification plan. While general error handling should move to Result, the unification plan retains `panic!` for specific cases like missing method lookup (get_method) to maintain consistency with existing behavior. Consider whether these should be unified under the Result approach as part of a broader error handling refactor.
 - [x] Return an error instead of `DataType::Undefined()` from `scope.get_variable` when a variable doesn't exist — silent undefined values cause confusing panics far from the actual mistake.
 - [ ] Remove dead code in `lexer/lexer.rs` — the string-accumulation guard at the top of the main loop makes a second identical check further down unreachable.
 - [ ] Document or rewrite `insert_new_right` in `parser/expressions.rs` — the custom iterative precedence algorithm is undocumented and hard to reason about; inline comments explaining the algorithm are the minimum, a rewrite to Pratt parsing is preferred (see Architecture section).
-- [ ] Clarify `PartialEq` behavior for `Callable::BuiltIn` in `interpreter/scope.rs` — two instances of the same builtin always compare as unequal, which could confuse users if functions are ever compared in DSL code. Document this as intentional or remove `PartialEq` from `Callable`.
+- [ ] Clarify `PartialEq` behavior for `Callable` variants — with the unification plan, all callable types will use a unified internal representation, making equality comparison more meaningful. Two callables should compare equal if they refer to the same underlying function (accounting for adaptations). This replaces the previous issue where built-in functions always compared as unequal.
 
 ## Architecture
 
