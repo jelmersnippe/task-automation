@@ -1,6 +1,6 @@
 use crate::{
-    RuntimeContext,
     interpreter::{coerce::ArgumentError, datatype::DataType},
+    RuntimeContext,
 };
 use std::{fmt, rc::Rc, sync::Arc};
 

@@ -4,12 +4,12 @@ use std::{
 };
 
 use crate::{
-    RuntimeContext,
     interpreter::{
         builtin::{BuiltinFn, CallInfo, ExecutionError},
         coerce::Args,
         datatype::DataType,
     },
+    RuntimeContext,
 };
 
 pub static BUILTINS: &[(&str, BuiltinFn)] = &[

@@ -1,12 +1,12 @@
 use std::rc::Rc;
 
 use crate::{
-    RuntimeContext,
     interpreter::{
         builtin::{CallInfo, ExecutionError},
         coerce::{self, Args, DataKind},
         datatype::DataType,
     },
+    RuntimeContext,
 };
 
 pub(crate) fn clear(

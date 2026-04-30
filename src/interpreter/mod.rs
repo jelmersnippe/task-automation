@@ -9,9 +9,8 @@ pub(crate) mod scope;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
-    RuntimeContext,
     interpreter::{
-        builtin::{CallInfo, ExecutionError, global::BUILTINS},
+        builtin::{global::BUILTINS, CallInfo, ExecutionError},
         coerce::Args,
         datatype::{Callable, DataType},
         dictionary::DictionaryDeclaration,
@@ -26,13 +25,14 @@ use crate::{
         },
         statements::{AssignmentStatement, ExpressionStatement, StatementType},
     },
+    RuntimeContext,
 };
 
 #[cfg(test)]
 mod tests;
 
 pub struct Interpreter {
-    scope: Rc<RefCell<Scope>>,
+    pub(crate) scope: Rc<RefCell<Scope>>,
     statements: Vec<StatementType>,
     pos: usize,
 }

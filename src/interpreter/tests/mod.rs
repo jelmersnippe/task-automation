@@ -5,8 +5,7 @@ mod r#while;
 use std::rc::Rc;
 
 use crate::{
-    RuntimeContext,
-    interpreter::{Interpreter, datatype::DataType, function::FunctionDeclaration},
+    interpreter::{datatype::DataType, function::FunctionDeclaration, Interpreter},
     parser::{
         expressions::{
             BinaryOperationExpression, BinaryOperator, ExpressionType, IdentifierExpression,
@@ -14,6 +13,7 @@ use crate::{
         statements::StatementType,
     },
     runner::interpret,
+    RuntimeContext,
 };
 
 pub fn run(dsl: &'static str) -> Interpreter {

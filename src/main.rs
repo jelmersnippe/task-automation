@@ -1,6 +1,6 @@
 use std::env;
 
-use crate::modules::{ModuleRegistry, git_module};
+use crate::modules::{GitRunner, ModuleRegistry, ProcessGitRunner, git_module};
 use crate::runner::{RuntimeError, repl, run};
 use crate::task_management::TaskRegistry;
 
@@ -15,6 +15,7 @@ pub struct RuntimeContext {
     pub task_registry: TaskRegistry,
     pub module_registry: ModuleRegistry,
     pub cwd: String,
+    pub git_runner: Box<dyn GitRunner>,
 }
 
 impl RuntimeContext {
@@ -27,6 +28,7 @@ impl RuntimeContext {
                 .into_os_string()
                 .into_string()
                 .unwrap(),
+            git_runner: Box::new(ProcessGitRunner),
         }
     }
 }

@@ -1,11 +1,62 @@
-use std::{collections::HashMap, fmt};
+use std::{
+    collections::HashMap,
+    fmt,
+    process::{Command, Stdio},
+};
 
 use crate::{
     interpreter::{builtin::BuiltinFn, datatype::Callable},
     modules::git::create_git_module,
 };
 
-mod git;
+pub mod git;
+
+#[derive(Debug, Clone)]
+pub struct GitError {
+    pub command: String,
+    pub reason: String,
+}
+
+impl fmt::Display for GitError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Git command '{}' failed: {}", self.command, self.reason)
+    }
+}
+
+pub trait GitRunner {
+    fn run(&self, args: &[&str], cwd: &str) -> Result<String, GitError>;
+}
+
+pub struct ProcessGitRunner;
+
+impl GitRunner for ProcessGitRunner {
+    fn run(&self, args: &[&str], cwd: &str) -> Result<String, GitError> {
+        let output = Command::new("git")
+            .current_dir(cwd)
+            .args(args)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .map_err(|error| GitError {
+                reason: error.to_string(),
+                command: format!("git {}", args.join(" ")),
+            })?;
+
+        if !output.status.success() {
+            return Err(GitError {
+                reason: String::from_utf8_lossy(&output.stderr).to_string(),
+                command: format!("git {}", args.join(" ")),
+            });
+        }
+
+        let stdout = String::from_utf8(output.stdout).map_err(|e| GitError {
+            reason: e.to_string(),
+            command: format!("git {}", args.join(" ")),
+        })?;
+
+        Ok(stdout)
+    }
+}
 
 #[derive(Clone)]
 pub struct Module {
