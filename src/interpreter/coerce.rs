@@ -1,7 +1,6 @@
 use crate::interpreter::{
     datatype::{Callable, DataType},
     dictionary::DictionaryDeclaration,
-    function::FunctionDeclaration,
     list::ListDeclaration,
 };
 
@@ -14,9 +13,9 @@ pub fn expect_string(data: &DataType) -> String {
     }
 }
 
-pub fn expect_user_function(data: &DataType) -> &FunctionDeclaration {
-    if let DataType::Function(Callable::User(x)) = data {
-        return x;
+pub fn expect_callable(data: &DataType) -> &Callable {
+    if let DataType::Function(callable) = data {
+        return callable;
     }
 
     panic!("Can only use user defined functions")

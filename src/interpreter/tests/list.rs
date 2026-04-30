@@ -2,10 +2,7 @@ use std::rc::Rc;
 
 use crate::{
     interpreter::{
-        datatype::{Callable, DataType},
-        function::FunctionDeclaration,
-        list::ListDeclaration,
-        tests::run,
+        datatype::DataType, function::FunctionDeclaration, list::ListDeclaration, tests::run,
     },
     parser::{
         expressions::{ExpressionType, LiteralType},
@@ -256,7 +253,7 @@ fn interpret_list_declaration() {
             ]))),
             Rc::new(DataType::Number(2.0)),
             Rc::new(DataType::Number(3.0)),
-            Rc::new(DataType::Function(Callable::User(
+            Rc::new(DataType::Function(
                 FunctionDeclaration::new(
                     Some(String::from("foo")),
                     vec![],
@@ -265,7 +262,8 @@ fn interpret_list_declaration() {
                     ))],
                     interpreter.scope.clone()
                 )
-            ))),
+                .into_callable()
+            )),
         ])))
     );
 }

@@ -6,8 +6,8 @@ use std::{
 use crate::{
     RuntimeContext,
     interpreter::{
-        builtin::{BuiltinFn, Executable},
-        coerce::{self, expect_string, expect_user_function},
+        builtin::BuiltinFn,
+        coerce::{self, expect_callable, expect_string},
         datatype::DataType,
     },
 };
@@ -120,7 +120,7 @@ fn register_task(
     };
 
     let task_name = expect_string(arg1);
-    let task_block = expect_user_function(arg2);
+    let task_block = expect_callable(arg2);
 
     context
         .task_registry

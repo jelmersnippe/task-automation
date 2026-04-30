@@ -11,7 +11,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use crate::{
     RuntimeContext,
     interpreter::{
-        builtin::{Builtin, global::BUILTINS},
+        builtin::global::BUILTINS,
         datatype::{Callable, DataType},
         dictionary::DictionaryDeclaration,
         function::FunctionDeclaration,
@@ -43,7 +43,7 @@ impl Interpreter {
         for (k, v) in BUILTINS {
             scope.set_variable(
                 k.to_string(),
-                Rc::new(DataType::Function(Callable::BuiltIn(Builtin::new(k, *v)))),
+                Rc::new(DataType::Function(Callable::new(Some(k.to_string()), *v))),
             );
         }
 
@@ -99,14 +99,15 @@ fn interpret_statement(
 
             scope.borrow_mut().set_variable(
                 identifier.clone(),
-                Rc::new(DataType::Function(Callable::User(
+                Rc::new(DataType::Function(
                     FunctionDeclaration::new(
                         Some(identifier.clone()),
                         arguments,
                         statements,
                         scope.clone(),
-                    ),
-                ))),
+                    )
+                    .into_callable(),
+                )),
             );
 
             StatementResult::Void
@@ -324,12 +325,13 @@ fn execute_function(
 ) -> Rc<DataType> {
     let value = interpret_expression(scope.clone(), &statement.value, context);
 
-    if let DataType::Function(function_declaration) = value.as_ref() {
-        function_declaration.execute(
-            &Parameters::new(statement.parameters.clone()),
-            scope.clone(),
-            context,
-        )
+    if let DataType::Function(callable) = value.as_ref() {
+        let parameters = statement
+            .parameters
+            .iter()
+            .map(|x| interpret_expression(scope.clone(), x, context))
+            .collect();
+        callable.execute(parameters, context)
     } else {
         panic!("Expression is not callable");
     }
@@ -361,9 +363,10 @@ pub fn interpret_expression(
                 .collect();
             let statements = function_declaration_expression.body.statements.clone();
 
-            Rc::new(DataType::Function(Callable::User(
-                FunctionDeclaration::new(None, arguments, statements, scope.clone()),
-            )))
+            Rc::new(DataType::Function(
+                FunctionDeclaration::new(None, arguments, statements, scope.clone())
+                    .into_callable(),
+            ))
         }
         ExpressionType::BinaryOperation(binary_operation_expression) => Rc::new(
             interpret_binary_expression(scope.clone(), binary_operation_expression, context),
@@ -506,32 +509,5 @@ fn interpret_unary_expression(
             )
         }
         _ => panic!("Unsupported expression type for unary processing"),
-    }
-}
-
-#[derive(PartialEq, Debug, Clone)]
-pub struct Parameters {
-    values: Vec<ExpressionType>,
-}
-
-impl Parameters {
-    pub fn new(values: Vec<ExpressionType>) -> Self {
-        Self { values }
-    }
-
-    pub fn resolve(
-        &self,
-        scope: Rc<RefCell<Scope>>,
-        context: &mut RuntimeContext,
-    ) -> Vec<Rc<DataType>> {
-        return self
-            .values
-            .iter()
-            .map(|x| interpret_expression(scope.clone(), x, context))
-            .collect();
-    }
-
-    pub fn len(&self) -> usize {
-        return self.values.len();
     }
 }

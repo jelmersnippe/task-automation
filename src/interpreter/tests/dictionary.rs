@@ -2,11 +2,8 @@ use std::{collections::HashMap, rc::Rc};
 
 use crate::{
     interpreter::{
-        datatype::{Callable, DataType},
-        dictionary::DictionaryDeclaration,
-        function::FunctionDeclaration,
-        list::ListDeclaration,
-        tests::run,
+        datatype::DataType, dictionary::DictionaryDeclaration, function::FunctionDeclaration,
+        list::ListDeclaration, tests::run,
     },
     parser::{
         expressions::{ExpressionType, LiteralType},
@@ -215,7 +212,7 @@ fn interprets_dictionary_declaration() {
                 (String::from("f"), Rc::new(DataType::Number(3.0))),
                 (
                     String::from("g"),
-                    Rc::new(DataType::Function(Callable::User(
+                    Rc::new(DataType::Function(
                         FunctionDeclaration::new(
                             Some(String::from("foo")),
                             vec![],
@@ -224,7 +221,8 @@ fn interprets_dictionary_declaration() {
                             ))],
                             interpreter.scope.clone()
                         )
-                    )))
+                        .into_callable()
+                    ))
                 ),
             ])
         )))

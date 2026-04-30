@@ -6,11 +6,7 @@ use std::rc::Rc;
 
 use crate::{
     RuntimeContext,
-    interpreter::{
-        Interpreter,
-        datatype::{Callable, DataType},
-        function::FunctionDeclaration,
-    },
+    interpreter::{Interpreter, datatype::DataType, function::FunctionDeclaration},
     parser::{
         expressions::{
             BinaryOperationExpression, BinaryOperator, ExpressionType, IdentifierExpression,
@@ -285,7 +281,7 @@ fn interprets_function_declaration_with_return() {
             .scope
             .borrow()
             .get_variable(&String::from("foo")),
-        Rc::new(DataType::Function(Callable::User(
+        Rc::new(DataType::Function(
             FunctionDeclaration::new(
                 Some(String::from("foo")),
                 vec![String::from("bar"), String::from("baz")],
@@ -302,7 +298,8 @@ fn interprets_function_declaration_with_return() {
                 ))],
                 interpreter.scope.clone()
             )
-        )))
+            .into_callable()
+        ))
     );
 }
 
@@ -315,14 +312,15 @@ fn interprets_function_declaration_with_arguments() {
             .scope
             .borrow()
             .get_variable(&String::from("foo")),
-        Rc::new(DataType::Function(Callable::User(
+        Rc::new(DataType::Function(
             FunctionDeclaration::new(
                 Some(String::from("foo")),
                 vec![String::from("bar"), String::from("baz")],
                 vec![],
                 interpreter.scope.clone()
             )
-        )))
+            .into_callable()
+        ))
     );
 }
 
@@ -335,9 +333,10 @@ fn interprets_function_declaration_as_variable() {
             .scope
             .borrow()
             .get_variable(&String::from("foo")),
-        Rc::new(DataType::Function(Callable::User(
+        Rc::new(DataType::Function(
             FunctionDeclaration::new(None, vec![], vec![], interpreter.scope.clone())
-        )))
+                .into_callable()
+        ))
     );
 }
 
@@ -350,14 +349,15 @@ fn interprets_function_declaration() {
             .scope
             .borrow()
             .get_variable(&String::from("foo")),
-        Rc::new(DataType::Function(Callable::User(
+        Rc::new(DataType::Function(
             FunctionDeclaration::new(
                 Some(String::from("foo")),
                 vec![],
                 vec![],
                 interpreter.scope.clone()
             )
-        )))
+            .into_callable()
+        ))
     );
 }
 
@@ -370,9 +370,10 @@ fn interprets_variable_assignment_function() {
     let interpreter = run(dsl);
     assert_eq!(
         interpreter.scope.borrow().get_variable(&String::from("x")),
-        Rc::new(DataType::Function(Callable::User(
+        Rc::new(DataType::Function(
             FunctionDeclaration::new(None, vec![], vec![], interpreter.scope.clone())
-        )))
+                .into_callable()
+        ))
     );
 }
 

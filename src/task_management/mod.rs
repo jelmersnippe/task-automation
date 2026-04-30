@@ -1,9 +1,9 @@
 use std::{cell::RefCell, collections::HashMap, fmt};
 
-use crate::interpreter::function::FunctionDeclaration;
+use crate::interpreter::datatype::Callable;
 
 pub struct TaskRegistry {
-    tasks: RefCell<HashMap<String, FunctionDeclaration>>,
+    tasks: RefCell<HashMap<String, Callable>>,
 }
 
 impl TaskRegistry {
@@ -13,7 +13,7 @@ impl TaskRegistry {
         }
     }
 
-    pub fn register(&self, name: String, task: FunctionDeclaration) {
+    pub fn register(&self, name: String, task: Callable) {
         if self.tasks.borrow().contains_key(name.as_str()) {
             println!(
                 "Hey buddy! Task '{}' was already registered, but I'll override it for you. I hope you know what you're doing :)",
@@ -24,7 +24,7 @@ impl TaskRegistry {
         self.tasks.borrow_mut().insert(name, task);
     }
 
-    pub fn get(&self, name: String) -> Result<FunctionDeclaration, TaskRunError> {
+    pub fn get(&self, name: String) -> Result<Callable, TaskRunError> {
         match self.tasks.borrow().get(&name) {
             Some(task) => Ok(task.clone()),
             None => Err(TaskRunError {

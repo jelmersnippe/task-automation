@@ -1,16 +1,13 @@
-use std::{cell::RefCell, fmt, rc::Rc};
+use std::{fmt, rc::Rc, sync::Arc};
 
 use crate::{
     RuntimeContext,
     interpreter::{
-        Parameters,
-        builtin::{self, Builtin},
+        builtin::{self, BuiltinFn, Executable},
         dictionary::DictionaryDeclaration,
-        function::FunctionDeclaration,
         list::ListDeclaration,
-        scope::Scope,
     },
-    modules::{Module, ModuleFunction},
+    modules::Module,
 };
 
 #[derive(Debug, Clone)]
@@ -25,41 +22,61 @@ pub enum DataType {
     Undefined,
 }
 
-#[derive(Debug, Clone)]
-pub enum Callable {
-    BuiltIn(Builtin),
-    Module(ModuleFunction),
-    User(FunctionDeclaration),
+#[derive(Clone)]
+pub struct Callable {
+    name: Option<String>,
+    function: Executable,
+    receiver: Option<Rc<DataType>>,
+}
+
+impl fmt::Debug for Callable {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Callable")
+            .field("name", &self.name)
+            .finish()
+    }
 }
 
 impl fmt::Display for Callable {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Callable::BuiltIn(builtin) => write!(f, "{}", builtin),
-            Callable::User(function_declaration) => write!(f, "{}", function_declaration),
-            Callable::Module(module) => write!(f, "{}", module),
+        write!(f, "fn ")?;
+
+        if let Some(name) = &self.name {
+            write!(f, "{}", name)?;
         }
+
+        write!(f, "() {{ }}")
     }
 }
 
 impl Callable {
+    pub fn new(name: Option<String>, function: BuiltinFn) -> Self {
+        Self {
+            name,
+            function: Arc::new(function),
+            receiver: None,
+        }
+    }
+    pub fn from_executable(name: Option<String>, executable: Executable) -> Self {
+        Self {
+            name,
+            function: executable,
+            receiver: None,
+        }
+    }
+    pub fn bind(self, receiver: Rc<DataType>) -> Self {
+        Self {
+            name: self.name,
+            function: self.function.clone(),
+            receiver: Some(receiver),
+        }
+    }
     pub fn execute(
         &self,
-        parameters: &Parameters,
-        scope: Rc<RefCell<Scope>>,
+        parameters: Vec<Rc<DataType>>,
         context: &mut RuntimeContext,
     ) -> Rc<DataType> {
-        match self {
-            Callable::BuiltIn(builtin) => {
-                builtin.execute(parameters.resolve(scope.clone(), context), context)
-            }
-            Callable::User(function_declaration) => {
-                function_declaration.execute(parameters.resolve(scope.clone(), context), context)
-            }
-            Callable::Module(module_fn) => {
-                module_fn.execute(parameters.resolve(scope.clone(), context), context)
-            }
-        }
+        (self.function)(self.receiver.clone(), parameters, context)
     }
 }
 
@@ -69,10 +86,7 @@ impl PartialEq for DataType {
             (Self::Number(l0), Self::Number(r0)) => l0 == r0,
             (Self::String(l0), Self::String(r0)) => l0 == r0,
             (Self::Boolean(l0), Self::Boolean(r0)) => l0 == r0,
-            (Self::Function(l0), Self::Function(r0)) => match (l0, r0) {
-                (Callable::User(f1), Callable::User(f2)) => f1 == f2,
-                _ => false,
-            },
+            (Self::Function(l0), Self::Function(r0)) => l0.name == r0.name,
             (Self::List(l0), Self::List(r0)) => l0 == r0,
             (Self::Dictionary(l0), Self::Dictionary(r0)) => l0 == r0,
             (Self::Undefined, Self::Undefined) => true,
@@ -84,25 +98,32 @@ impl PartialEq for DataType {
 impl DataType {
     pub(crate) fn get_method(self: &Rc<DataType>, name: &str) -> Rc<DataType> {
         Rc::new(DataType::Function(match self.as_ref() {
-            DataType::Dictionary(_) => Callable::BuiltIn(match name {
-                "has" => Builtin::new("has", builtin::dictionary::has).bind(self.clone()),
-                "delete" => Builtin::new("delete", builtin::dictionary::delete).bind(self.clone()),
-                "clear" => Builtin::new("clear", builtin::dictionary::clear).bind(self.clone()),
+            DataType::Dictionary(_) => match name {
+                "has" => Callable::new(Some(String::from("has")), builtin::dictionary::has)
+                    .bind(self.clone()),
+                "delete" => {
+                    Callable::new(Some(String::from("delete")), builtin::dictionary::delete)
+                        .bind(self.clone())
+                }
+                "clear" => Callable::new(Some(String::from("clear")), builtin::dictionary::clear)
+                    .bind(self.clone()),
                 _ => panic!("Function with name '{}' not found on dict", name),
-            }),
-            DataType::List(_) => Callable::BuiltIn(match name {
-                "pop" => Builtin::new("pop", builtin::list::pop).bind(self.clone()),
-                "push" => Builtin::new("push", builtin::list::push).bind(self.clone()),
-                "clear" => Builtin::new("clear", builtin::list::clear).bind(self.clone()),
+            },
+            DataType::List(_) => match name {
+                "pop" => {
+                    Callable::new(Some(String::from("pop")), builtin::list::pop).bind(self.clone())
+                }
+                "push" => Callable::new(Some(String::from("push")), builtin::list::push)
+                    .bind(self.clone()),
+                "clear" => Callable::new(Some(String::from("clear")), builtin::list::clear)
+                    .bind(self.clone()),
                 _ => panic!("Function with name '{}' not found on list", name),
-            }),
+            },
             DataType::Module(module) => {
                 let module_fn = module.functions.get(name);
 
                 match module_fn {
-                    Some(function) => {
-                        Callable::Module(ModuleFunction::new(name.to_string(), function.clone()))
-                    }
+                    Some(function) => function.clone(),
                     _ => panic!(
                         "Function with name '{}' not found on module {}",
                         name, module.name

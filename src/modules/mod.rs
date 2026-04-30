@@ -1,49 +1,16 @@
-use std::{collections::HashMap, fmt, rc::Rc, sync::Arc};
+use std::{collections::HashMap, fmt};
 
 use crate::{
-    RuntimeContext,
-    interpreter::{
-        builtin::{BuiltinFn, Executable},
-        datatype::DataType,
-    },
+    interpreter::{builtin::BuiltinFn, datatype::Callable},
     modules::git::create_git_module,
 };
 
 mod git;
 
 #[derive(Clone)]
-pub struct ModuleFunction {
-    pub name: String,
-    pub function: Executable,
-}
-
-impl fmt::Debug for ModuleFunction {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("ModuleFunction")
-            .field("name", &self.name)
-            .finish()
-    }
-}
-
-impl fmt::Display for ModuleFunction {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "module fn '{}'", self.name)
-    }
-}
-
-impl ModuleFunction {
-    pub fn new(name: String, function: Executable) -> Self {
-        Self { name, function }
-    }
-    pub fn execute(&self, args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> Rc<DataType> {
-        (self.function)(None, args, context)
-    }
-}
-
-#[derive(Clone)]
 pub struct Module {
     pub name: String,
-    pub functions: HashMap<String, Executable>,
+    pub functions: HashMap<String, Callable>,
 }
 
 impl fmt::Debug for Module {
@@ -61,7 +28,10 @@ impl Module {
     }
 
     pub fn function(mut self, name: &str, function: BuiltinFn) -> Self {
-        self.functions.insert(name.to_string(), Arc::new(function));
+        self.functions.insert(
+            name.to_string(),
+            Callable::new(Some(name.to_string()), function),
+        );
         self
     }
 }
