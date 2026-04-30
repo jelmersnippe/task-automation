@@ -1,4 +1,6 @@
+use regex::Regex;
 use std::{
+    collections::HashMap,
     fmt,
     process::{Command, Stdio},
     rc::Rc,
@@ -6,7 +8,10 @@ use std::{
 
 use crate::{
     RuntimeContext,
-    interpreter::{coerce::expect_string, datatype::DataType, list::ListDeclaration},
+    interpreter::{
+        coerce::expect_string, datatype::DataType, dictionary::DictionaryDeclaration,
+        list::ListDeclaration,
+    },
     modules::Module,
 };
 
@@ -67,18 +72,29 @@ fn list_worktrees(args: Vec<Rc<DataType>>, _: &RuntimeContext) -> DataType {
         panic!("list_remote_branches does not take any arguments");
     }
 
-    let branches: Vec<Rc<DataType>> = run_git_command(&["worktree", "list"])
+    let worktrees: Vec<Rc<DataType>> = run_git_command(&["worktree", "list"])
         .unwrap()
         .split("\n")
         .filter(|x| !x.is_empty())
         .map(|x| {
-            Rc::new(DataType::String(
-                x.split(" ").collect::<Vec<_>>()[0].trim().to_string(),
-            ))
+            let worktree_info = parse_worktree_line(x);
+
+            Rc::new(DataType::Dictionary(DictionaryDeclaration::new(
+                HashMap::from([
+                    (
+                        String::from("directory"),
+                        Rc::new(DataType::String(worktree_info.directory)),
+                    ),
+                    (
+                        String::from("branch"),
+                        Rc::new(DataType::String(worktree_info.branch)),
+                    ),
+                ]),
+            )))
         })
         .collect();
 
-    DataType::List(ListDeclaration::new(branches))
+    DataType::List(ListDeclaration::new(worktrees))
 }
 fn delete_branch(args: Vec<Rc<DataType>>, _: &RuntimeContext) -> DataType {
     let [arg] = args.as_slice() else {
@@ -142,4 +158,20 @@ fn run_git_command(args: &[&str]) -> Result<String, GitError> {
     })?;
 
     Ok(stdout)
+}
+
+struct WorktreeInfo {
+    pub branch: String,
+    pub directory: String,
+}
+
+fn parse_worktree_line(line: &str) -> WorktreeInfo {
+    let re = Regex::new(r"^(\S+)\s+\S+\s+\[([^\]]+)\]").unwrap();
+
+    re.captures(line)
+        .map(|caps| WorktreeInfo {
+            directory: caps[1].to_string(),
+            branch: caps[2].to_string(),
+        })
+        .expect("Worktree parse failed.")
 }
