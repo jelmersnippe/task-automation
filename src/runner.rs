@@ -15,6 +15,7 @@ use crate::{
 #[derive(Debug)]
 struct RunArgs {
     pub recursive: bool,
+    pub directory: Option<String>,
     pub task_name: String,
     pub task_args: Vec<String>,
 }
@@ -33,8 +34,12 @@ pub fn repl(runtime_context: &RuntimeContext) {
 pub fn run(args: &[String], runtime_context: &RuntimeContext) -> std::io::Result<()> {
     let run_args = parse_run_arguments(args);
 
-    let cwd = env::current_dir()?;
-    let dsl_files = get_dsl_files_from_dir(&cwd, run_args.recursive)?;
+    let dsl_directory = if let Some(directory) = run_args.directory {
+        PathBuf::from(directory)
+    } else {
+        env::current_dir()?
+    };
+    let dsl_files = get_dsl_files_from_dir(&dsl_directory, run_args.recursive)?;
 
     for file in dsl_files {
         process_file(&file, &runtime_context)?;
@@ -63,6 +68,7 @@ pub fn run(args: &[String], runtime_context: &RuntimeContext) -> std::io::Result
 
 fn parse_run_arguments(args: &[String]) -> RunArgs {
     let mut recursive = false;
+    let mut directory: Option<String> = None;
     let mut task_name: String = String::new();
     let mut task_args: Vec<String> = vec![];
 
@@ -78,6 +84,9 @@ fn parse_run_arguments(args: &[String]) -> RunArgs {
         } else if arg == "--task" {
             i += 1;
             task_name = args[i].clone();
+        } else if arg == "--dir" {
+            i += 1;
+            directory = Some(args[i].clone());
         } else if task_name.is_empty() {
             task_name = args[i].clone();
         } else {
@@ -89,6 +98,7 @@ fn parse_run_arguments(args: &[String]) -> RunArgs {
 
     RunArgs {
         recursive,
+        directory,
         task_name,
         task_args,
     }
