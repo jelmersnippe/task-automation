@@ -1,10 +1,15 @@
-use std::{cell::RefCell, fmt, rc::Rc};
+use std::{cell::RefCell, fmt, rc::Rc, sync::Arc};
 
 use crate::{
     RuntimeContext,
-    interpreter::{StatementResult, datatype::DataType, scope::Scope},
+    interpreter::{StatementResult, builtin::Executable, datatype::DataType, scope::Scope},
     parser::statements::StatementType,
 };
+
+pub struct StoredCallable {
+    pub name: Option<String>,
+    pub function: Executable,
+}
 
 #[derive(Debug, Clone)]
 pub struct FunctionDeclaration {
@@ -90,5 +95,9 @@ impl FunctionDeclaration {
             StatementResult::Break => panic!("Break is not supported in function body"),
             StatementResult::Continue => panic!("Continue is not supported in function body"),
         }
+    }
+
+    fn adapt_user(func_decl: FunctionDeclaration) -> Executable {
+        Arc::new(move |_receiver, args, context| func_decl.execute(args, context))
     }
 }

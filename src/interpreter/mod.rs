@@ -43,10 +43,7 @@ impl Interpreter {
         for (k, v) in BUILTINS {
             scope.set_variable(
                 k.to_string(),
-                Rc::new(DataType::Function(Callable::BuiltIn(Builtin::new(
-                    k,
-                    v.clone(),
-                )))),
+                Rc::new(DataType::Function(Callable::BuiltIn(Builtin::new(k, *v)))),
             );
         }
 

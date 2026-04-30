@@ -1,17 +1,28 @@
-use std::{collections::HashMap, fmt, rc::Rc};
+use std::{collections::HashMap, fmt, rc::Rc, sync::Arc};
 
 use crate::{
     RuntimeContext,
-    interpreter::{builtin::BuiltinFn, datatype::DataType},
+    interpreter::{
+        builtin::{BuiltinFn, Executable},
+        datatype::DataType,
+    },
     modules::git::create_git_module,
 };
 
 mod git;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ModuleFunction {
     pub name: String,
-    pub function: BuiltinFn,
+    pub function: Executable,
+}
+
+impl fmt::Debug for ModuleFunction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ModuleFunction")
+            .field("name", &self.name)
+            .finish()
+    }
 }
 
 impl fmt::Display for ModuleFunction {
@@ -21,15 +32,24 @@ impl fmt::Display for ModuleFunction {
 }
 
 impl ModuleFunction {
+    pub fn new(name: String, function: Executable) -> Self {
+        Self { name, function }
+    }
     pub fn execute(&self, args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> Rc<DataType> {
         (self.function)(None, args, context)
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Module {
     pub name: String,
-    pub functions: HashMap<String, BuiltinFn>,
+    pub functions: HashMap<String, Executable>,
+}
+
+impl fmt::Debug for Module {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Module").field("name", &self.name).finish()
+    }
 }
 
 impl Module {
@@ -41,7 +61,7 @@ impl Module {
     }
 
     pub fn function(mut self, name: &str, function: BuiltinFn) -> Self {
-        self.functions.insert(name.to_string(), function);
+        self.functions.insert(name.to_string(), Arc::new(function));
         self
     }
 }

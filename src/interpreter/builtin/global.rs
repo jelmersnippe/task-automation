@@ -6,7 +6,7 @@ use std::{
 use crate::{
     RuntimeContext,
     interpreter::{
-        builtin::BuiltinFn,
+        builtin::{BuiltinFn, Executable},
         coerce::{self, expect_string, expect_user_function},
         datatype::DataType,
     },

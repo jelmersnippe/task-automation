@@ -100,10 +100,9 @@ impl DataType {
                 let module_fn = module.functions.get(name);
 
                 match module_fn {
-                    Some(function) => Callable::Module(ModuleFunction {
-                        name: name.to_string(),
-                        function: *function,
-                    }),
+                    Some(function) => {
+                        Callable::Module(ModuleFunction::new(name.to_string(), function.clone()))
+                    }
                     _ => panic!(
                         "Function with name '{}' not found on module {}",
                         name, module.name

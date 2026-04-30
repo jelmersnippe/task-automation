@@ -1,15 +1,26 @@
 use crate::{RuntimeContext, interpreter::datatype::DataType};
-use std::{fmt, rc::Rc};
+use std::{fmt, rc::Rc, sync::Arc};
 
 pub(crate) mod dictionary;
 pub(crate) mod global;
 pub(crate) mod list;
 
-#[derive(Debug, Clone)]
+pub type BuiltinFn =
+    fn(Option<Rc<DataType>>, Vec<Rc<DataType>>, &mut RuntimeContext) -> Rc<DataType>;
+pub type Executable =
+    Arc<dyn Fn(Option<Rc<DataType>>, Vec<Rc<DataType>>, &mut RuntimeContext) -> Rc<DataType>>;
+
+#[derive(Clone)]
 pub struct Builtin {
     pub name: &'static str,
     receiver: Option<Rc<DataType>>,
-    function: BuiltinFn,
+    function: Executable,
+}
+
+impl fmt::Debug for Builtin {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Builtin({})", self.name)
+    }
 }
 
 impl fmt::Display for Builtin {
@@ -18,14 +29,11 @@ impl fmt::Display for Builtin {
     }
 }
 
-pub type BuiltinFn =
-    fn(Option<Rc<DataType>>, Vec<Rc<DataType>>, &mut RuntimeContext) -> Rc<DataType>;
-
 impl Builtin {
     pub fn new(name: &'static str, function: BuiltinFn) -> Self {
         Self {
             name,
-            function,
+            function: Arc::new(function),
             receiver: None,
         }
     }
@@ -33,7 +41,7 @@ impl Builtin {
     pub fn bind(&self, receiver: Rc<DataType>) -> Self {
         Self {
             name: self.name,
-            function: self.function,
+            function: self.function.clone(),
             receiver: Some(receiver),
         }
     }
