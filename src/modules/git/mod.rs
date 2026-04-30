@@ -44,7 +44,11 @@ impl fmt::Display for GitError {
     }
 }
 
-fn in_directory(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
+fn in_directory(
+    _: Option<Rc<DataType>>,
+    args: Vec<Rc<DataType>>,
+    context: &mut RuntimeContext,
+) -> Rc<DataType> {
     let [arg] = args.as_slice() else {
         panic!("in_directory expects one argument");
     };
@@ -58,10 +62,14 @@ fn in_directory(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataTy
 
     context.cwd = absolute_path;
 
-    DataType::Module(create_git_module())
+    Rc::new(DataType::Module(create_git_module()))
 }
 
-fn current_branch(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
+fn current_branch(
+    _: Option<Rc<DataType>>,
+    args: Vec<Rc<DataType>>,
+    context: &mut RuntimeContext,
+) -> Rc<DataType> {
     if !args.is_empty() {
         panic!("current_branch does not take any arguments");
     }
@@ -69,20 +77,28 @@ fn current_branch(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> Data
     let branch =
         run_git_command(&["rev-parse", "--abbrev-ref", "HEAD"], context.cwd.clone()).unwrap();
 
-    DataType::String(String::from(branch.trim()))
+    Rc::new(DataType::String(String::from(branch.trim())))
 }
 
-fn rebase(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
+fn rebase(
+    _: Option<Rc<DataType>>,
+    args: Vec<Rc<DataType>>,
+    context: &mut RuntimeContext,
+) -> Rc<DataType> {
     if !args.is_empty() {
         panic!("current_branch does not take any arguments");
     }
 
     run_git_command(&["rebase", "origin/master"], context.cwd.clone()).unwrap();
 
-    DataType::Undefined
+    Rc::new(DataType::Undefined)
 }
 
-fn local_branches(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
+fn local_branches(
+    _: Option<Rc<DataType>>,
+    args: Vec<Rc<DataType>>,
+    context: &mut RuntimeContext,
+) -> Rc<DataType> {
     if !args.is_empty() {
         panic!("local_branches does not take any arguments");
     }
@@ -97,9 +113,13 @@ fn local_branches(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> Data
     .map(|x| Rc::new(DataType::String(x.trim().to_string())))
     .collect();
 
-    DataType::List(ListDeclaration::new(branches))
+    Rc::new(DataType::List(ListDeclaration::new(branches)))
 }
-fn remote_branches(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
+fn remote_branches(
+    _: Option<Rc<DataType>>,
+    args: Vec<Rc<DataType>>,
+    context: &mut RuntimeContext,
+) -> Rc<DataType> {
     if !args.is_empty() {
         panic!("remote_branches does not take any arguments");
     }
@@ -111,9 +131,13 @@ fn remote_branches(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> Dat
         .map(|x| Rc::new(DataType::String(x.trim().to_string())))
         .collect();
 
-    DataType::List(ListDeclaration::new(branches))
+    Rc::new(DataType::List(ListDeclaration::new(branches)))
 }
-fn worktrees(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
+fn worktrees(
+    _: Option<Rc<DataType>>,
+    args: Vec<Rc<DataType>>,
+    context: &mut RuntimeContext,
+) -> Rc<DataType> {
     if !args.is_empty() {
         panic!("remote_branches does not take any arguments");
     }
@@ -140,9 +164,13 @@ fn worktrees(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType 
         })
         .collect();
 
-    DataType::List(ListDeclaration::new(worktrees))
+    Rc::new(DataType::List(ListDeclaration::new(worktrees)))
 }
-fn delete_branch(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
+fn delete_branch(
+    _: Option<Rc<DataType>>,
+    args: Vec<Rc<DataType>>,
+    context: &mut RuntimeContext,
+) -> Rc<DataType> {
     let [arg] = args.as_slice() else {
         panic!("delete_branch expects 1 argument. Received: {:?}", args);
     };
@@ -151,27 +179,39 @@ fn delete_branch(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataT
 
     run_git_command(&["branch", "-D", branch.as_str()], context.cwd.clone()).unwrap();
 
-    DataType::Undefined
+    Rc::new(DataType::Undefined)
 }
-fn fetch(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
+fn fetch(
+    _: Option<Rc<DataType>>,
+    args: Vec<Rc<DataType>>,
+    context: &mut RuntimeContext,
+) -> Rc<DataType> {
     if !args.is_empty() {
         panic!("fetch does not take any arguments");
     }
 
     run_git_command(&["fetch"], context.cwd.clone()).unwrap();
 
-    DataType::Undefined
+    Rc::new(DataType::Undefined)
 }
-fn prune(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
+fn prune(
+    _: Option<Rc<DataType>>,
+    args: Vec<Rc<DataType>>,
+    context: &mut RuntimeContext,
+) -> Rc<DataType> {
     if !args.is_empty() {
         panic!("prune does not take any arguments");
     }
 
     run_git_command(&["gc"], context.cwd.clone()).unwrap();
 
-    DataType::Undefined
+    Rc::new(DataType::Undefined)
 }
-fn push(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
+fn push(
+    _: Option<Rc<DataType>>,
+    args: Vec<Rc<DataType>>,
+    context: &mut RuntimeContext,
+) -> Rc<DataType> {
     if args.len() > 1 {
         panic!("push takes 0-1 arguments")
     }
@@ -192,23 +232,27 @@ fn push(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
         None => {}
     };
 
-    let branch = expect_string(&current_branch(vec![], context));
+    let branch = expect_string(&current_branch(None, vec![], context));
 
     git_args.push("origin");
     git_args.push(&branch);
 
     run_git_command(&git_args, context.cwd.clone()).unwrap();
 
-    DataType::Undefined
+    Rc::new(DataType::Undefined)
 }
-fn pull(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
+fn pull(
+    _: Option<Rc<DataType>>,
+    args: Vec<Rc<DataType>>,
+    context: &mut RuntimeContext,
+) -> Rc<DataType> {
     if !args.is_empty() {
         panic!("pull does not take any arguments");
     }
 
     run_git_command(&["pull"], context.cwd.clone()).unwrap();
 
-    DataType::Undefined
+    Rc::new(DataType::Undefined)
 }
 
 fn run_git_command(args: &[&str], cwd: String) -> Result<String, GitError> {

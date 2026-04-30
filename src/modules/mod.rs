@@ -1,15 +1,17 @@
 use std::{collections::HashMap, fmt, rc::Rc};
 
-use crate::{RuntimeContext, interpreter::datatype::DataType, modules::git::create_git_module};
+use crate::{
+    RuntimeContext,
+    interpreter::{builtin::BuiltinFn, datatype::DataType},
+    modules::git::create_git_module,
+};
 
 mod git;
-
-pub type ModuleFn = fn(Vec<Rc<DataType>>, &mut RuntimeContext) -> DataType;
 
 #[derive(Debug, Clone)]
 pub struct ModuleFunction {
     pub name: String,
-    pub function: ModuleFn,
+    pub function: BuiltinFn,
 }
 
 impl fmt::Display for ModuleFunction {
@@ -20,14 +22,14 @@ impl fmt::Display for ModuleFunction {
 
 impl ModuleFunction {
     pub fn execute(&self, args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> Rc<DataType> {
-        Rc::new((self.function)(args, context))
+        (self.function)(None, args, context)
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct Module {
     pub name: String,
-    pub functions: HashMap<String, ModuleFn>,
+    pub functions: HashMap<String, BuiltinFn>,
 }
 
 impl Module {
@@ -38,7 +40,7 @@ impl Module {
         }
     }
 
-    pub fn function(mut self, name: &str, function: ModuleFn) -> Self {
+    pub fn function(mut self, name: &str, function: BuiltinFn) -> Self {
         self.functions.insert(name.to_string(), function);
         self
     }
