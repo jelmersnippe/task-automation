@@ -1,0 +1,25 @@
+fn foreach_worktree(function) {
+    git.fetch()
+
+    var worktrees = git.worktrees()
+
+    var i = 0
+    while (i < len(worktrees)) {
+        var worktree = worktrees[i]
+
+        print(worktree)
+
+        function(worktree["directory"])
+
+        i = i + 1
+    }
+}
+
+register_task("update_worktrees", fn() {
+    print("updating worktrees")
+    foreach_worktree(fn(worktree_directory) {
+        git.in_directory(worktree_directory).pull()
+
+        print(git.in_directory(worktree_directory).current_branch())
+    })
+})
