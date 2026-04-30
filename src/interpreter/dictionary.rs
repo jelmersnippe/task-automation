@@ -1,6 +1,10 @@
 use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 
-use crate::interpreter::{coerce, datatype::DataType};
+use crate::interpreter::{
+    builtin::{CallInfo, ExecutionError},
+    coerce::Args,
+    datatype::DataType,
+};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct DictionaryDeclaration {
@@ -18,19 +22,24 @@ impl DictionaryDeclaration {
         self.entries.borrow().contains_key(key)
     }
 
-    pub fn get(&self, key: &String) -> Rc<DataType> {
+    pub fn get(&self, key: &String) -> Result<Rc<DataType>, ExecutionError> {
         let binding = self.entries.borrow();
         let value = binding.get(key);
 
         match value {
-            Some(data) => Rc::clone(data),
-            None => panic!("Dict does not have key '{}'", key),
+            Some(data) => Ok(Rc::clone(data)),
+            None => Err(ExecutionError::new(
+                CallInfo::new(""),
+                format!("Dict does not have key '{}'", key).as_str(),
+            )),
         }
     }
 
-    pub fn set(&self, key: Rc<DataType>, value: Rc<DataType>) {
-        let key_string = coerce::expect_string(&*key);
+    pub fn set(&self, key: Rc<DataType>, value: Rc<DataType>) -> Result<(), ExecutionError> {
+        let args = Args::new("set", &vec![key]);
+        let key_string = args.string(0)?;
         self.entries.borrow_mut().insert(key_string, value);
+        Ok(())
     }
 
     pub fn delete(&self, key: &String) {

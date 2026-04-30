@@ -1,5 +1,5 @@
 use std::{
-    env, fs,
+    env, fmt, fs,
     io::{self, Write},
     path::{Path, PathBuf},
     rc::Rc,
@@ -7,10 +7,37 @@ use std::{
 
 use crate::{
     RuntimeContext,
-    interpreter::{Interpreter, datatype::DataType},
+    interpreter::{Interpreter, builtin::ExecutionError, datatype::DataType},
     lexer::Lexer,
     parser::Parser,
 };
+
+#[derive(Debug)]
+pub struct RuntimeError {
+    reason: String,
+}
+
+impl From<ExecutionError> for RuntimeError {
+    fn from(value: ExecutionError) -> Self {
+        Self {
+            reason: value.to_string(),
+        }
+    }
+}
+
+impl From<std::io::Error> for RuntimeError {
+    fn from(value: std::io::Error) -> Self {
+        Self {
+            reason: value.to_string(),
+        }
+    }
+}
+
+impl fmt::Display for RuntimeError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Runtime failure: {}", self.reason)
+    }
+}
 
 #[derive(Debug)]
 struct RunArgs {
@@ -20,18 +47,18 @@ struct RunArgs {
     pub task_args: Vec<String>,
 }
 
-pub fn repl(runtime_context: &mut RuntimeContext) {
+pub fn repl(runtime_context: &mut RuntimeContext) -> Result<(), RuntimeError> {
     loop {
         let mut dsl = String::new();
         print!("> ");
         let _ = io::stdout().flush();
         let _ = io::stdin().read_line(&mut dsl);
 
-        interpret(dsl, runtime_context);
+        interpret(dsl, runtime_context)?;
     }
 }
 
-pub fn run(args: &[String], runtime_context: &mut RuntimeContext) -> std::io::Result<()> {
+pub fn run(args: &[String], runtime_context: &mut RuntimeContext) -> Result<(), RuntimeError> {
     let run_args = parse_run_arguments(args);
 
     let dsl_directory = if let Some(directory) = run_args.directory {
@@ -52,14 +79,12 @@ pub fn run(args: &[String], runtime_context: &mut RuntimeContext) -> std::io::Re
         .map(|x| Rc::new(DataType::String(x.clone())))
         .collect();
 
-    let task_result = runtime_context.task_registry.get(run_args.task_name);
+    let task_result = runtime_context.task_registry.get(&run_args.task_name);
 
     match task_result {
         Err(err) => println!("Error: {}", err),
-        Ok(task) => {
-            task.execute(task_args, runtime_context);
-        }
-    }
+        Ok(task) => _ = task.execute(task_args, runtime_context),
+    };
 
     Ok(())
 }
@@ -125,24 +150,27 @@ fn get_dsl_files_from_dir(dir: &Path, recursive: bool) -> std::io::Result<Vec<Pa
 fn process_file(
     path: &std::path::Path,
     runtime_context: &mut RuntimeContext,
-) -> std::io::Result<()> {
+) -> Result<(), RuntimeError> {
     println!("Processing file {}", path.display());
 
     let dsl = fs::read_to_string(path)?;
 
-    interpret(dsl, runtime_context);
+    interpret(dsl, runtime_context)?;
 
     Ok(())
 }
 
-pub fn interpret(input: String, runtime_context: &mut RuntimeContext) -> Interpreter {
+pub fn interpret(
+    input: String,
+    runtime_context: &mut RuntimeContext,
+) -> Result<Interpreter, ExecutionError> {
     let tokens = Lexer::new().tokenize(input);
 
     let mut parser = Parser::new(tokens);
     let ast = parser.parse();
 
-    let mut interpreter = Interpreter::new(ast, runtime_context);
-    interpreter.interpret(runtime_context);
+    let mut interpreter = Interpreter::new(ast, runtime_context)?;
+    interpreter.interpret(runtime_context)?;
 
-    interpreter
+    Ok(interpreter)
 }

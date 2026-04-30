@@ -24,11 +24,11 @@ impl TaskRegistry {
         self.tasks.borrow_mut().insert(name, task);
     }
 
-    pub fn get(&self, name: String) -> Result<Callable, TaskRunError> {
-        match self.tasks.borrow().get(&name) {
+    pub fn get(&self, name: &str) -> Result<Callable, TaskRunError> {
+        match self.tasks.borrow().get(name) {
             Some(task) => Ok(task.clone()),
             None => Err(TaskRunError {
-                task: name,
+                task: name.to_string(),
                 reason: "Not registered",
             }),
         }

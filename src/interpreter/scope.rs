@@ -1,6 +1,9 @@
 use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 
-use crate::interpreter::datatype::DataType;
+use crate::interpreter::{
+    builtin::{CallInfo, ExecutionError},
+    datatype::DataType,
+};
 
 #[derive(Debug, PartialEq)]
 pub struct Scope {
@@ -27,33 +30,55 @@ impl Scope {
         }
     }
 
-    pub fn get_variable(&self, identifier: &String) -> Rc<DataType> {
+    pub fn get_variable(&self, identifier: &String) -> Result<Rc<DataType>, ExecutionError> {
         if let Some(var) = self.variables.get(identifier) {
-            return var.clone();
+            return Ok(var.clone());
         }
 
         match &self.parent {
             Some(parent) => parent.borrow().get_variable(identifier),
-            None => panic!("Variable '{}' is not declared", identifier),
+            None => Err(ExecutionError::new(
+                CallInfo::new(""),
+                format!("Variable '{}' is not declared", identifier).as_str(),
+            )),
         }
     }
 
-    pub fn set_variable(&mut self, identifier: String, data: Rc<DataType>) {
+    pub fn set_variable(
+        &mut self,
+        identifier: String,
+        data: Rc<DataType>,
+    ) -> Result<(), ExecutionError> {
         if self.variables.contains_key(&identifier) {
-            panic!("Duplicate identifier '{}' already declared", &identifier);
+            return Err(ExecutionError::new(
+                CallInfo::new(""),
+                format!("Duplicate identifier '{}' already declared", &identifier).as_str(),
+            ));
         }
 
         self.variables.insert(identifier, data);
+        Ok(())
     }
 
-    pub fn update_variable(&mut self, identifier: &String, data: Rc<DataType>) {
+    pub fn update_variable(
+        &mut self,
+        identifier: &String,
+        data: Rc<DataType>,
+    ) -> Result<(), ExecutionError> {
         if !self.variables.contains_key(identifier) {
             match &self.parent {
-                Some(parent) => parent.borrow_mut().update_variable(identifier, data),
-                None => panic!("Identifier '{}' has not declared", &identifier),
-            }
+                Some(parent) => parent.borrow_mut().update_variable(identifier, data)?,
+                None => {
+                    return Err(ExecutionError::new(
+                        CallInfo::new(""),
+                        format!("Identifier '{}' has not declared", &identifier).as_str(),
+                    ));
+                }
+            };
         } else {
             self.variables.insert(identifier.clone(), data);
         }
+
+        Ok(())
     }
 }

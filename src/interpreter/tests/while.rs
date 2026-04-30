@@ -14,7 +14,11 @@ fn interprets_while_with_condition() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::Number(3.0))
     );
 }
@@ -35,7 +39,11 @@ fn interprets_while_with_false() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::Number(0.0))
     );
 }
@@ -57,11 +65,19 @@ fn interprets_while_with_continue() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::Number(1.0))
     );
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("y")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("y"))
+            .unwrap(),
         Rc::new(DataType::Number(0.0))
     );
 }
@@ -83,11 +99,19 @@ fn interprets_while_with_break() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::Number(1.0))
     );
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("y")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("y"))
+            .unwrap(),
         Rc::new(DataType::Number(0.0))
     );
 }
@@ -111,11 +135,19 @@ fn interprets_while_with_nested_continue() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::Number(5.0))
     );
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("y")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("y"))
+            .unwrap(),
         Rc::new(DataType::List(ListDeclaration::new(vec![
             Rc::new(DataType::Number(2.0)),
             Rc::new(DataType::Number(3.0)),
@@ -141,7 +173,11 @@ fn interprets_while_with_nested_break() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::Number(5.0))
     );
 }

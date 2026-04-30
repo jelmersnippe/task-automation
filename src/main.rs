@@ -1,7 +1,7 @@
 use std::env;
 
 use crate::modules::{ModuleRegistry, git_module};
-use crate::runner::{repl, run};
+use crate::runner::{RuntimeError, repl, run};
 use crate::task_management::TaskRegistry;
 
 mod interpreter;
@@ -31,7 +31,7 @@ impl RuntimeContext {
     }
 }
 
-fn main() -> std::io::Result<()> {
+fn main() -> Result<(), RuntimeError> {
     let mut runtime_context = RuntimeContext::new();
     runtime_context.module_registry.register(git_module());
 
@@ -41,14 +41,10 @@ fn main() -> std::io::Result<()> {
 
     match arg.as_str() {
         "repl" => repl(&mut runtime_context),
-        "run" => {
-            run(
-                &std::env::args().collect::<Vec<String>>()[2..],
-                &mut runtime_context,
-            )?;
-        }
+        "run" => run(
+            &std::env::args().collect::<Vec<String>>()[2..],
+            &mut runtime_context,
+        ),
         _ => panic!("Invalid argument supplied: '{}'. Expect repl or run", arg),
     }
-
-    Ok(())
 }

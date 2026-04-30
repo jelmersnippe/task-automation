@@ -4,7 +4,9 @@ use crate::{
     RuntimeContext,
     interpreter::{
         StatementResult,
+        builtin::{CallInfo, ExecutionError},
         datatype::{Callable, DataType},
+        execute_statements,
         scope::Scope,
     },
     parser::statements::StatementType,
@@ -65,7 +67,7 @@ impl FunctionDeclaration {
         &self,
         parameters: Vec<Rc<DataType>>,
         context: &mut RuntimeContext,
-    ) -> Rc<DataType> {
+    ) -> Result<Rc<DataType>, ExecutionError> {
         let expected_arguments = self.arguments.len();
         let received_arguments = parameters.len();
 
@@ -82,17 +84,32 @@ impl FunctionDeclaration {
         for (identifier, value) in self.arguments.iter().zip(parameters) {
             function_scope
                 .borrow_mut()
-                .set_variable(identifier.clone(), value);
+                .set_variable(identifier.clone(), value)?;
         }
 
         let return_value =
-            super::execute_statements(function_scope.clone(), self.body.iter().collect(), context);
+            execute_statements(function_scope.clone(), self.body.iter().collect(), context)?;
+
         match return_value {
-            StatementResult::Return(data_type) => data_type,
-            StatementResult::Void => Rc::new(DataType::Undefined),
+            StatementResult::Return(data_type) => Ok(data_type),
+            StatementResult::Void => Ok(Rc::new(DataType::Undefined)),
             // Break and Continue are disallowed in Parser. This is just safety
-            StatementResult::Break => panic!("Break is not supported in function body"),
-            StatementResult::Continue => panic!("Continue is not supported in function body"),
+            StatementResult::Break => Err(ExecutionError::new(
+                CallInfo::new(if let Some(name) = &self.name {
+                    &name
+                } else {
+                    ""
+                }),
+                "Break is not supported in function body",
+            )),
+            StatementResult::Continue => Err(ExecutionError::new(
+                CallInfo::new(if let Some(name) = &self.name {
+                    &name
+                } else {
+                    ""
+                }),
+                "Continue is not supported in function body",
+            )),
         }
     }
 

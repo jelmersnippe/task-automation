@@ -19,7 +19,11 @@ fn interprets_clear() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::List(ListDeclaration::new(vec![])))
     );
 }
@@ -33,11 +37,19 @@ fn interprets_pop() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::List(ListDeclaration::new(vec![])))
     );
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("y")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("y"))
+            .unwrap(),
         Rc::new(DataType::Number(1.0)),
     );
 }
@@ -51,7 +63,11 @@ fn interprets_push() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::List(ListDeclaration::new(vec![
             Rc::new(DataType::Number(1.0)),
             Rc::new(DataType::Number(2.0))
@@ -71,7 +87,11 @@ fn interprets_array_reference_overwrite() {
     ";
     let interpreter = run(dsl);
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::List(ListDeclaration::new(vec![
             Rc::new(DataType::Number(1.0)),
             Rc::new(DataType::Number(2.0)),
@@ -79,7 +99,11 @@ fn interprets_array_reference_overwrite() {
         ])))
     );
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("y")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("y"))
+            .unwrap(),
         Rc::new(DataType::List(ListDeclaration::new(vec![
             Rc::new(DataType::Number(9.0)),
             Rc::new(DataType::Number(9.0)),
@@ -100,7 +124,11 @@ fn interprets_array_reference_assignment() {
     ";
     let interpreter = run(dsl);
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::List(ListDeclaration::new(vec![
             Rc::new(DataType::Number(5.0)),
             Rc::new(DataType::Number(2.0)),
@@ -108,7 +136,11 @@ fn interprets_array_reference_assignment() {
         ])))
     );
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("y")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("y"))
+            .unwrap(),
         Rc::new(DataType::List(ListDeclaration::new(vec![
             Rc::new(DataType::Number(5.0)),
             Rc::new(DataType::Number(2.0)),
@@ -130,7 +162,11 @@ fn interpret_accessor_function_call() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("y")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("y"))
+            .unwrap(),
         Rc::new(DataType::Number(1.0))
     );
 }
@@ -149,7 +185,11 @@ fn interpret_function_call_accessor_assignment() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::List(ListDeclaration::new(vec![Rc::new(
             DataType::Number(2.0)
         )])))
@@ -165,7 +205,11 @@ fn interpret_list_assignment_nested() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::List(ListDeclaration::new(vec![Rc::new(
             DataType::List(ListDeclaration::new(vec![Rc::new(DataType::Number(2.0))]))
         )])))
@@ -181,7 +225,11 @@ fn interpret_list_assignment() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::List(ListDeclaration::new(vec![Rc::new(
             DataType::Number(2.0)
         )])))
@@ -197,13 +245,21 @@ fn interpret_list_accessor_nested() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::List(ListDeclaration::new(vec![Rc::new(
             DataType::List(ListDeclaration::new(vec![Rc::new(DataType::Number(1.0))]))
         )])))
     );
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("y")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("y"))
+            .unwrap(),
         Rc::new(DataType::Number(1.0))
     );
 }
@@ -217,13 +273,21 @@ fn interpret_list_accessor() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::List(ListDeclaration::new(vec![Rc::new(
             DataType::Number(1.0)
         )])))
     );
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("y")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("y"))
+            .unwrap(),
         Rc::new(DataType::Number(1.0))
     );
 }
@@ -241,7 +305,11 @@ fn interpret_list_declaration() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::List(ListDeclaration::new(vec![
             Rc::new(DataType::Number(1.0)),
             Rc::new(DataType::String(String::from("Hello"))),
@@ -276,7 +344,11 @@ fn interpret_list_declaration_empty() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::List(ListDeclaration::new(vec![])))
     );
 }

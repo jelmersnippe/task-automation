@@ -3,7 +3,7 @@ use std::{fmt, rc::Rc, sync::Arc};
 use crate::{
     RuntimeContext,
     interpreter::{
-        builtin::{self, BuiltinFn, Executable},
+        builtin::{self, BuiltinFn, Executable, ExecutionError},
         dictionary::DictionaryDeclaration,
         list::ListDeclaration,
     },
@@ -75,7 +75,7 @@ impl Callable {
         &self,
         parameters: Vec<Rc<DataType>>,
         context: &mut RuntimeContext,
-    ) -> Rc<DataType> {
+    ) -> Result<Rc<DataType>, ExecutionError> {
         (self.function)(self.receiver.clone(), parameters, context)
     }
 }

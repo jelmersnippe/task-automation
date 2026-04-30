@@ -18,7 +18,7 @@ use crate::{
 
 pub fn run(dsl: &'static str) -> Interpreter {
     let mut runtime_context = RuntimeContext::new();
-    return interpret(dsl.to_string(), &mut runtime_context);
+    return interpret(dsl.to_string(), &mut runtime_context).unwrap();
 }
 
 #[test]
@@ -57,7 +57,11 @@ fn interprets_scoped_variable_rebinding() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::Number(2.0))
     );
 }
@@ -75,11 +79,19 @@ fn interprets_variable_rebinding() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::Number(3.0))
     );
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("y")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("y"))
+            .unwrap(),
         Rc::new(DataType::Number(5.0))
     );
 }
@@ -198,7 +210,11 @@ fn interprets_if_scoped_variables() {
     ";
     let interpreter = run(dsl);
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::String(String::from("outer")))
     );
 }
@@ -210,7 +226,11 @@ fn interprets_function_call_inline() {
     ";
     let interpreter = run(dsl);
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::Number(3.0))
     );
 }
@@ -231,11 +251,19 @@ fn interprets_function_call_with_return_inside_if() {
     ";
     let interpreter = run(dsl);
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::Number(1.0))
     );
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("y")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("y"))
+            .unwrap(),
         Rc::new(DataType::Number(0.0))
     );
 }
@@ -250,7 +278,11 @@ fn interprets_function_call_with_arguments() {
     ";
     let interpreter = run(dsl);
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::Number(1.0))
     );
 }
@@ -265,7 +297,11 @@ fn interprets_function_call() {
     ";
     let interpreter = run(dsl);
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::Number(3.0))
     );
 }
@@ -280,7 +316,8 @@ fn interprets_function_declaration_with_return() {
         interpreter
             .scope
             .borrow()
-            .get_variable(&String::from("foo")),
+            .get_variable(&String::from("foo"))
+            .unwrap(),
         Rc::new(DataType::Function(
             FunctionDeclaration::new(
                 Some(String::from("foo")),
@@ -311,7 +348,8 @@ fn interprets_function_declaration_with_arguments() {
         interpreter
             .scope
             .borrow()
-            .get_variable(&String::from("foo")),
+            .get_variable(&String::from("foo"))
+            .unwrap(),
         Rc::new(DataType::Function(
             FunctionDeclaration::new(
                 Some(String::from("foo")),
@@ -332,7 +370,8 @@ fn interprets_function_declaration_as_variable() {
         interpreter
             .scope
             .borrow()
-            .get_variable(&String::from("foo")),
+            .get_variable(&String::from("foo"))
+            .unwrap(),
         Rc::new(DataType::Function(
             FunctionDeclaration::new(None, vec![], vec![], interpreter.scope.clone())
                 .into_callable()
@@ -348,7 +387,8 @@ fn interprets_function_declaration() {
         interpreter
             .scope
             .borrow()
-            .get_variable(&String::from("foo")),
+            .get_variable(&String::from("foo"))
+            .unwrap(),
         Rc::new(DataType::Function(
             FunctionDeclaration::new(
                 Some(String::from("foo")),
@@ -369,7 +409,11 @@ fn interprets_variable_assignment_function() {
     ";
     let interpreter = run(dsl);
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::Function(
             FunctionDeclaration::new(None, vec![], vec![], interpreter.scope.clone())
                 .into_callable()
@@ -385,7 +429,11 @@ fn interprets_variable_assignment() {
     ";
     let interpreter = run(dsl);
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::Number(5.0))
     );
 }
@@ -395,7 +443,11 @@ fn interprets_variable_declaration_number() {
     let dsl = "var x = 3";
     let interpreter = run(dsl);
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::Number(3.0))
     );
 }
@@ -405,7 +457,11 @@ fn interprets_variable_declaration_string() {
     let dsl = "var x = \"Hello\"";
     let interpreter = run(dsl);
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::String(String::from("Hello")))
     );
 }
@@ -415,7 +471,11 @@ fn interprets_variable_declaration_bool() {
     let dsl = "var x = true";
     let interpreter = run(dsl);
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::Boolean(true))
     );
 }
@@ -432,7 +492,11 @@ fn interprets_variable_declaration_scoped_2() {
     ";
     let interpreter = run(dsl);
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::Boolean(true))
     );
 }
@@ -449,7 +513,11 @@ fn interprets_variable_declaration_scoped() {
     ";
     let interpreter = run(dsl);
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::Boolean(true))
     );
 }

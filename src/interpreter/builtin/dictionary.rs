@@ -1,78 +1,96 @@
 use std::rc::Rc;
 
 use crate::{
-    interpreter::{coerce, datatype::DataType},
     RuntimeContext,
+    interpreter::{
+        builtin::{CallInfo, ExecutionError},
+        coerce::{self, Args, DataKind},
+        datatype::DataType,
+    },
 };
 
 pub(crate) fn has(
     receiver: Option<Rc<DataType>>,
     data: Vec<Rc<DataType>>,
     _: &mut RuntimeContext,
-) -> Rc<DataType> {
-    let [key] = data.as_slice() else {
-        panic!(
-            "has only takes 1 argument. received: {:?}",
-            data.iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
-        )
-    };
+) -> Result<Rc<DataType>, ExecutionError> {
+    let args = Args::new("has", &data);
+    args.exact(1)?;
 
     let x = receiver.expect("has can only be called on a dictionary");
 
-    let arg = coerce::expect_string(key);
-    let dict = coerce::expect_dict(x.as_ref());
+    let key = args.string(0)?;
+    let receiver_dict = coerce::expect_dict(x.as_ref());
 
-    Rc::new(DataType::Boolean(dict.has(&arg)))
+    match receiver_dict {
+        Ok(dict) => Ok(Rc::new(DataType::Boolean(dict.has(&key)))),
+        Err(err) => Err(ExecutionError::new(
+            CallInfo::new("has"),
+            format!(
+                "Expected to be called on {:?}, instead found: {:?}",
+                DataKind::Dictionary,
+                err
+            )
+            .as_str(),
+        )),
+    }
 }
 
 pub(crate) fn delete(
     receiver: Option<Rc<DataType>>,
     data: Vec<Rc<DataType>>,
     _: &mut RuntimeContext,
-) -> Rc<DataType> {
-    let [key] = data.as_slice() else {
-        panic!(
-            "delete only takes 1 argument. received: {:?}",
-            data.iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
-        )
-    };
+) -> Result<Rc<DataType>, ExecutionError> {
+    let args = Args::new("delete", &data);
+    args.exact(1)?;
 
-    let x = receiver.expect("delete can only be called on a dictionary");
+    let x = receiver.expect("has can only be called on a dictionary");
 
-    let arg = coerce::expect_string(key);
-    let dict = coerce::expect_dict(x.as_ref());
+    let key = args.string(0)?;
+    let receiver_dict = coerce::expect_dict(x.as_ref());
 
-    dict.delete(&arg);
-
-    Rc::new(DataType::Undefined)
+    match receiver_dict {
+        Ok(dict) => {
+            dict.delete(&key);
+            Ok(Rc::new(DataType::Undefined))
+        }
+        Err(err) => Err(ExecutionError::new(
+            CallInfo::new("delete"),
+            format!(
+                "Expected to be called on {:?}, instead found: {:?}",
+                DataKind::Dictionary,
+                err
+            )
+            .as_str(),
+        )),
+    }
 }
 
 pub(crate) fn clear(
     receiver: Option<Rc<DataType>>,
     data: Vec<Rc<DataType>>,
     _: &mut RuntimeContext,
-) -> Rc<DataType> {
-    if !data.is_empty() {
-        panic!(
-            "clear takes no arguments. received: {:?}",
-            data.iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
-        )
+) -> Result<Rc<DataType>, ExecutionError> {
+    let args = Args::new("clear", &data);
+    args.exact(0)?;
+
+    let x = receiver.expect("has can only be called on a dictionary");
+
+    let receiver_dict = coerce::expect_dict(x.as_ref());
+
+    match receiver_dict {
+        Ok(dict) => {
+            dict.clear();
+            Ok(Rc::new(DataType::Undefined))
+        }
+        Err(err) => Err(ExecutionError::new(
+            CallInfo::new("clear"),
+            format!(
+                "Expected to be called on {:?}, instead found: {:?}",
+                DataKind::Dictionary,
+                err
+            )
+            .as_str(),
+        )),
     }
-
-    let x = receiver.expect("clear can only be called on a dictionary");
-
-    let dict = coerce::expect_dict(x.as_ref());
-
-    dict.clear();
-
-    Rc::new(DataType::Undefined)
 }

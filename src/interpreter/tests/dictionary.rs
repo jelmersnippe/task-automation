@@ -50,18 +50,24 @@ fn interprets_property_scopes() {
         interpreter
             .scope
             .borrow()
-            .get_variable(&String::from("bar")),
+            .get_variable(&String::from("bar"))
+            .unwrap(),
         Rc::new(DataType::Boolean(true)),
     );
     assert_eq!(
         interpreter
             .scope
             .borrow()
-            .get_variable(&String::from("baz")),
+            .get_variable(&String::from("baz"))
+            .unwrap(),
         Rc::new(DataType::Number(10.0)),
     );
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("a")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("a"))
+            .unwrap(),
         Rc::new(DataType::Boolean(true)),
     );
 }
@@ -89,32 +95,60 @@ fn interprets_dictionary_builtins() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("a")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("a"))
+            .unwrap(),
         Rc::new(DataType::Boolean(true)),
     );
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("b")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("b"))
+            .unwrap(),
         Rc::new(DataType::Boolean(true)),
     );
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("c")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("c"))
+            .unwrap(),
         Rc::new(DataType::Boolean(false)),
     );
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("d")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("d"))
+            .unwrap(),
         Rc::new(DataType::Boolean(false)),
     );
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("e")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("e"))
+            .unwrap(),
         Rc::new(DataType::Boolean(false)),
     );
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("f")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("f"))
+            .unwrap(),
         Rc::new(DataType::Number(0.0)),
     );
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::Dictionary(DictionaryDeclaration::new(
             HashMap::new()
         )))
@@ -132,7 +166,11 @@ fn interprets_dictionary_assignment() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::Dictionary(DictionaryDeclaration::new(
             HashMap::from([
                 (String::from("a"), Rc::new(DataType::Number(1.0))),
@@ -157,14 +195,19 @@ fn interprets_dictionary_accessor() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("y")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("y"))
+            .unwrap(),
         Rc::new(DataType::Number(1.0)),
     );
     assert_eq!(
         interpreter
             .scope
             .borrow()
-            .get_variable(&String::from("bar")),
+            .get_variable(&String::from("bar"))
+            .unwrap(),
         Rc::new(DataType::Number(3.0)),
     );
 }
@@ -186,7 +229,11 @@ fn interprets_dictionary_declaration() {
     let interpreter = run(dsl);
 
     assert_eq!(
-        interpreter.scope.borrow().get_variable(&String::from("x")),
+        interpreter
+            .scope
+            .borrow()
+            .get_variable(&String::from("x"))
+            .unwrap(),
         Rc::new(DataType::Dictionary(DictionaryDeclaration::new(
             HashMap::from([
                 (String::from("a"), Rc::new(DataType::Number(1.0))),

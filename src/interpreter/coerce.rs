@@ -1,49 +1,309 @@
+use std::{fmt, rc::Rc};
+
 use crate::interpreter::{
     datatype::{Callable, DataType},
     dictionary::DictionaryDeclaration,
     list::ListDeclaration,
 };
 
-pub fn expect_string(data: &DataType) -> String {
+pub fn expect_string(data: &DataType) -> Result<String, DataKind> {
     match data {
-        DataType::Number(x) => x.to_string(),
-        DataType::String(x) => x.clone(),
-        DataType::Boolean(x) => x.to_string(),
-        _ => panic!("Expected a string"),
+        DataType::Number(x) => Ok(x.to_string()),
+        DataType::String(x) => Ok(x.clone()),
+        DataType::Boolean(x) => Ok(x.to_string()),
+        _ => Err(DataKind::from(data)),
     }
 }
 
-pub fn expect_callable(data: &DataType) -> &Callable {
+pub fn expect_callable(data: &DataType) -> Result<&Callable, DataKind> {
     if let DataType::Function(callable) = data {
-        return callable;
+        return Ok(callable);
     }
 
-    panic!("Can only use user defined functions")
+    Err(DataKind::from(data))
 }
 
-pub fn expect_dict(data: &DataType) -> &DictionaryDeclaration {
+pub fn expect_dict(data: &DataType) -> Result<&DictionaryDeclaration, DataKind> {
     match data {
-        DataType::Dictionary(x) => x,
-        _ => panic!("Expected a dictionary"),
+        DataType::Dictionary(x) => Ok(x),
+        _ => Err(DataKind::from(data)),
     }
 }
 
-pub fn expect_list(data: &DataType) -> &ListDeclaration {
+pub fn expect_bool(data: &DataType) -> Result<bool, DataKind> {
     match data {
-        DataType::List(x) => x,
-        _ => panic!("Expected a list"),
+        DataType::Boolean(x) => Ok(*x),
+        _ => Err(DataKind::from(data)),
     }
 }
 
-pub fn expect_int(data: &DataType) -> usize {
+pub fn expect_list(data: &DataType) -> Result<&ListDeclaration, DataKind> {
+    match data {
+        DataType::List(x) => Ok(x),
+        _ => Err(DataKind::from(data)),
+    }
+}
+
+pub fn expect_int(data: &DataType) -> Result<usize, DataKind> {
     if let DataType::Number(number) = data {
         let i = number.round() as usize;
         if *number as usize != i {
-            panic!("Number should be an integer. Received: '{}'", number);
+            return Err(DataKind::Float);
         }
 
-        return *number as usize;
+        return Ok(*number as usize);
     }
 
-    panic!("Not an integer number");
+    Err(DataKind::from(data))
+}
+
+#[derive(Debug)]
+pub enum DataKind {
+    String,
+    Boolean,
+    Int,
+    Float,
+    List,
+    Dictionary,
+    Callable,
+    Module,
+    Undefined,
+}
+
+impl From<&DataType> for DataKind {
+    fn from(value: &DataType) -> Self {
+        match value {
+            DataType::Number(_) => DataKind::Int,
+            DataType::String(_) => DataKind::String,
+            DataType::Boolean(_) => DataKind::Boolean,
+            DataType::Function(_) => DataKind::Callable,
+            DataType::List(_) => DataKind::List,
+            DataType::Dictionary(_) => DataKind::Dictionary,
+            DataType::Module(_) => DataKind::Module,
+            DataType::Undefined => DataKind::Undefined,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum ArgumentError {
+    InvalidCount {
+        fn_name: String,
+        expected: usize,
+        found: usize,
+    },
+    InvalidRange {
+        fn_name: String,
+        expected_min: usize,
+        expected_max: usize,
+        found: usize,
+    },
+    InvalidType {
+        fn_name: String,
+        index: usize,
+        expected_type: DataKind,
+        found_type: DataKind,
+    },
+}
+
+impl fmt::Display for ArgumentError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ArgumentError::InvalidCount {
+                fn_name,
+                expected,
+                found,
+            } => write!(
+                f,
+                "Argument count error. {} expected {} arguments, found: {}",
+                fn_name, expected, found
+            ),
+            ArgumentError::InvalidRange {
+                fn_name,
+                expected_min,
+                expected_max,
+                found,
+            } => write!(
+                f,
+                "Argument range error. {} expected {}-{} arguments, found: {}",
+                fn_name, expected_min, expected_max, found
+            ),
+            ArgumentError::InvalidType {
+                fn_name,
+                index,
+                expected_type,
+                found_type,
+            } => write!(
+                f,
+                "Argument type error. {} expected {:?} as argument {}, found: {:?}",
+                fn_name, expected_type, index, found_type
+            ),
+        }
+    }
+}
+
+pub struct Args {
+    fn_name: String,
+    pub arguments: Vec<Rc<DataType>>,
+}
+
+impl Args {
+    pub fn new(fn_name: &str, arguments: &Vec<Rc<DataType>>) -> Self {
+        Self {
+            fn_name: fn_name.to_string(),
+            arguments: arguments.iter().cloned().collect(),
+        }
+    }
+
+    pub fn exact(&self, length: usize) -> Result<(), ArgumentError> {
+        let len = self.arguments.len();
+        if len != length {
+            return Err(ArgumentError::InvalidCount {
+                fn_name: self.fn_name.clone(),
+                found: len,
+                expected: length,
+            });
+        }
+
+        Ok(())
+    }
+    pub fn range(&self, min: usize, max: usize) -> Result<(), ArgumentError> {
+        let len = self.arguments.len();
+        if len < min || len > max {
+            return Err(ArgumentError::InvalidRange {
+                fn_name: self.fn_name.clone(),
+                found: len,
+                expected_min: min,
+                expected_max: max,
+            });
+        }
+
+        Ok(())
+    }
+
+    pub fn optional_string(&self, index: usize) -> Result<Option<String>, ArgumentError> {
+        self.arguments
+            .get(index)
+            .map(|data| {
+                expect_string(data).map_err(|found| ArgumentError::InvalidType {
+                    fn_name: self.fn_name.clone(),
+                    index,
+                    expected_type: DataKind::String,
+                    found_type: found,
+                })
+            })
+            .transpose()
+    }
+
+    pub fn string(&self, index: usize) -> Result<String, ArgumentError> {
+        let value = self
+            .arguments
+            .get(index)
+            .ok_or(ArgumentError::InvalidType {
+                fn_name: self.fn_name.clone(),
+                index,
+                expected_type: DataKind::String,
+                found_type: DataKind::Undefined,
+            })?;
+        expect_string(value).map_err(|found| ArgumentError::InvalidType {
+            fn_name: self.fn_name.clone(),
+            index,
+            expected_type: DataKind::String,
+            found_type: found,
+        })
+    }
+    pub fn int(&self, index: usize) -> Result<usize, ArgumentError> {
+        let value = self
+            .arguments
+            .get(index)
+            .ok_or(ArgumentError::InvalidType {
+                fn_name: self.fn_name.clone(),
+                index,
+                expected_type: DataKind::Int,
+                found_type: DataKind::Undefined,
+            })?;
+        expect_int(value).map_err(|found| ArgumentError::InvalidType {
+            fn_name: self.fn_name.clone(),
+            index,
+            expected_type: DataKind::Int,
+            found_type: found,
+        })
+    }
+    pub fn boolean(&self, index: usize) -> Result<bool, ArgumentError> {
+        let value = self
+            .arguments
+            .get(index)
+            .ok_or(ArgumentError::InvalidType {
+                fn_name: self.fn_name.clone(),
+                index,
+                expected_type: DataKind::Boolean,
+                found_type: DataKind::Undefined,
+            })?;
+        expect_bool(value).map_err(|found| ArgumentError::InvalidType {
+            fn_name: self.fn_name.clone(),
+            index,
+            expected_type: DataKind::Boolean,
+            found_type: found,
+        })
+    }
+    pub fn list(&self, index: usize) -> Result<&ListDeclaration, ArgumentError> {
+        let value = self
+            .arguments
+            .get(index)
+            .ok_or(ArgumentError::InvalidType {
+                fn_name: self.fn_name.clone(),
+                index,
+                expected_type: DataKind::List,
+                found_type: DataKind::Undefined,
+            })?;
+        expect_list(value).map_err(|found| ArgumentError::InvalidType {
+            fn_name: self.fn_name.clone(),
+            index,
+            expected_type: DataKind::List,
+            found_type: found,
+        })
+    }
+    pub fn dictionary(&self, index: usize) -> Result<&DictionaryDeclaration, ArgumentError> {
+        let value = self
+            .arguments
+            .get(index)
+            .ok_or(ArgumentError::InvalidType {
+                fn_name: self.fn_name.clone(),
+                index,
+                expected_type: DataKind::Dictionary,
+                found_type: DataKind::Undefined,
+            })?;
+        expect_dict(value).map_err(|found| ArgumentError::InvalidType {
+            fn_name: self.fn_name.clone(),
+            index,
+            expected_type: DataKind::Dictionary,
+            found_type: found,
+        })
+    }
+    pub fn callable(&self, index: usize) -> Result<&Callable, ArgumentError> {
+        let value = self
+            .arguments
+            .get(index)
+            .ok_or(ArgumentError::InvalidType {
+                fn_name: self.fn_name.clone(),
+                index,
+                expected_type: DataKind::Callable,
+                found_type: DataKind::Undefined,
+            })?;
+        expect_callable(value).map_err(|found| ArgumentError::InvalidType {
+            fn_name: self.fn_name.clone(),
+            index,
+            expected_type: DataKind::Callable,
+            found_type: found,
+        })
+    }
+    pub fn any(&self, index: usize) -> Result<&Rc<DataType>, ArgumentError> {
+        self.arguments.get(index).ok_or(ArgumentError::InvalidType {
+            // TODO: Fix proper error type here. Index accessor gone wrong
+            fn_name: self.fn_name.clone(),
+            index,
+            expected_type: DataKind::Callable,
+            found_type: DataKind::Undefined,
+        })
+    }
 }

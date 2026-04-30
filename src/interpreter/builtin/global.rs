@@ -6,8 +6,8 @@ use std::{
 use crate::{
     RuntimeContext,
     interpreter::{
-        builtin::BuiltinFn,
-        coerce::{self, expect_callable, expect_string},
+        builtin::{BuiltinFn, CallInfo, ExecutionError},
+        coerce::Args,
         datatype::DataType,
     },
 };
@@ -20,39 +20,40 @@ pub static BUILTINS: &[(&str, BuiltinFn)] = &[
     ("run", run),
 ];
 
-fn len(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>, _: &mut RuntimeContext) -> Rc<DataType> {
+fn len(
+    _: Option<Rc<DataType>>,
+    data: Vec<Rc<DataType>>,
+    _: &mut RuntimeContext,
+) -> Result<Rc<DataType>, ExecutionError> {
+    // TODO: Make methods on data types
     let [arg] = data.as_slice() else {
-        panic!(
-            "len only takes 1 argument. Received: {:?}",
-            data.iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
-        )
+        return Err(ExecutionError::new(
+            CallInfo::new("len"),
+            "Invalid argument count",
+        ));
     };
 
-    match arg.as_ref() {
+    Ok(match arg.as_ref() {
         DataType::String(string) => Rc::new(DataType::Number(string.len() as f32)),
         DataType::List(list_declaration) => list_declaration.length(),
         DataType::Dictionary(dict) => dict.length(),
         _ => panic!("Can't get length for '{}'", arg),
-    }
+    })
 }
 
-fn print(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>, _: &mut RuntimeContext) -> Rc<DataType> {
-    let [arg] = data.as_slice() else {
-        panic!(
-            "print only takes 1 argument. Received: {:?}",
-            data.iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
-        )
-    };
+fn print(
+    _: Option<Rc<DataType>>,
+    data: Vec<Rc<DataType>>,
+    _: &mut RuntimeContext,
+) -> Result<Rc<DataType>, ExecutionError> {
+    let args = Args::new("print", &data);
+
+    args.exact(1)?;
+    let arg = args.string(0)?;
 
     println!("{}", arg);
 
-    Rc::new(DataType::Undefined)
+    Ok(Rc::new(DataType::Undefined))
 }
 
 // wt.exe wsl bash -c "cd ~/dev/task-automation && exec bash"
@@ -60,24 +61,17 @@ fn spawn_terminal(
     _: Option<Rc<DataType>>,
     data: Vec<Rc<DataType>>,
     _: &mut RuntimeContext,
-) -> Rc<DataType> {
-    let path = data.iter().nth(0).expect(
-        format!(
-            "spawn_terminal takes 1-2 arguments. Received: {:?}",
-            data.iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
-        )
-        .as_str(),
-    );
+) -> Result<Rc<DataType>, ExecutionError> {
+    let args = Args::new("spawn_terminal", &data);
 
-    let mut command: String;
+    args.range(1, 2)?;
+    let path = args.string(0)?;
+    let cmd = args.optional_string(1)?;
 
-    command = format!("cd {}", coerce::expect_string(path));
+    let mut command: String = String::from(format!("cd {}", path));
 
-    if let [_, cmd] = data.as_slice() {
-        command += format!(" && {}", coerce::expect_string(cmd)).as_str();
+    if let Some(x) = cmd {
+        command += format!(" && {}", x).as_str();
     }
 
     // Retain the terminal in bash mode
@@ -101,64 +95,51 @@ fn spawn_terminal(
         _ => {}
     }
 
-    Rc::new(DataType::Undefined)
+    Ok(Rc::new(DataType::Undefined))
 }
 
 fn register_task(
     _: Option<Rc<DataType>>,
     data: Vec<Rc<DataType>>,
     context: &mut RuntimeContext,
-) -> Rc<DataType> {
-    let [arg1, arg2] = data.as_slice() else {
-        panic!(
-            "register_task expects 2 arguments. Received: {:?}",
-            data.iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
-        )
-    };
-
-    let task_name = expect_string(arg1);
-    let task_block = expect_callable(arg2);
+) -> Result<Rc<DataType>, ExecutionError> {
+    let args = Args::new("register_task", &data);
+    args.exact(2)?;
+    let task_name = args.string(0)?;
+    let task_block = args.callable(1)?;
 
     context
         .task_registry
         .register(task_name, task_block.clone());
 
-    Rc::new(DataType::Undefined)
+    Ok(Rc::new(DataType::Undefined))
 }
 
 fn run(
     _: Option<Rc<DataType>>,
     data: Vec<Rc<DataType>>,
     context: &mut RuntimeContext,
-) -> Rc<DataType> {
-    let arg = data.iter().nth(0).expect(
-        format!(
-            "run expects 1 argument. Received: {:?}",
-            data.iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
-        )
-        .as_str(),
-    );
+) -> Result<Rc<DataType>, ExecutionError> {
+    let args = Args::new("run", &data);
+
+    let task_name = args.string(0)?;
 
     // TODO: Validate string values
-    let task_args: Vec<Rc<DataType>> = data[1..].iter().cloned().collect();
+    let task_args: Vec<Rc<DataType>> = args.arguments[1..].iter().cloned().collect();
 
-    let task = expect_string(arg);
-
-    // TODO: Propogate error
-    let task_result = context.task_registry.get(task);
+    let task_result = context.task_registry.get(&task_name);
 
     match task_result {
-        Err(err) => println!("Error: {}", err),
+        Err(_) => {
+            return Err(ExecutionError::new(
+                CallInfo::new(&task_name),
+                "Task not registered",
+            ));
+        }
         Ok(task) => {
-            task.execute(task_args, context);
+            task.execute(task_args, context)?;
         }
     }
 
-    Rc::new(DataType::Undefined)
+    Ok(Rc::new(DataType::Undefined))
 }

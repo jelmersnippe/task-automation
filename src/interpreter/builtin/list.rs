@@ -1,80 +1,101 @@
 use std::rc::Rc;
 
 use crate::{
-    interpreter::{coerce, datatype::DataType},
     RuntimeContext,
+    interpreter::{
+        builtin::{CallInfo, ExecutionError},
+        coerce::{self, Args, DataKind},
+        datatype::DataType,
+    },
 };
 
 pub(crate) fn clear(
     receiver: Option<Rc<DataType>>,
     data: Vec<Rc<DataType>>,
     _: &mut RuntimeContext,
-) -> Rc<DataType> {
-    if !data.is_empty() {
-        panic!(
-            "clear takes no arguments. received: {}",
-            data.iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
-        )
-    }
+) -> Result<Rc<DataType>, ExecutionError> {
+    let args = Args::new("clear", &data);
+    args.exact(0)?;
 
     let x = receiver.expect("clear can only be called on a list");
 
-    let list = coerce::expect_list(x.as_ref());
+    let list_receiver = coerce::expect_list(x.as_ref());
 
-    list.clear();
-
-    Rc::new(DataType::Undefined)
+    match list_receiver {
+        Ok(list) => {
+            list.clear();
+            Ok(Rc::new(DataType::Undefined))
+        }
+        Err(err) => Err(ExecutionError::new(
+            CallInfo::new("clear"),
+            format!(
+                "Expected to be called on {:?}, instead found: {:?}",
+                DataKind::List,
+                err
+            )
+            .as_str(),
+        )),
+    }
 }
 
 pub(crate) fn push(
     receiver: Option<Rc<DataType>>,
     data: Vec<Rc<DataType>>,
     _: &mut RuntimeContext,
-) -> Rc<DataType> {
-    let [data] = data.as_slice() else {
-        panic!(
-            "delete only takes 1 argument. received: {}",
-            data.iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
-        )
-    };
+) -> Result<Rc<DataType>, ExecutionError> {
+    let args = Args::new("push", &data);
+    args.exact(1)?;
+    let data = args.any(0)?;
 
-    let x = receiver.expect("clear can only be called on a list");
+    let x = receiver.expect("push can only be called on a list");
 
-    let list = coerce::expect_list(x.as_ref());
+    let list_receiver = coerce::expect_list(x.as_ref());
 
-    list.push(data.clone());
-
-    Rc::new(DataType::Undefined)
+    match list_receiver {
+        Ok(list) => {
+            list.push(data.clone());
+            Ok(Rc::new(DataType::Undefined))
+        }
+        Err(err) => Err(ExecutionError::new(
+            CallInfo::new("push"),
+            format!(
+                "Expected to be called on {:?}, instead found: {:?}",
+                DataKind::List,
+                err
+            )
+            .as_str(),
+        )),
+    }
 }
 
 pub(crate) fn pop(
     receiver: Option<Rc<DataType>>,
     data: Vec<Rc<DataType>>,
     _: &mut RuntimeContext,
-) -> Rc<DataType> {
-    if !data.is_empty() {
-        panic!(
-            "pop takes no arguments. received: {}",
-            data.iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
-        )
-    }
+) -> Result<Rc<DataType>, ExecutionError> {
+    let args = Args::new("clear", &data);
+    args.exact(0)?;
 
-    let x = receiver.expect("clear can only be called on a list");
+    let x = receiver.expect("pop can only be called on a list");
 
-    let list = coerce::expect_list(x.as_ref());
+    let list_receiver = coerce::expect_list(x.as_ref());
 
-    if let Some(value) = list.pop() {
-        value
-    } else {
-        Rc::new(DataType::Undefined)
+    match list_receiver {
+        Ok(list) => {
+            let result = list.pop();
+            match result {
+                Some(data) => Ok(data),
+                None => Ok(Rc::new(DataType::Undefined)),
+            }
+        }
+        Err(err) => Err(ExecutionError::new(
+            CallInfo::new("pop"),
+            format!(
+                "Expected to be called on {:?}, instead found: {:?}",
+                DataKind::List,
+                err
+            )
+            .as_str(),
+        )),
     }
 }

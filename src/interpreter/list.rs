@@ -1,6 +1,10 @@
 use std::{cell::RefCell, fmt, rc::Rc};
 
-use crate::interpreter::{coerce, datatype::DataType};
+use crate::interpreter::{
+    builtin::{CallInfo, ExecutionError},
+    coerce::Args,
+    datatype::DataType,
+};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ListDeclaration {
@@ -14,30 +18,35 @@ impl ListDeclaration {
         }
     }
 
-    pub fn get(&self, index: Rc<DataType>) -> Rc<DataType> {
-        let i = coerce::expect_int(&index);
+    pub fn get(&self, index: Rc<DataType>) -> Result<Rc<DataType>, ExecutionError> {
+        let args = Args::new("get", &vec![index]);
+        let i = args.int(0)?;
 
-        if i >= self.values.borrow().len() {
-            panic!("Index out of bounds");
+        let values = self.values.borrow();
+        match i < values.len() {
+            true => Ok(Rc::clone(&values[i])),
+            false => Err(ExecutionError::new(
+                CallInfo::new("get"),
+                "Index out of bounds",
+            )),
         }
-
-        return Rc::clone(
-            self.values
-                .borrow()
-                .iter()
-                .nth(i)
-                .expect("Index out of range"),
-        );
     }
 
-    pub fn set(&self, index: Rc<DataType>, value: Rc<DataType>) {
-        let i = coerce::expect_int(&index);
+    pub fn set(&self, index: Rc<DataType>, value: Rc<DataType>) -> Result<(), ExecutionError> {
+        let args = Args::new("get", &vec![index]);
+        let i = args.int(0)?;
 
-        if i >= self.values.borrow().len() {
-            panic!("Index out of bounds");
+        let mut values = self.values.borrow_mut();
+        match i < values.len() {
+            true => {
+                values[i] = value;
+                Ok(())
+            }
+            false => Err(ExecutionError::new(
+                CallInfo::new("get"),
+                "Index out of bounds",
+            )),
         }
-
-        self.values.borrow_mut()[i] = value
     }
 
     pub fn length(&self) -> Rc<DataType> {
