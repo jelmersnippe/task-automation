@@ -25,9 +25,11 @@ pub fn create_git_module() -> Module {
         .function("remote_branches", remote_branches)
         .function("worktrees", worktrees)
         .function("delete_branch", delete_branch)
+        .function("rebase", rebase)
         .function("fetch", fetch)
         .function("prune", prune)
         .function("pull", pull)
+        .function("push", push)
 }
 
 #[derive(Debug)]
@@ -69,6 +71,17 @@ fn current_branch(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> Data
 
     DataType::String(String::from(branch.trim()))
 }
+
+fn rebase(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
+    if !args.is_empty() {
+        panic!("current_branch does not take any arguments");
+    }
+
+    run_git_command(&["rebase", "origin/master"], context.cwd.clone()).unwrap();
+
+    DataType::Undefined
+}
+
 fn local_branches(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
     if !args.is_empty() {
         panic!("local_branches does not take any arguments");
@@ -155,6 +168,36 @@ fn prune(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
     }
 
     run_git_command(&["gc"], context.cwd.clone()).unwrap();
+
+    DataType::Undefined
+}
+fn push(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
+    if args.len() > 1 {
+        panic!("push takes 0-1 arguments")
+    }
+    let arg = args.iter().nth(0);
+
+    let mut git_args = vec!["push"];
+    match arg {
+        Some(arg) => {
+            let force = expect_string(arg);
+            if force == "--force" {
+                git_args.push("--force");
+            }
+            panic!(
+                "Invalid arg supplied to git push. Expected --force, found: {}",
+                arg
+            )
+        }
+        None => {}
+    };
+
+    let branch = expect_string(&current_branch(vec![], context));
+
+    git_args.push("origin");
+    git_args.push(&branch);
+
+    run_git_command(&git_args, context.cwd.clone()).unwrap();
 
     DataType::Undefined
 }

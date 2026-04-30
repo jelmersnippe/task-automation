@@ -23,3 +23,12 @@ register_task("update_worktrees", fn() {
         print(git.in_directory(worktree_directory).current_branch())
     })
 })
+
+register_task("rebase_worktrees", fn() {
+    print("rebasing worktrees")
+    foreach_worktree(fn(worktree_directory) {
+        git.in_directory(worktree_directory).rebase()
+
+        print(git.in_directory(worktree_directory).current_branch())
+    })
+})
