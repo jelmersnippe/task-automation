@@ -180,14 +180,14 @@ fn push(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
     let mut git_args = vec!["push"];
     match arg {
         Some(arg) => {
-            let force = expect_string(arg);
-            if force == "--force" {
-                git_args.push("--force");
+            if expect_string(arg) == "--force" {
+                git_args.push("--force-with-lease");
+            } else {
+                panic!(
+                    "Invalid arg supplied to git push. Expected --force, found: {}",
+                    arg
+                );
             }
-            panic!(
-                "Invalid arg supplied to git push. Expected --force, found: {}",
-                arg
-            )
         }
         None => {}
     };

@@ -30,5 +30,11 @@ register_task("rebase_worktrees", fn() {
         git.in_directory(worktree_directory).rebase()
 
         print(git.in_directory(worktree_directory).current_branch())
+
+        git.in_directory(worktree_directory).push("--force")
     })
+})
+
+register_task("test", fn() {
+    git.push("--force")
 })
