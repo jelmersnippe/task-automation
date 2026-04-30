@@ -162,15 +162,15 @@ var y = len(x)
 // expect y == 2
 ```
 
-**List out-of-bounds access — should panic**
-The bounds check exists in `ListDeclaration::get` but the panic is untested:
+**List out-of-bounds access — should return an error**
+The bounds check exists in `ListDeclaration::get` but the error path is untested. Once the interpreter returns `ExecutionError` here instead of panicking, a test should assert the error is surfaced cleanly:
 ```dsl
 var x = [1, 2]
 var y = x[5]
 ```
 
-**Type mismatch in binary expression — should panic**
-No test for invalid type combinations:
+**Type mismatch in binary expression — should return an error**
+These currently panic inside `interpret_binary_expression`. Once converted to `ExecutionError` (see `todo.md`), tests should assert clean error returns rather than panics:
 ```dsl
 var x = true + 1
 var y = "foo" - 1

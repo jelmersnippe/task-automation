@@ -5,7 +5,7 @@
 One of the most common beginner patterns in this codebase. When a function only needs to read a string, it should accept `&str` instead of `&String`. `&str` is strictly more flexible — a `&String` can always be coerced to `&str`, but not vice versa. As a rule: only accept `&String` if you need to call methods exclusive to `String` (which is rare).
 
 Affected locations:
-- `lexer/lexer.rs`: `lookup_keyword`, `is_valid_number`, `is_valid_string`, `is_valid_identifier`
+- `lexer/mod.rs`: `lookup_keyword`, `is_valid_number`, `is_valid_string`, `is_valid_identifier`
 - `interpreter/scope.rs`: `get_variable`, `update_variable`
 - `interpreter/list.rs`: `has`, `get`, `delete`
 
@@ -33,7 +33,7 @@ fn parse(&mut self) -> Vec<StatementType> {
 
 `return` is correct and appropriate for early exits mid-function, which is already used correctly in some places. The fix is simply to drop the `return` keyword (and the semicolon) on the final expression of each function.
 
-Affects nearly every function in: `lexer/lexer.rs`, `parser/mod.rs`, `parser/expressions.rs`, `parser/statements.rs`, `interpreter/builtin.rs`, `interpreter/helpers.rs`.
+Affects nearly every function in: `lexer/mod.rs`, `parser/mod.rs`, `parser/expressions.rs`, `parser/statements.rs`, `interpreter/builtin/`, `interpreter/coerce.rs`.
 
 ---
 
@@ -72,7 +72,7 @@ There are two categories of `.clone()` in this codebase. It is important to dist
 
 ## 5. Dead Code: Unused Vec in `execute_statements` (High Priority)
 
-`interpreter/mod.rs:379-387`:
+`interpreter/mod.rs:469-472`:
 
 ```rust
 let mut executed_statements: Vec<StatementType> = vec![];
@@ -195,7 +195,7 @@ The `matches!` macro checks a pattern without binding variables, which is exactl
 
 ## 14. Type Aliases for Shared Reference Types (Medium Priority)
 
-Even after item 13, `Rc<RefCell<>>` or similar compound types may remain in other parts of the codebase. Writing these types out in full at every function signature makes the code harder to scan and harder to refactor.
+Even after reducing `Rc<RefCell<>>` usage, compound types may remain in other parts of the codebase. Writing these types out in full at every function signature makes the code harder to scan and harder to refactor.
 
 Define aliases in a central location (e.g. a `types.rs` module, or at the top of `scope.rs`):
 

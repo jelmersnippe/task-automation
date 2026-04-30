@@ -4,37 +4,13 @@ This file documents repeated patterns in the codebase that could be extracted in
 
 ---
 
-## 1. Builtin argument validation
+## 1. ~~Builtin argument validation~~ (Resolved)
 
-**Where:** Every function in `interpreter/builtin.rs`
+**Where:** `interpreter/builtin/mod.rs`
 
-Every builtin starts with the same shape:
+Argument validation is now handled by the `Args` struct with `exact()`, `range()`, and `any()` methods, all returning `Result<_, ArgumentError>`. This replaces the old panic-based `let [arg] = data.as_slice() else { panic!(...) }` pattern. The `Args` approach is more ergonomic and integrates with the `?` propagation chain.
 
-```rust
-let [arg] = data.as_slice() else {
-    panic!("my_builtin expects 1 argument, got {}", data.len());
-};
-```
-
-Two-argument variants repeat the same thing with `[a, b]`. This is 6–8 lines of near-identical code per builtin.
-
-**Fix idea:** A helper that takes the `Vec<DataType>` and the expected count, and either returns an array or panics with a consistent message:
-
-```rust
-fn expect_args<const N: usize>(name: &str, data: Vec<DataType>) -> [DataType; N] {
-    data.try_into().unwrap_or_else(|v: Vec<_>| {
-        panic!("{} expects {} argument(s), got {}", name, N, v.len())
-    })
-}
-```
-
-Usage becomes a single line per builtin:
-
-```rust
-let [arg] = expect_args::<1>("print", data);
-```
-
-> This uses a const generic (`<const N: usize>`) — a Rust feature that lets you bake a number into a type. `[DataType; N]` is an array of exactly `N` elements known at compile time.
+Note: `Args::any()` still has a bug where it hardcodes `expected_type: DataKind::Callable` in its error — there is a `// TODO` comment at `interpreter/coerce.rs:305`.
 
 ---
 
@@ -95,31 +71,9 @@ let map: HashMap<String, Rc<DataType>> = pairs
 
 ---
 
-## 6. Unified Callable Construction (Updated)
+## 6. ~~Unified Callable Construction~~ (Resolved)
 
-**Where:** Function construction throughout the codebase
-
-With the function call system unification (see FUNCTION_UNIFICATION_PLAN.md), user functions, built-ins, and module functions all use the same execution signature. Constructing callable values previously required nested constructor calls that exposed implementation details:
-
-```rust
-// Old approach (to be replaced)
-DataType::Function(Callable::User(UserFunction { parameters, body, scope }))
-```
-
-**Fix idea:** Use unified callable factories that handle adaptation internally:
-
-```rust
-// For user functions (adapted to unified signature)
-Callable::new_user(func_decl)
-
-// For built-in functions (already match unified signature)  
-Callable::new_builtin(builtin_fn)
-
-// For module functions (adapted to unified signature)
-Callable::new_module(module_fn)
-```
-
-This eliminates the need for nested constructor calls and provides a uniform interface for all callable types. The `Callable::new_*` methods encapsulate the appropriate adaptation layer, hiding implementation details from callers.
+The function unification plan has been fully executed. All callable types (user functions, builtins, module functions) now share a unified internal representation and construction interface. The old nested constructor approach (`DataType::Function(Callable::User(UserFunction { ... }))`) no longer applies.
 
 ---
 
@@ -141,13 +95,9 @@ This works if `DataType` implements `Display` (which it does). One branch replac
 
 ## 8. Near-identical `Display` implementations
 
-**Where:** `DataType` in `interpreter/mod.rs` (or wherever it's defined), `LiteralType` in the parser
+**Where:** `DataType` in `interpreter/datatype.rs`, `LiteralType` in the parser
 
-Both types implement `Display` with a `match` that maps each variant to a string. The structure is essentially identical.
-
-This one is harder to de-duplicate mechanically, but it's worth knowing they exist as a pair — if you add a new literal type, you need to update both `Display` implementations, which is easy to forget.
-
-> NOTE: With the function call unification plan (see FUNCTION_UNIFICATION_PLAN.md), Display implementations for callable types will be further simplified as all callables use a unified internal representation. The core issue of duplicated logic between LiteralType and DataType Display impls remains relevant for non-callable types, but callable Display logic will be centralized.
+Both types implement `Display` with a `match` that maps each variant to a string. The structure is essentially identical. If you add a new literal type, you need to update both `Display` implementations, which is easy to forget.
 
 A longer-term fix would be to unify `LiteralType` and `DataType` or derive one from the other, but that's an architectural change. For now, just be aware of the coupling.
 
@@ -157,10 +107,10 @@ A longer-term fix would be to unify `LiteralType` and `DataType` or derive one f
 
 | # | Pattern | Occurrences | Suggested fix |
 |---|---------|-------------|---------------|
-| 1 | Builtin arg validation | ~10 builtins | `expect_args::<N>()` helper |
+| 1 | Builtin arg validation | Resolved — `Args` struct with `?` | — |
 | 3 | `Rc::new(DataType::Undefined())` | ~10 builtins | `undefined()` helper |
 | 4 | Dict key resolution reimplemented inline | 1 | Call existing `expect_string` helper |
 | 5 | Intermediate `Vec` before `HashMap` | 1 | Collect directly into `HashMap` |
-| 6 | Triple-nested function constructor | 2–3 | `DataType::user_function(...)` |
+| 6 | Unified callable construction | Resolved — function unification done | — |
 | 7 | String concat match arms | 3 | Single `format!` after `to_string()` |
 | 8 | Duplicate `Display` impls | 2 | Awareness; unify types long-term |

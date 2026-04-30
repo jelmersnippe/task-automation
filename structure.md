@@ -2,21 +2,17 @@
 
 ## Current Issues
 
-### 4. `builtin.rs` Will Become a Monolith (Medium Priority)
+### 4. ~~`builtin.rs` Will Become a Monolith~~ (Resolved)
 
-Three builtins fit comfortably in one file today. The long-term goal includes a task registry with filesystem, process, environment, and terminal operations. All of these in one file will become hard to navigate and maintain.
-
-**Fix:** Convert to a `builtins/` subdirectory, grouping by concern:
+The `builtins/` split has been completed. The module now lives at `interpreter/builtin/` with the following layout:
 
 ```
-interpreter/builtins/
-    mod.rs          ← BUILTINS registry, Builtin struct, BuiltinFn type definition
-    io.rs           ← print, read_line, etc.
-    terminal.rs     ← spawn_terminal and future terminal operations
-    collections.rs  ← dict_has, dict_delete, dict_clear, len
+interpreter/builtin/
+    mod.rs          ← BuiltinFn type, ExecutionError, Args validation, BUILTINS registry
+    global.rs       ← print, len, run, register_task, spawn_terminal
+    list.rs         ← list methods: clear, push, pop
+    dictionary.rs   ← dict methods: has, delete, clear
 ```
-
-Each category file only exports its functions; `mod.rs` assembles the `BUILTINS` list and re-exports the `Builtin` and `BuiltinFn` types.
 
 ---
 
@@ -46,33 +42,34 @@ src/
 ├── runner.rs                   ← pipeline: tokenize → parse → interpret
 │
 ├── lexer/
-│   ├── mod.rs                  ← Lexer struct + tokenize() (merged from lexer.rs)
+│   ├── mod.rs                  ← Lexer struct + tokenize()
 │   └── tests.rs
 │
 ├── parser/
 │   ├── mod.rs                  ← Parser struct + token utilities (peek, next, expect, match)
-│   ├── expressions.rs          ← AST expression types + expression parsing (no interpreter imports)
+│   ├── expressions.rs          ← AST expression types + expression parsing
 │   ├── statements.rs           ← AST statement types + statement parsing
 │   └── tests/
 │
 ├── interpreter/
 │   ├── mod.rs                  ← Interpreter struct + interpret_statement / interpret_expression
-│   ├── value.rs                ← DataType, Callable, Display/PartialEq impls (split from scope.rs)
+│   ├── datatype.rs             ← DataType, Callable, Display/PartialEq impls
 │   ├── scope.rs                ← Scope only
+│   ├── coerce.rs               ← Args validation, type coercion helpers
 │   ├── function.rs
 │   ├── list.rs
-│   ├── helpers.rs
-│   ├── builtins/               ← split from single builtin.rs
-│   │   ├── mod.rs              ← BUILTINS registry, Builtin struct, BuiltinFn type
-│   │   ├── io.rs               ← print, read_line
-│   │   ├── terminal.rs         ← spawn_terminal
-│   │   └── collections.rs      ← len, dict_has, dict_delete, dict_clear
+│   ├── dictionary.rs
+│   ├── builtin/                ← split from single builtin.rs (done)
+│   │   ├── mod.rs              ← BuiltinFn type, ExecutionError, BUILTINS registry
+│   │   ├── global.rs           ← print, len, run, register_task, spawn_terminal
+│   │   ├── list.rs             ← list methods
+│   │   └── dictionary.rs       ← dict methods
 │   └── tests/
 │
-└── task/                       ← future: task registry and runner
-    ├── mod.rs
-    ├── registry.rs             ← task definitions and lookup
-    └── runner.rs               ← task execution logic
+├── modules/
+│   └── git/                    ← git command wrappers
+│
+└── task_management/            ← task registry and execution
 
 tests/                          ← crate-level integration tests (full pipeline)
     integration.rs              ← or split by feature area
@@ -85,4 +82,3 @@ tests/                          ← crate-level integration tests (full pipeline
 The issues above are not independent — some must come before others to avoid doing work twice.
 
 5. **Add integration tests** — validates that refactors haven't broken anything, gives confidence for the steps below
-6. **Split `builtins/`** — do this when the number of builtins justifies it, or when the task registry work begins

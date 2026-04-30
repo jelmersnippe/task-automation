@@ -10,13 +10,13 @@
 ## Code Quality
 
 - [ ] Replace `f32` with `f64` for number storage to reduce precision loss, or introduce separate `Int` and `Float` variants in `DataType` for more principled numeric handling.
-- [ ] Replace `panic!` throughout with `Result<T, E>` and a custom `InterpreterError` enum, using `?` for propagation — this is idiomatic Rust and makes errors recoverable.
-  
-  > NOTE: This item requires coordination with the function unification plan. While general error handling should move to Result, the unification plan retains `panic!` for specific cases like missing method lookup (get_method) to maintain consistency with existing behavior. Consider whether these should be unified under the Result approach as part of a broader error handling refactor.
+- [x] Replace `panic!` in the interpreter core with `Result<T, E>` — `ExecutionError`, `ArgumentError`, and `RuntimeError` types are defined with `From` conversions enabling `?` propagation throughout the interpreter and runner layers.
+- [ ] Extend `Result` handling to the parser layer — `Parser::parse()` still returns `Vec<StatementType>` with all syntax errors as `panic!`. Introduce a `ParseError` type and change the return to `Result<Vec<StatementType>, ParseError>`. Parse errors should collect multiple issues before reporting and include source location.
+- [ ] Extend `Result` handling to the git module — `run_git_command` returns `Result<String, GitError>` but every call site calls `.unwrap()`. Add `From<GitError> for ExecutionError` and replace all `.unwrap()` calls with `?` propagation.
 - [x] Return an error instead of `DataType::Undefined()` from `scope.get_variable` when a variable doesn't exist — silent undefined values cause confusing panics far from the actual mistake.
 - [ ] Remove dead code in `lexer/lexer.rs` — the string-accumulation guard at the top of the main loop makes a second identical check further down unreachable.
 - [ ] Document or rewrite `insert_new_right` in `parser/expressions.rs` — the custom iterative precedence algorithm is undocumented and hard to reason about; inline comments explaining the algorithm are the minimum, a rewrite to Pratt parsing is preferred (see Architecture section).
-- [ ] Clarify `PartialEq` behavior for `Callable` variants — with the unification plan, all callable types will use a unified internal representation, making equality comparison more meaningful. Two callables should compare equal if they refer to the same underlying function (accounting for adaptations). This replaces the previous issue where built-in functions always compared as unequal.
+- [ ] Clarify `PartialEq` behavior for `Callable` variants — two callables should compare equal if they refer to the same underlying function.
 
 ## Architecture
 
@@ -30,7 +30,7 @@
 ## Missing Language Features
 
 - [ ] Implement `else` / `else if` — the `Else` token is already lexed but `parse_if_statement` never checks for it.
-- [x] Implement `while` loop — no token, AST node, or interpreter support exists yet.
+- [x] Implement `while` loop.
 - [ ] Implement comments (`//`) — currently tokenized as two `Divide` tokens; needs to be stripped in the lexer.
 - [ ] Implement the `global` keyword — referenced in the spec but absent from the lexer and parser.
 - [ ] Implement `for` / iteration over collections — without iteration, lists are limited to indexed access; a `for item in list {}` construct or a `forEach` builtin would unlock much more expressive scripts.

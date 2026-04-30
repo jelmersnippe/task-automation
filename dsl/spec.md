@@ -5,7 +5,7 @@
 - There is no need to end lines with ;. Instead, ; can be used to end a statement without using a space
 - Scopes are contained inside { }
 - Comments are denoted with //
-- Errors stop the process. In the future errors will only break out of the current scope, logging a failure.
+- Errors stop the process. Result-based error handling is being introduced; in the future errors will surface cleanly rather than crashing.
 
 ## Variables
 Variables can be created by using the `var` keyword
@@ -53,10 +53,20 @@ var falseValue = false
 
 ## Data structures
 ### Array
-TBD. `[]` with `,` separated values
+`[]` with `,` separated values. Supports indexed access (`x[0]`), and methods: `push(value)`, `pop()`, `clear()`.
+```
+var x = [1, 2, 3]
+x.push(4)
+var first = x[0]
+```
 
 ### Map
-TBD. `{}` with Text keys and any value
+`{}` with text keys and any value. Supports key access (`x["key"]`), and methods: `has(key)`, `delete(key)`, `clear()`.
+```
+var x = { name: "Alice", age: 30, }
+var name = x["name"]
+var exists = x.has("name")
+```
 
 ## Functions
 Functions can be created with or without parameters. The body of the function is defined within a `{}` scope.
@@ -83,7 +93,7 @@ fn add(x, y) {
     return x + y
 }
 
-let result = add(1, 2)
+var result = add(1, 2)
 ```
 print(result) // Prints 3
 
