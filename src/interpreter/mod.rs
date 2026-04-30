@@ -37,7 +37,7 @@ pub struct Interpreter {
 }
 
 impl Interpreter {
-    pub fn new(statements: Vec<StatementType>, context: &RuntimeContext) -> Self {
+    pub fn new(statements: Vec<StatementType>, context: &mut RuntimeContext) -> Self {
         let mut scope = Scope::new(None);
 
         for (k, v) in BUILTINS {
@@ -64,7 +64,7 @@ impl Interpreter {
         }
     }
 
-    pub fn interpret(&mut self, context: &RuntimeContext) {
+    pub fn interpret(&mut self, context: &mut RuntimeContext) {
         while self.pos < self.statements.len() {
             let statement = self.statements[self.pos].clone();
             interpret_statement(self.scope.clone(), &statement, context);
@@ -84,7 +84,7 @@ pub enum StatementResult {
 fn interpret_statement(
     scope: Rc<RefCell<Scope>>,
     statement: &StatementType,
-    context: &RuntimeContext,
+    context: &mut RuntimeContext,
 ) -> StatementResult {
     match statement {
         StatementType::VariableDeclaration(statement) => {
@@ -196,7 +196,7 @@ fn interpret_statement(
 fn interpret_assignment(
     scope: Rc<RefCell<Scope>>,
     assignment: &AssignmentStatement,
-    context: &RuntimeContext,
+    context: &mut RuntimeContext,
 ) {
     let value = interpret_expression(scope.clone(), &assignment.value, context);
     match &assignment.identifier {
@@ -229,7 +229,7 @@ fn interpret_assignment(
 fn interpret_binary_expression(
     scope: Rc<RefCell<Scope>>,
     expression: &BinaryOperationExpression,
-    context: &RuntimeContext,
+    context: &mut RuntimeContext,
 ) -> DataType {
     let left = interpret_expression(scope.clone(), &expression.left, context);
     let right = interpret_expression(scope.clone(), &expression.right, context);
@@ -323,7 +323,7 @@ fn interpret_binary_expression(
 fn execute_function(
     scope: Rc<RefCell<Scope>>,
     statement: &CallExpression,
-    context: &RuntimeContext,
+    context: &mut RuntimeContext,
 ) -> Rc<DataType> {
     let value = interpret_expression(scope.clone(), &statement.value, context);
 
@@ -341,7 +341,7 @@ fn execute_function(
 pub fn interpret_expression(
     scope: Rc<RefCell<Scope>>,
     expression: &ExpressionType,
-    context: &RuntimeContext,
+    context: &mut RuntimeContext,
 ) -> Rc<DataType> {
     match expression {
         ExpressionType::Literal(literal_type) => match literal_type {
@@ -411,7 +411,7 @@ pub fn interpret_expression(
 fn interpret_dictionary_expression(
     scope: Rc<RefCell<Scope>>,
     dictionary_expression: &crate::parser::expressions::DictionaryExpression,
-    context: &RuntimeContext,
+    context: &mut RuntimeContext,
 ) -> DictionaryDeclaration {
     let mut keys: Vec<String> = vec![];
 
@@ -446,7 +446,7 @@ fn interpret_dictionary_expression(
 fn interpret_list_expression(
     scope: Rc<RefCell<Scope>>,
     list_expression: &ListExpression,
-    context: &RuntimeContext,
+    context: &mut RuntimeContext,
 ) -> ListDeclaration {
     let values = list_expression
         .values
@@ -460,7 +460,7 @@ fn interpret_list_expression(
 fn execute_statements(
     scope: Rc<RefCell<Scope>>,
     statements: Vec<&StatementType>,
-    context: &RuntimeContext,
+    context: &mut RuntimeContext,
 ) -> StatementResult {
     let mut executed_statements: Vec<StatementType> = vec![];
     for x in statements {
@@ -483,7 +483,7 @@ fn execute_statements(
 fn interpret_unary_expression(
     scope: Rc<RefCell<Scope>>,
     expression: &UnaryOperationExpression,
-    context: &RuntimeContext,
+    context: &mut RuntimeContext,
 ) -> DataType {
     let value = interpret_expression(scope, &expression.expression, context);
 
@@ -525,7 +525,7 @@ impl Parameters {
     pub fn resolve(
         &self,
         scope: Rc<RefCell<Scope>>,
-        context: &RuntimeContext,
+        context: &mut RuntimeContext,
     ) -> Vec<Rc<DataType>> {
         return self
             .values

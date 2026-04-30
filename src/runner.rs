@@ -20,7 +20,7 @@ struct RunArgs {
     pub task_args: Vec<String>,
 }
 
-pub fn repl(runtime_context: &RuntimeContext) {
+pub fn repl(runtime_context: &mut RuntimeContext) {
     loop {
         let mut dsl = String::new();
         print!("> ");
@@ -31,7 +31,7 @@ pub fn repl(runtime_context: &RuntimeContext) {
     }
 }
 
-pub fn run(args: &[String], runtime_context: &RuntimeContext) -> std::io::Result<()> {
+pub fn run(args: &[String], runtime_context: &mut RuntimeContext) -> std::io::Result<()> {
     let run_args = parse_run_arguments(args);
 
     let dsl_directory = if let Some(directory) = run_args.directory {
@@ -42,7 +42,7 @@ pub fn run(args: &[String], runtime_context: &RuntimeContext) -> std::io::Result
     let dsl_files = get_dsl_files_from_dir(&dsl_directory, run_args.recursive)?;
 
     for file in dsl_files {
-        process_file(&file, &runtime_context)?;
+        process_file(&file, runtime_context)?;
     }
 
     // TODO: Use interpreter to parse arguments?
@@ -52,15 +52,13 @@ pub fn run(args: &[String], runtime_context: &RuntimeContext) -> std::io::Result
         .map(|x| Rc::new(DataType::String(x.clone())))
         .collect();
 
-    // TODO: Propogate error
-    let run_result =
-        runtime_context
-            .task_registry
-            .run(run_args.task_name, task_args, &runtime_context);
+    let task_result = runtime_context.task_registry.get(run_args.task_name);
 
-    match run_result {
+    match task_result {
         Err(err) => println!("Error: {}", err),
-        _ => {}
+        Ok(task) => {
+            task.execute(task_args, runtime_context);
+        }
     }
 
     Ok(())
@@ -124,7 +122,10 @@ fn get_dsl_files_from_dir(dir: &Path, recursive: bool) -> std::io::Result<Vec<Pa
     Ok(dsl_files)
 }
 
-fn process_file(path: &std::path::Path, runtime_context: &RuntimeContext) -> std::io::Result<()> {
+fn process_file(
+    path: &std::path::Path,
+    runtime_context: &mut RuntimeContext,
+) -> std::io::Result<()> {
     println!("Processing file {}", path.display());
 
     let dsl = fs::read_to_string(path)?;
@@ -134,7 +135,7 @@ fn process_file(path: &std::path::Path, runtime_context: &RuntimeContext) -> std
     Ok(())
 }
 
-pub fn interpret(input: String, runtime_context: &RuntimeContext) -> Interpreter {
+pub fn interpret(input: String, runtime_context: &mut RuntimeContext) -> Interpreter {
     let tokens = Lexer::new().tokenize(input);
 
     let mut parser = Parser::new(tokens);

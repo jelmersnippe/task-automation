@@ -47,7 +47,7 @@ impl Callable {
         &self,
         parameters: &Parameters,
         scope: Rc<RefCell<Scope>>,
-        context: &RuntimeContext,
+        context: &mut RuntimeContext,
     ) -> Rc<DataType> {
         match self {
             Callable::BuiltIn(builtin) => {

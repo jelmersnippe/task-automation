@@ -2,6 +2,8 @@ use regex::Regex;
 use std::{
     collections::HashMap,
     fmt,
+    fs::canonicalize,
+    path::PathBuf,
     process::{Command, Stdio},
     rc::Rc,
 };
@@ -17,9 +19,11 @@ use crate::{
 
 pub fn create_git_module() -> Module {
     Module::new("git")
-        .function("list_local_branches", list_local_branches)
-        .function("list_remote_branches", list_remote_branches)
-        .function("list_worktrees", list_worktrees)
+        .function("in_directory", in_directory)
+        .function("current_branch", current_branch)
+        .function("local_branches", local_branches)
+        .function("remote_branches", remote_branches)
+        .function("worktrees", worktrees)
         .function("delete_branch", delete_branch)
         .function("fetch", fetch)
         .function("prune", prune)
@@ -38,27 +42,56 @@ impl fmt::Display for GitError {
     }
 }
 
-fn list_local_branches(args: Vec<Rc<DataType>>, _: &RuntimeContext) -> DataType {
+fn in_directory(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
+    let [arg] = args.as_slice() else {
+        panic!("in_directory expects one argument");
+    };
+
+    let directory = expect_string(arg);
+    let absolute_path = canonicalize(PathBuf::from(directory))
+        .unwrap()
+        .into_os_string()
+        .into_string()
+        .unwrap();
+
+    context.cwd = absolute_path;
+
+    DataType::Module(create_git_module())
+}
+
+fn current_branch(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
     if !args.is_empty() {
-        panic!("list_local_branches does not take any arguments");
+        panic!("current_branch does not take any arguments");
     }
 
-    let branches: Vec<Rc<DataType>> =
-        run_git_command(&["for-each-ref", "--format=%(refname:short)", "refs/heads/"])
-            .unwrap()
-            .split("\n")
-            .filter(|x| !x.is_empty())
-            .map(|x| Rc::new(DataType::String(x.trim().to_string())))
-            .collect();
+    let branch =
+        run_git_command(&["rev-parse", "--abbrev-ref", "HEAD"], context.cwd.clone()).unwrap();
+
+    DataType::String(String::from(branch.trim()))
+}
+fn local_branches(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
+    if !args.is_empty() {
+        panic!("local_branches does not take any arguments");
+    }
+
+    let branches: Vec<Rc<DataType>> = run_git_command(
+        &["for-each-ref", "--format=%(refname:short)", "refs/heads/"],
+        context.cwd.clone(),
+    )
+    .unwrap()
+    .split("\n")
+    .filter(|x| !x.is_empty())
+    .map(|x| Rc::new(DataType::String(x.trim().to_string())))
+    .collect();
 
     DataType::List(ListDeclaration::new(branches))
 }
-fn list_remote_branches(args: Vec<Rc<DataType>>, _: &RuntimeContext) -> DataType {
+fn remote_branches(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
     if !args.is_empty() {
-        panic!("list_remote_branches does not take any arguments");
+        panic!("remote_branches does not take any arguments");
     }
 
-    let branches: Vec<Rc<DataType>> = run_git_command(&["branch", "--remote"])
+    let branches: Vec<Rc<DataType>> = run_git_command(&["branch", "--remote"], context.cwd.clone())
         .unwrap()
         .split("\n")
         .filter(|x| !x.is_empty())
@@ -67,12 +100,12 @@ fn list_remote_branches(args: Vec<Rc<DataType>>, _: &RuntimeContext) -> DataType
 
     DataType::List(ListDeclaration::new(branches))
 }
-fn list_worktrees(args: Vec<Rc<DataType>>, _: &RuntimeContext) -> DataType {
+fn worktrees(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
     if !args.is_empty() {
-        panic!("list_remote_branches does not take any arguments");
+        panic!("remote_branches does not take any arguments");
     }
 
-    let worktrees: Vec<Rc<DataType>> = run_git_command(&["worktree", "list"])
+    let worktrees: Vec<Rc<DataType>> = run_git_command(&["worktree", "list"], context.cwd.clone())
         .unwrap()
         .split("\n")
         .filter(|x| !x.is_empty())
@@ -96,47 +129,48 @@ fn list_worktrees(args: Vec<Rc<DataType>>, _: &RuntimeContext) -> DataType {
 
     DataType::List(ListDeclaration::new(worktrees))
 }
-fn delete_branch(args: Vec<Rc<DataType>>, _: &RuntimeContext) -> DataType {
+fn delete_branch(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
     let [arg] = args.as_slice() else {
         panic!("delete_branch expects 1 argument. Received: {:?}", args);
     };
 
     let branch = expect_string(arg);
 
-    run_git_command(&["branch", "-D", branch.as_str()]).unwrap();
+    run_git_command(&["branch", "-D", branch.as_str()], context.cwd.clone()).unwrap();
 
     DataType::Undefined
 }
-fn fetch(args: Vec<Rc<DataType>>, _: &RuntimeContext) -> DataType {
+fn fetch(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
     if !args.is_empty() {
         panic!("fetch does not take any arguments");
     }
 
-    run_git_command(&["fetch"]).unwrap();
+    run_git_command(&["fetch"], context.cwd.clone()).unwrap();
 
     DataType::Undefined
 }
-fn prune(args: Vec<Rc<DataType>>, _: &RuntimeContext) -> DataType {
+fn prune(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
     if !args.is_empty() {
         panic!("prune does not take any arguments");
     }
 
-    run_git_command(&["gc"]).unwrap();
+    run_git_command(&["gc"], context.cwd.clone()).unwrap();
 
     DataType::Undefined
 }
-fn pull(args: Vec<Rc<DataType>>, _: &RuntimeContext) -> DataType {
+fn pull(args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> DataType {
     if !args.is_empty() {
         panic!("pull does not take any arguments");
     }
 
-    run_git_command(&["pull"]).unwrap();
+    run_git_command(&["pull"], context.cwd.clone()).unwrap();
 
     DataType::Undefined
 }
 
-fn run_git_command(args: &[&str]) -> Result<String, GitError> {
+fn run_git_command(args: &[&str], cwd: String) -> Result<String, GitError> {
     let output = Command::new("git")
+        .current_dir(cwd)
         .args(args)
         .stdout(Stdio::piped())
         .output()

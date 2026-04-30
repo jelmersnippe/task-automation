@@ -21,8 +21,8 @@ use crate::{
 };
 
 pub fn run(dsl: &'static str) -> Interpreter {
-    let runtime_context = RuntimeContext::new();
-    return interpret(dsl.to_string(), &runtime_context);
+    let mut runtime_context = RuntimeContext::new();
+    return interpret(dsl.to_string(), &mut runtime_context);
 }
 
 #[test]

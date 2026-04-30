@@ -1,3 +1,5 @@
+use std::env;
+
 use crate::modules::{ModuleRegistry, git_module};
 use crate::runner::{repl, run};
 use crate::task_management::TaskRegistry;
@@ -12,6 +14,7 @@ mod task_management;
 pub struct RuntimeContext {
     pub task_registry: TaskRegistry,
     pub module_registry: ModuleRegistry,
+    pub cwd: String,
 }
 
 impl RuntimeContext {
@@ -19,6 +22,11 @@ impl RuntimeContext {
         Self {
             task_registry: TaskRegistry::new(),
             module_registry: ModuleRegistry::new(),
+            cwd: env::current_dir()
+                .unwrap()
+                .into_os_string()
+                .into_string()
+                .unwrap(),
         }
     }
 }
@@ -32,11 +40,11 @@ fn main() -> std::io::Result<()> {
         .expect("Expected 'repl' or 'run' with a task name");
 
     match arg.as_str() {
-        "repl" => repl(&runtime_context),
+        "repl" => repl(&mut runtime_context),
         "run" => {
             run(
                 &std::env::args().collect::<Vec<String>>()[2..],
-                &runtime_context,
+                &mut runtime_context,
             )?;
         }
         _ => panic!("Invalid argument supplied: '{}'. Expect repl or run", arg),

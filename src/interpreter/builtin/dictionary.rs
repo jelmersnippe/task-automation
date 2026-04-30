@@ -8,7 +8,7 @@ use crate::{
 pub(crate) fn has(
     receiver: Option<Rc<DataType>>,
     data: Vec<Rc<DataType>>,
-    _: &RuntimeContext,
+    _: &mut RuntimeContext,
 ) -> Rc<DataType> {
     let [key] = data.as_slice() else {
         panic!(
@@ -31,7 +31,7 @@ pub(crate) fn has(
 pub(crate) fn delete(
     receiver: Option<Rc<DataType>>,
     data: Vec<Rc<DataType>>,
-    _: &RuntimeContext,
+    _: &mut RuntimeContext,
 ) -> Rc<DataType> {
     let [key] = data.as_slice() else {
         panic!(
@@ -56,7 +56,7 @@ pub(crate) fn delete(
 pub(crate) fn clear(
     receiver: Option<Rc<DataType>>,
     data: Vec<Rc<DataType>>,
-    _: &RuntimeContext,
+    _: &mut RuntimeContext,
 ) -> Rc<DataType> {
     if !data.is_empty() {
         panic!(

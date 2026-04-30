@@ -4,7 +4,7 @@ use crate::{RuntimeContext, interpreter::datatype::DataType, modules::git::creat
 
 mod git;
 
-pub type ModuleFn = fn(Vec<Rc<DataType>>, &RuntimeContext) -> DataType;
+pub type ModuleFn = fn(Vec<Rc<DataType>>, &mut RuntimeContext) -> DataType;
 
 #[derive(Debug, Clone)]
 pub struct ModuleFunction {
@@ -19,7 +19,7 @@ impl fmt::Display for ModuleFunction {
 }
 
 impl ModuleFunction {
-    pub fn execute(&self, args: Vec<Rc<DataType>>, context: &RuntimeContext) -> Rc<DataType> {
+    pub fn execute(&self, args: Vec<Rc<DataType>>, context: &mut RuntimeContext) -> Rc<DataType> {
         Rc::new((self.function)(args, context))
     }
 }

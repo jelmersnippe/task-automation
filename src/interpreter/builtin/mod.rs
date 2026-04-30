@@ -18,7 +18,8 @@ impl fmt::Display for Builtin {
     }
 }
 
-pub type BuiltinFn = fn(Option<Rc<DataType>>, Vec<Rc<DataType>>, &RuntimeContext) -> Rc<DataType>;
+pub type BuiltinFn =
+    fn(Option<Rc<DataType>>, Vec<Rc<DataType>>, &mut RuntimeContext) -> Rc<DataType>;
 
 impl Builtin {
     pub fn new(name: &'static str, function: BuiltinFn) -> Self {
@@ -37,7 +38,11 @@ impl Builtin {
         }
     }
 
-    pub fn execute(&self, parameters: Vec<Rc<DataType>>, context: &RuntimeContext) -> Rc<DataType> {
+    pub fn execute(
+        &self,
+        parameters: Vec<Rc<DataType>>,
+        context: &mut RuntimeContext,
+    ) -> Rc<DataType> {
         (self.function)(self.receiver.clone(), parameters, context)
     }
 }

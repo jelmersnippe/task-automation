@@ -1,9 +1,6 @@
-use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt};
 
-use crate::{
-    RuntimeContext,
-    interpreter::{datatype::DataType, function::FunctionDeclaration},
-};
+use crate::interpreter::function::FunctionDeclaration;
 
 pub struct TaskRegistry {
     tasks: RefCell<HashMap<String, FunctionDeclaration>>,
@@ -27,26 +24,14 @@ impl TaskRegistry {
         self.tasks.borrow_mut().insert(name, task);
     }
 
-    pub fn run(
-        &self,
-        name: String,
-        arguments: Vec<Rc<DataType>>,
-        context: &RuntimeContext,
-    ) -> Result<(), TaskRunError> {
-        let tasks = self.tasks.borrow();
-        let task = tasks.get(&name);
-
-        match task {
-            Some(task) => task.execute(arguments, context),
-            None => {
-                return Err(TaskRunError {
-                    task: name,
-                    reason: "Not registered",
-                });
-            }
-        };
-
-        Ok(())
+    pub fn get(&self, name: String) -> Result<FunctionDeclaration, TaskRunError> {
+        match self.tasks.borrow().get(&name) {
+            Some(task) => Ok(task.clone()),
+            None => Err(TaskRunError {
+                task: name,
+                reason: "Not registered",
+            }),
+        }
     }
 }
 

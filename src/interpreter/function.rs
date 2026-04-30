@@ -57,7 +57,11 @@ impl FunctionDeclaration {
         }
     }
 
-    pub fn execute(&self, parameters: Vec<Rc<DataType>>, context: &RuntimeContext) -> Rc<DataType> {
+    pub fn execute(
+        &self,
+        parameters: Vec<Rc<DataType>>,
+        context: &mut RuntimeContext,
+    ) -> Rc<DataType> {
         let expected_arguments = self.arguments.len();
         let received_arguments = parameters.len();
 

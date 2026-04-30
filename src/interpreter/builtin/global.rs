@@ -20,7 +20,7 @@ pub static BUILTINS: &[(&str, BuiltinFn)] = &[
     ("run", run),
 ];
 
-fn len(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>, _: &RuntimeContext) -> Rc<DataType> {
+fn len(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>, _: &mut RuntimeContext) -> Rc<DataType> {
     let [arg] = data.as_slice() else {
         panic!(
             "len only takes 1 argument. Received: {:?}",
@@ -39,7 +39,7 @@ fn len(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>, _: &RuntimeContext) -> 
     }
 }
 
-fn print(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>, _: &RuntimeContext) -> Rc<DataType> {
+fn print(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>, _: &mut RuntimeContext) -> Rc<DataType> {
     let [arg] = data.as_slice() else {
         panic!(
             "print only takes 1 argument. Received: {:?}",
@@ -59,7 +59,7 @@ fn print(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>, _: &RuntimeContext) -
 fn spawn_terminal(
     _: Option<Rc<DataType>>,
     data: Vec<Rc<DataType>>,
-    _: &RuntimeContext,
+    _: &mut RuntimeContext,
 ) -> Rc<DataType> {
     let path = data.iter().nth(0).expect(
         format!(
@@ -107,7 +107,7 @@ fn spawn_terminal(
 fn register_task(
     _: Option<Rc<DataType>>,
     data: Vec<Rc<DataType>>,
-    context: &RuntimeContext,
+    context: &mut RuntimeContext,
 ) -> Rc<DataType> {
     let [arg1, arg2] = data.as_slice() else {
         panic!(
@@ -129,7 +129,11 @@ fn register_task(
     Rc::new(DataType::Undefined)
 }
 
-fn run(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>, context: &RuntimeContext) -> Rc<DataType> {
+fn run(
+    _: Option<Rc<DataType>>,
+    data: Vec<Rc<DataType>>,
+    context: &mut RuntimeContext,
+) -> Rc<DataType> {
     let arg = data.iter().nth(0).expect(
         format!(
             "run expects 1 argument. Received: {:?}",
@@ -147,7 +151,14 @@ fn run(_: Option<Rc<DataType>>, data: Vec<Rc<DataType>>, context: &RuntimeContex
     let task = expect_string(arg);
 
     // TODO: Propogate error
-    let _ = context.task_registry.run(task, task_args, context);
+    let task_result = context.task_registry.get(task);
+
+    match task_result {
+        Err(err) => println!("Error: {}", err),
+        Ok(task) => {
+            task.execute(task_args, context);
+        }
+    }
 
     Rc::new(DataType::Undefined)
 }
