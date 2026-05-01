@@ -166,6 +166,24 @@ fn spawn_run(path: &str, cmd: &str) -> Result<SharedDataType, ExecutionError> {
     Ok(DataType::Undefined.to_shared())
 }
 
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+fn spawn_open(_path: &str, _cmd: Option<&str>) -> Result<SharedDataType, ExecutionError> {
+    use crate::interpreter::builtin::CallInfo;
+    Err(ExecutionError::new(
+        CallInfo::new("open"),
+        "shell module is not supported on this platform",
+    ))
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+fn spawn_run(_path: &str, _cmd: &str) -> Result<SharedDataType, ExecutionError> {
+    use crate::interpreter::builtin::CallInfo;
+    Err(ExecutionError::new(
+        CallInfo::new("run"),
+        "shell module is not supported on this platform",
+    ))
+}
+
 #[cfg(target_os = "windows")]
 fn spawn_run(path: &str, cmd: &str) -> Result<SharedDataType, ExecutionError> {
     use std::process::{Command, Stdio};
