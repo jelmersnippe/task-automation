@@ -1,4 +1,5 @@
 use std::env;
+use std::sync::Arc;
 
 use crate::modules::{GitRunner, ModuleRegistry, ProcessGitRunner, git_module};
 use crate::runner::{RuntimeError, repl, run};
@@ -11,11 +12,12 @@ mod parser;
 mod runner;
 mod task_management;
 
+#[derive(Clone)]
 pub struct RuntimeContext {
     pub task_registry: TaskRegistry,
     pub module_registry: ModuleRegistry,
     pub cwd: String,
-    pub git_runner: Box<dyn GitRunner>,
+    pub git_runner: Arc<dyn GitRunner>,
 }
 
 impl RuntimeContext {
@@ -28,7 +30,7 @@ impl RuntimeContext {
                 .into_os_string()
                 .into_string()
                 .unwrap(),
-            git_runner: Box::new(ProcessGitRunner),
+            git_runner: Arc::new(ProcessGitRunner),
         }
     }
 }

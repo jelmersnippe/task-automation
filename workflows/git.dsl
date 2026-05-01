@@ -3,16 +3,20 @@ fn foreach_worktree(function) {
 
     var worktrees = git.worktrees()
 
+    var actions = []
+    
     var i = 0
     while (i < worktrees.len()) {
         var worktree = worktrees[i]
 
         print(worktree)
 
-        function(worktree["directory"])
+        actions.push(function(worktree["directory"]))
 
         i = i + 1
     }
+
+    parallel(actions)
 }
 
 register_task("update_worktrees", fn() {

@@ -2,13 +2,13 @@ use std::{cell::RefCell, fmt, rc::Rc};
 
 use crate::interpreter::{
     builtin::{CallInfo, ExecutionError},
-    coerce::Args,
+    coerce::{Args, DataKind},
     datatype::DataType,
 };
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ListDeclaration {
-    values: Rc<RefCell<Vec<Rc<DataType>>>>,
+    pub values: Rc<RefCell<Vec<Rc<DataType>>>>,
 }
 
 impl ListDeclaration {
@@ -47,6 +47,13 @@ impl ListDeclaration {
                 "Index out of bounds",
             )),
         }
+    }
+
+    pub fn all(&self, kind: DataKind) -> bool {
+        self.values
+            .borrow()
+            .iter()
+            .all(|value| DataKind::from(&**value) == kind)
     }
 
     pub fn length(&self) -> Rc<DataType> {

@@ -1,13 +1,14 @@
 use std::{
     process::{Command, Stdio},
     rc::Rc,
+    thread::{self, JoinHandle},
 };
 
 use crate::{
     RuntimeContext,
     interpreter::{
         builtin::{BuiltinFn, CallInfo, ExecutionError},
-        coerce::Args,
+        coerce::{Args, ArgumentError, DataKind, expect_callable},
         datatype::DataType,
     },
 };
@@ -16,7 +17,7 @@ pub static BUILTINS: &[(&str, BuiltinFn)] = &[
     ("print", print),
     ("spawn_terminal", spawn_terminal),
     ("register_task", register_task),
-    ("run", run),
+    ("parallel", parallel),
 ];
 
 fn print(
@@ -93,29 +94,43 @@ fn register_task(
     Ok(Rc::new(DataType::Undefined))
 }
 
-fn run(
+fn parallel(
     _: Option<Rc<DataType>>,
     data: Vec<Rc<DataType>>,
     context: &mut RuntimeContext,
 ) -> Result<Rc<DataType>, ExecutionError> {
-    let args = Args::new("run", &data);
+    let args = Args::new("parallel", &data);
+    args.exact(1)?;
+    let list = args.list(0)?;
 
-    let task_name = args.string(0)?;
+    let callables = list
+        .values
+        .borrow()
+        .iter()
+        .enumerate()
+        .map(|(i, x)| {
+            expect_callable(x).map_err(|e| ArgumentError::InvalidType {
+                fn_name: String::from("parallel"),
+                index: i,
+                expected_type: DataKind::Callable,
+                found_type: e,
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
 
-    // TODO: Validate string values
-    let task_args: Vec<Rc<DataType>> = args.arguments[1..].iter().cloned().collect();
+    let handles: Vec<JoinHandle<Result<(), ExecutionError>>> = callables
+        .iter()
+        .map(|x| {
+            let cloned_context = context.clone();
+            thread::spawn(x.execute(vec![], cloned_context))
+        })
+        .collect();
 
-    let task_result = context.task_registry.get(&task_name);
-
-    match task_result {
-        Err(_) => {
-            return Err(ExecutionError::new(
-                CallInfo::new(&task_name),
-                "Task not registered",
-            ));
-        }
-        Ok(task) => {
-            task.execute(task_args, context)?;
+    for handle in handles {
+        match handle.join() {
+            Ok(Err(_)) => todo!(),
+            Ok(Ok(_)) => todo!(),
+            Err(_) => todo!(),
         }
     }
 

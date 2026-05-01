@@ -93,6 +93,7 @@ impl fmt::Display for Module {
     }
 }
 
+#[derive(Clone)]
 pub struct ModuleRegistry {
     pub modules: Vec<Module>,
 }

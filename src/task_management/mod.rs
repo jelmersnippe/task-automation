@@ -2,6 +2,7 @@ use std::{cell::RefCell, collections::HashMap, fmt};
 
 use crate::interpreter::datatype::Callable;
 
+#[derive(Clone)]
 pub struct TaskRegistry {
     tasks: RefCell<HashMap<String, Callable>>,
 }

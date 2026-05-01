@@ -57,7 +57,7 @@ pub fn expect_int(data: &DataType) -> Result<usize, DataKind> {
     Err(DataKind::from(data))
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum DataKind {
     String,
     Boolean,
