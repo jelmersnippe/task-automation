@@ -21,6 +21,89 @@ Optimizations:
 
 ---
 
+## parallel
+
+`parallel(fns)` takes a list of zero-argument functions and runs them concurrently on real
+OS threads. All functions start at the same time and the call blocks until every one of them
+has finished. Errors from individual functions are isolated — one failing task does not
+cancel the others.
+
+Each thread receives a **clone of the runtime context**, which includes a copy of the current
+variable scope. Any variables written inside a parallel task are local to that thread and are
+dropped when it finishes. If you need results out of a parallel block, collect them into a
+shared data structure before calling `parallel`.
+
+```dsl
+var results = []
+
+parallel([
+    fn() { shell.run({ cwd: "~/dev/api",      cmd: "cargo build" }) },
+    fn() { shell.run({ cwd: "~/dev/frontend", cmd: "pnpm build" }) },
+    fn() { shell.run({ cwd: "~/dev/docs",     cmd: "pnpm build" }) },
+])
+```
+
+---
+
+## Git module
+
+The `git` module wraps common git operations. All functions operate on the runtime's current
+working directory. Use `git.in_directory(path)` to target a specific repo — it returns a new
+`git` module instance scoped to that path, so operations can be chained.
+
+```dsl
+// Run in the current working directory
+git.fetch()
+
+// Run in a specific directory
+git.in_directory("~/dev/my-project").pull()
+
+// Chain multiple operations in the same directory
+var dir = "~/dev/my-project"
+git.in_directory(dir).fetch()
+git.in_directory(dir).rebase()
+git.in_directory(dir).push()
+```
+
+### Functions
+
+| Function | Returns | Description |
+|---|---|---|
+| `git.in_directory(path)` | `git` | Returns a git module instance scoped to `path`. Supports `~` expansion. |
+| `git.current_branch()` | `string` | Returns the name of the current branch. |
+| `git.local_branches()` | `list` | Returns a list of local branch name strings. |
+| `git.remote_branches()` | `list` | Returns a list of remote branch name strings. |
+| `git.worktrees()` | `list` | Returns a list of dictionaries with `"directory"` and `"branch"` keys. |
+| `git.fetch()` | — | Runs `git fetch`. |
+| `git.pull()` | — | Runs `git pull`. |
+| `git.push()` | — | Pushes the current branch to `origin`. |
+| `git.push("--force")` | — | Force-pushes using `--force-with-lease`. |
+| `git.rebase()` | — | Rebases the current branch onto `origin/master`. |
+| `git.prune()` | — | Runs `git gc` to prune loose objects. |
+| `git.delete_branch(name)` | — | Force-deletes the named local branch (`git branch -D`). |
+
+### Example — update all worktrees
+
+```dsl
+git.fetch()
+
+var worktrees = git.worktrees()
+var actions = []
+var i = 0
+
+while (i < worktrees.len()) {
+    var dir = worktrees[i]["directory"]
+    actions.push(fn() {
+        git.in_directory(dir).pull()
+    })
+    i = i + 1
+}
+
+parallel(actions)
+```
+
+---
+
 ## Shell module
 
 The `shell` module opens terminal windows from DSL tasks. It has two functions: `open` for
