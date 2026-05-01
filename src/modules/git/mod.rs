@@ -1,5 +1,5 @@
 use regex::Regex;
-use std::{collections::HashMap, fs::canonicalize, path::PathBuf, rc::Rc};
+use std::{collections::HashMap, fs::canonicalize, path::PathBuf, rc::Rc, sync::LazyLock};
 
 use crate::{
     RuntimeContext,
@@ -279,15 +279,12 @@ pub(crate) struct WorktreeInfo {
     pub directory: String,
 }
 
-pub(crate) fn parse_worktree_line(line: &str) -> Result<WorktreeInfo, ExecutionError> {
-    let re = Regex::new(r"^(\S+)\s+\S+\s+\[([^\]]+)\]").map_err(|err| {
-        ExecutionError::new(
-            CallInfo::new("parse_worktree_line"),
-            format!("Initializing regex failed ({})", err).as_str(),
-        )
-    })?;
+const WORKTREE_PATTERN: &str = r"^(\S+)\s+\S+\s+\[([^\]]+)\]";
+static WORKTREE_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(WORKTREE_PATTERN).unwrap());
 
-    re.captures(line)
+pub(crate) fn parse_worktree_line(line: &str) -> Result<WorktreeInfo, ExecutionError> {
+    WORKTREE_REGEX
+        .captures(line)
         .map(|caps| WorktreeInfo {
             directory: caps[1].to_string(),
             branch: caps[2].to_string(),
