@@ -131,20 +131,25 @@ fn spawn_run(path: &str, cmd: &str) -> Result<SharedDataType, ExecutionError> {
 
     use crate::interpreter::builtin::CallInfo;
 
-    // Append a self-closing osascript call so the window closes when the
-    // command exits, without requiring any iTerm2 profile settings.
-    let cmd_string = format!(
-        "cd '{}' && {}; osascript -e 'tell application \"iTerm2\" to close front window'",
+    // The write text command closes the window by its ID (captured at creation
+    // time) rather than "front window", so focus changes during the run don't
+    // cause the wrong window to be closed.
+    let write_text = format!(
+        "write text \"cd '{}' && {}; osascript -e 'tell application \\\"iTerm2\\\" to close (first window whose id is \" & wid & \")'\"",
         path, cmd
     );
 
-    println!("Running an iterm2 window with command '{}'", cmd_string);
+    println!(
+        "Running an iterm2 window with command 'cd '{}' && {}'",
+        path, cmd
+    );
 
     Command::new("osascript")
         .args(["-e", "tell application \"iTerm2\""])
         .args(["-e", "set w to (create window with default profile)"])
+        .args(["-e", "set wid to id of w"])
         .args(["-e", "tell current session of w"])
-        .args(["-e", &format!("write text \"{}\"", cmd_string)])
+        .args(["-e", &write_text])
         .args(["-e", "end tell"])
         .args(["-e", "end tell"])
         .stdin(Stdio::null())
