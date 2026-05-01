@@ -8,8 +8,7 @@ fn foreach_worktree(function) {
     var actions = []
 
     var i = 0
-    var length = worktrees.len()
-    while (i < length) {
+    while (i < worktrees.len()) {
         var worktree = worktrees[i]
 
         print(worktree)

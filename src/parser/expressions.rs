@@ -210,7 +210,8 @@ impl UnaryOperationExpression {
 
 impl Parser {
     pub(crate) fn parse_expression(&mut self) -> ExpressionType {
-        let mut expression = self.parse_simple_expression();
+        let simple = self.parse_simple_expression();
+        let mut expression = self.parse_postfix_chain(simple);
         let mut operator: Option<BinaryOperator> = None;
         let mut right: Option<ExpressionType> = None;
 
@@ -229,7 +230,8 @@ impl Parser {
             TokenKind::Or,
         ]) {
             let new_operator = BinaryOperator::from(binary_operator.kind);
-            let new_right = self.parse_simple_expression();
+            let simple = self.parse_simple_expression();
+            let new_right = self.parse_postfix_chain(simple);
 
             // Create binary operation
             if let Some(r) = right
@@ -271,6 +273,10 @@ impl Parser {
                 ExpressionType::BinaryOperation(BinaryOperationExpression::new(expression, op, r));
         }
 
+        self.parse_postfix_chain(expression)
+    }
+
+    fn parse_postfix_chain(&mut self, mut expression: ExpressionType) -> ExpressionType {
         while let Some(x) = self.match_any(&[
             TokenKind::LeftBracket,
             TokenKind::LeftParenthesis,

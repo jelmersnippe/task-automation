@@ -9,6 +9,29 @@ use crate::{
 };
 
 #[test]
+fn interpret_method_call_as_binary_rhs() {
+    let dsl = "
+    var x = [1, 2, 3]
+    var result = false
+
+    if (0 < x.len()) {
+        result = true
+    }
+    ";
+    let interpreter = run(dsl);
+
+    assert_eq!(
+        interpreter
+            .scope
+            .lock()
+            .unwrap()
+            .get_variable(&String::from("result"))
+            .unwrap(),
+        (DataType::Boolean(true)).to_shared()
+    );
+}
+
+#[test]
 fn interprets_clear() {
     let dsl = "
     var x = [1]
@@ -225,12 +248,10 @@ fn interpret_list_assignment_nested() {
             .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        (DataType::List(ListDeclaration::new(vec![
-            (DataType::List(ListDeclaration::new(vec![
-                (DataType::Number(2.0)).to_shared()
-            ])))
-            .to_shared()
-        ])))
+        (DataType::List(ListDeclaration::new(vec![(DataType::List(
+            ListDeclaration::new(vec![(DataType::Number(2.0)).to_shared()])
+        ))
+        .to_shared()])))
         .to_shared()
     );
 }
@@ -272,12 +293,10 @@ fn interpret_list_accessor_nested() {
             .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        (DataType::List(ListDeclaration::new(vec![
-            (DataType::List(ListDeclaration::new(vec![
-                (DataType::Number(1.0)).to_shared()
-            ])))
-            .to_shared()
-        ])))
+        (DataType::List(ListDeclaration::new(vec![(DataType::List(
+            ListDeclaration::new(vec![(DataType::Number(1.0)).to_shared()])
+        ))
+        .to_shared()])))
         .to_shared()
     );
     assert_eq!(
