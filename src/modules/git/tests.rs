@@ -1,10 +1,10 @@
 use std::{collections::HashMap, rc::Rc};
 
 use crate::{
-    interpreter::{builtin::ExecutionError, datatype::DataType, Interpreter},
-    modules::{git_module, GitError, GitRunner},
-    runner::interpret,
     RuntimeContext,
+    interpreter::{Interpreter, builtin::ExecutionError, datatype::DataType},
+    modules::{GitError, GitRunner, git_module},
+    runner::interpret,
 };
 
 use super::parse_worktree_line;
@@ -70,7 +70,7 @@ fn empty_mock() -> MockGitRunner {
 #[test]
 fn parse_worktree_line_valid() {
     let line = "/home/user/project abc1234 [main]";
-    let info = parse_worktree_line(line);
+    let info = parse_worktree_line(line).unwrap();
     assert_eq!(info.directory, "/home/user/project");
     assert_eq!(info.branch, "main");
 }
@@ -78,21 +78,21 @@ fn parse_worktree_line_valid() {
 #[test]
 fn parse_worktree_line_feature_branch() {
     let line = "/repos/myrepo deadbeef [feature/my-feature]";
-    let info = parse_worktree_line(line);
+    let info = parse_worktree_line(line).unwrap();
     assert_eq!(info.directory, "/repos/myrepo");
     assert_eq!(info.branch, "feature/my-feature");
 }
 
 #[test]
-#[should_panic(expected = "Worktree parse failed.")]
 fn parse_worktree_line_no_branch_brackets() {
-    parse_worktree_line("/some/path abc1234 main");
+    let result = parse_worktree_line("/some/path abc1234 main");
+    assert!(result.is_err());
 }
 
 #[test]
-#[should_panic(expected = "Worktree parse failed.")]
 fn parse_worktree_line_empty() {
-    parse_worktree_line("");
+    let result = parse_worktree_line("");
+    assert!(result.is_err());
 }
 
 // ---------------------------------------------------------------------------

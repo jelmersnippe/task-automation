@@ -1,6 +1,7 @@
 use crate::{
-    interpreter::{coerce::ArgumentError, datatype::DataType},
     RuntimeContext,
+    interpreter::{coerce::ArgumentError, datatype::DataType},
+    modules::GitError,
 };
 use std::{fmt, rc::Rc, sync::Arc};
 
@@ -10,7 +11,7 @@ pub(crate) mod list;
 
 #[derive(Debug)]
 pub struct CallInfo {
-    pub name: String,
+    name: String,
 }
 
 impl CallInfo {
@@ -34,6 +35,15 @@ impl fmt::Display for ExecutionError {
             "Exeucting '{}' failed: {}",
             self.call_info.name, self.reason
         )
+    }
+}
+
+impl From<GitError> for ExecutionError {
+    fn from(value: GitError) -> Self {
+        Self {
+            call_info: CallInfo::new(&value.command),
+            reason: value.reason.to_string(),
+        }
     }
 }
 

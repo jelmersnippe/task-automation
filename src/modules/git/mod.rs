@@ -2,6 +2,7 @@ use regex::Regex;
 use std::{collections::HashMap, fs::canonicalize, path::PathBuf, rc::Rc};
 
 use crate::{
+    RuntimeContext,
     interpreter::{
         builtin::{CallInfo, ExecutionError},
         coerce::Args,
@@ -10,7 +11,6 @@ use crate::{
         list::ListDeclaration,
     },
     modules::Module,
-    RuntimeContext,
 };
 
 #[cfg(test)]
@@ -40,11 +40,29 @@ fn in_directory(
     args.exact(1)?;
 
     let directory = args.string(0)?;
-    let absolute_path = canonicalize(PathBuf::from(directory))
-        .unwrap()
+    let absolute_path = canonicalize(PathBuf::from(&directory))
+        .map_err(|err| {
+            ExecutionError::new(
+                CallInfo::new("in_directory"),
+                format!(
+                    "Passed directory '{}' could not be resolved ({})",
+                    &directory, err
+                )
+                .as_str(),
+            )
+        })?
         .into_os_string()
         .into_string()
-        .unwrap();
+        .map_err(|err| {
+            ExecutionError::new(
+                CallInfo::new("in_directory"),
+                format!(
+                    "Passed directory '{}' could not be resolved ({:?})",
+                    &directory, err
+                )
+                .as_str(),
+            )
+        })?;
 
     context.cwd = absolute_path;
 
@@ -61,8 +79,7 @@ fn current_branch(
 
     let branch = context
         .git_runner
-        .run(&["rev-parse", "--abbrev-ref", "HEAD"], &context.cwd)
-        .unwrap();
+        .run(&["rev-parse", "--abbrev-ref", "HEAD"], &context.cwd)?;
 
     Ok(Rc::new(DataType::String(String::from(branch.trim()))))
 }
@@ -77,8 +94,7 @@ fn rebase(
 
     context
         .git_runner
-        .run(&["rebase", "origin/master"], &context.cwd)
-        .unwrap();
+        .run(&["rebase", "origin/master"], &context.cwd)?;
 
     Ok(Rc::new(DataType::Undefined))
 }
@@ -96,8 +112,7 @@ fn local_branches(
         .run(
             &["for-each-ref", "--format=%(refname:short)", "refs/heads/"],
             &context.cwd,
-        )
-        .unwrap()
+        )?
         .split("\n")
         .filter(|x| !x.is_empty())
         .map(|x| Rc::new(DataType::String(x.trim().to_string())))
@@ -116,8 +131,7 @@ fn remote_branches(
 
     let branches: Vec<Rc<DataType>> = context
         .git_runner
-        .run(&["branch", "--remote"], &context.cwd)
-        .unwrap()
+        .run(&["branch", "--remote"], &context.cwd)?
         .split("\n")
         .filter(|x| !x.is_empty())
         .map(|x| Rc::new(DataType::String(x.trim().to_string())))
@@ -134,31 +148,33 @@ fn worktrees(
     let args = Args::new("worktrees", &args);
     args.exact(0)?;
 
-    let worktrees: Vec<Rc<DataType>> = context
+    let worktree_info: Vec<WorktreeInfo> = context
         .git_runner
-        .run(&["worktree", "list"], &context.cwd)
-        .unwrap()
+        .run(&["worktree", "list"], &context.cwd)?
         .split("\n")
         .filter(|x| !x.is_empty())
-        .map(|x| {
-            let worktree_info = parse_worktree_line(x);
+        .map(|x| parse_worktree_line(x))
+        .collect::<Result<Vec<_>, _>>()?;
 
+    let result: Vec<Rc<DataType>> = worktree_info
+        .iter()
+        .map(|x| {
             Rc::new(DataType::Dictionary(DictionaryDeclaration::new(
                 HashMap::from([
                     (
                         String::from("directory"),
-                        Rc::new(DataType::String(worktree_info.directory)),
+                        Rc::new(DataType::String(x.directory.clone())),
                     ),
                     (
                         String::from("branch"),
-                        Rc::new(DataType::String(worktree_info.branch)),
+                        Rc::new(DataType::String(x.branch.clone())),
                     ),
                 ]),
             )))
         })
         .collect();
 
-    Ok(Rc::new(DataType::List(ListDeclaration::new(worktrees))))
+    Ok(Rc::new(DataType::List(ListDeclaration::new(result))))
 }
 
 fn delete_branch(
@@ -172,8 +188,7 @@ fn delete_branch(
 
     context
         .git_runner
-        .run(&["branch", "-D", &branch], &context.cwd)
-        .unwrap();
+        .run(&["branch", "-D", &branch], &context.cwd)?;
 
     Ok(Rc::new(DataType::Undefined))
 }
@@ -186,7 +201,7 @@ fn fetch(
     let args = Args::new("fetch", &args);
     args.exact(0)?;
 
-    context.git_runner.run(&["fetch"], &context.cwd).unwrap();
+    context.git_runner.run(&["fetch"], &context.cwd)?;
 
     Ok(Rc::new(DataType::Undefined))
 }
@@ -199,7 +214,7 @@ fn prune(
     let args = Args::new("prune", &args);
     args.exact(0)?;
 
-    context.git_runner.run(&["gc"], &context.cwd).unwrap();
+    context.git_runner.run(&["gc"], &context.cwd)?;
 
     Ok(Rc::new(DataType::Undefined))
 }
@@ -241,7 +256,7 @@ fn push(
     git_args.push("origin");
     git_args.push(&branch);
 
-    context.git_runner.run(&git_args, &context.cwd).unwrap();
+    context.git_runner.run(&git_args, &context.cwd)?;
 
     Ok(Rc::new(DataType::Undefined))
 }
@@ -254,7 +269,7 @@ fn pull(
     let args = Args::new("pull", &args);
     args.exact(0)?;
 
-    context.git_runner.run(&["pull"], &context.cwd).unwrap();
+    context.git_runner.run(&["pull"], &context.cwd)?;
 
     Ok(Rc::new(DataType::Undefined))
 }
@@ -264,13 +279,23 @@ pub(crate) struct WorktreeInfo {
     pub directory: String,
 }
 
-pub(crate) fn parse_worktree_line(line: &str) -> WorktreeInfo {
-    let re = Regex::new(r"^(\S+)\s+\S+\s+\[([^\]]+)\]").unwrap();
+pub(crate) fn parse_worktree_line(line: &str) -> Result<WorktreeInfo, ExecutionError> {
+    let re = Regex::new(r"^(\S+)\s+\S+\s+\[([^\]]+)\]").map_err(|err| {
+        ExecutionError::new(
+            CallInfo::new("parse_worktree_line"),
+            format!("Initializing regex failed ({})", err).as_str(),
+        )
+    })?;
 
     re.captures(line)
         .map(|caps| WorktreeInfo {
             directory: caps[1].to_string(),
             branch: caps[2].to_string(),
         })
-        .expect("Worktree parse failed.")
+        .ok_or_else(|| {
+            ExecutionError::new(
+                CallInfo::new("parse_worktree_line"),
+                format!("Worktree line was not valid: {}", line).as_str(),
+            )
+        })
 }

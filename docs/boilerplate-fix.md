@@ -4,16 +4,6 @@ This file documents repeated patterns in the codebase that could be extracted in
 
 ---
 
-## 1. ~~Builtin argument validation~~ (Resolved)
-
-**Where:** `interpreter/builtin/mod.rs`
-
-Argument validation is now handled by the `Args` struct with `exact()`, `range()`, and `any()` methods, all returning `Result<_, ArgumentError>`. This replaces the old panic-based `let [arg] = data.as_slice() else { panic!(...) }` pattern. The `Args` approach is more ergonomic and integrates with the `?` propagation chain.
-
-Note: `Args::any()` still has a bug where it hardcodes `expected_type: DataKind::Callable` in its error — there is a `// TODO` comment at `interpreter/coerce.rs:305`.
-
----
-
 ## 3. `Rc::new(DataType::Undefined())` at the end of void builtins
 
 **Where:** Every void builtin in `interpreter/builtin.rs`
@@ -68,12 +58,6 @@ let map: HashMap<String, Rc<DataType>> = pairs
 ```
 
 > `HashMap` implements `FromIterator<(K, V)>`, so `.collect()` works here directly.
-
----
-
-## 6. ~~Unified Callable Construction~~ (Resolved)
-
-The function unification plan has been fully executed. All callable types (user functions, builtins, module functions) now share a unified internal representation and construction interface. The old nested constructor approach (`DataType::Function(Callable::User(UserFunction { ... }))`) no longer applies.
 
 ---
 
