@@ -5,6 +5,7 @@ use crate::modules::{GitRunner, ModuleRegistry, ProcessGitRunner, git_module, sh
 use crate::runner::{RuntimeError, repl, run};
 use crate::task_management::TaskRegistry;
 
+mod fs;
 mod interpreter;
 mod lexer;
 mod modules;

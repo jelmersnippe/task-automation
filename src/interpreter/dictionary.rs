@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::interpreter::{
-    builtin::{CallInfo, ExecutionError},
+    builtin::ExecutionError,
     coerce::Args,
     datatype::{DataType, SharedDataType},
 };

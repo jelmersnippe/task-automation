@@ -1,8 +1,8 @@
 use regex::Regex;
-use std::{collections::HashMap, fs::canonicalize, path::PathBuf, sync::LazyLock};
+use std::{collections::HashMap, sync::LazyLock};
 
 use crate::{
-    RuntimeContext,
+    fs::get_absolute_path,
     interpreter::{
         builtin::{CallInfo, ExecutionError},
         coerce::Args,
@@ -11,6 +11,7 @@ use crate::{
         list::ListDeclaration,
     },
     modules::Module,
+    RuntimeContext,
 };
 
 #[cfg(test)]
@@ -40,31 +41,7 @@ fn in_directory(
     args.exact(1)?;
 
     let directory = args.string(0)?;
-    let absolute_path = canonicalize(PathBuf::from(&directory))
-        .map_err(|err| {
-            ExecutionError::new(
-                CallInfo::new("in_directory"),
-                format!(
-                    "Passed directory '{}' could not be resolved ({})",
-                    &directory, err
-                )
-                .as_str(),
-            )
-        })?
-        .into_os_string()
-        .into_string()
-        .map_err(|err| {
-            ExecutionError::new(
-                CallInfo::new("in_directory"),
-                format!(
-                    "Passed directory '{}' could not be resolved ({:?})",
-                    &directory, err
-                )
-                .as_str(),
-            )
-        })?;
-
-    context.cwd = absolute_path;
+    context.cwd = get_absolute_path(&directory)?;
 
     Ok((DataType::Module(create_git_module())).to_shared())
 }

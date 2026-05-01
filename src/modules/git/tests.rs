@@ -1,10 +1,10 @@
 use std::{collections::HashMap, sync::Arc};
 
 use crate::{
-    RuntimeContext,
-    interpreter::{Interpreter, builtin::ExecutionError, datatype::DataType},
-    modules::{GitError, GitRunner, git_module},
+    interpreter::{builtin::ExecutionError, datatype::DataType, Interpreter},
+    modules::{git_module, GitError, GitRunner},
     runner::interpret,
+    RuntimeContext,
 };
 
 use super::parse_worktree_line;

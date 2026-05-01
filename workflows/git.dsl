@@ -46,5 +46,6 @@ register_task("rebase_worktrees", fn() {
 })
 
 register_task("test", fn() {
-    shell.open({cwd: "~/dev/appdev",});
+    shell.open({cwd: "~/dev/appdev", cmd: "git status"});
+    shell.run({cwd: "~/dev/appdev/ide-client/data/domain-model-editor", cmd: "echo 'hello from shell.run' && sleep 5"});
 })
