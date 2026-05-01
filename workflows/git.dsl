@@ -6,8 +6,7 @@ fn foreach_worktree(function) {
     var worktrees = git.worktrees()
 
     var actions = []
-    
-    print("worktree count")
+
     var i = 0
     var length = worktrees.len()
     while (i < length) {
@@ -20,28 +19,28 @@ fn foreach_worktree(function) {
         i = i + 1
     }
 
-    print("actions")
-    print(actions)
-
     parallel(actions)
 }
 
 register_task("update_worktrees", fn() {
     print("updating worktrees")
     foreach_worktree(fn(worktree_directory) {
-        git.in_directory(worktree_directory).pull()
-
+        print("pulling for")
         print(git.in_directory(worktree_directory).current_branch())
+
+        git.in_directory(worktree_directory).pull()
     })
 })
 
 register_task("rebase_worktrees", fn() {
     print("rebasing worktrees")
     foreach_worktree(fn(worktree_directory) {
-        git.in_directory(worktree_directory).rebase()
-
+        print("rebasing for")
         print(git.in_directory(worktree_directory).current_branch())
 
+        git.in_directory(worktree_directory).rebase()
+
+        print("pushing for")
         git.in_directory(worktree_directory).push("--force")
     })
 })
