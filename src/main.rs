@@ -1,7 +1,7 @@
 use std::env;
 use std::sync::Arc;
 
-use crate::modules::{GitRunner, ModuleRegistry, ProcessGitRunner, git_module, shell_module};
+use crate::modules::{GitRunner, ModuleRegistry, ProcessGitRunner, ProcessTmuxRunner, TmuxRunner, git_module, shell_module, tmux_module};
 use crate::runner::{RuntimeError, repl, run};
 use crate::task_management::TaskRegistry;
 
@@ -19,6 +19,7 @@ pub struct RuntimeContext {
     pub module_registry: ModuleRegistry,
     pub cwd: String,
     pub git_runner: Arc<dyn GitRunner>,
+    pub tmux_runner: Arc<dyn TmuxRunner>,
 }
 
 impl RuntimeContext {
@@ -32,6 +33,7 @@ impl RuntimeContext {
                 .into_string()
                 .unwrap(),
             git_runner: Arc::new(ProcessGitRunner),
+            tmux_runner: Arc::new(ProcessTmuxRunner),
         }
     }
 }
@@ -40,6 +42,7 @@ fn main() -> Result<(), RuntimeError> {
     let mut runtime_context = RuntimeContext::new();
     runtime_context.module_registry.register(git_module());
     runtime_context.module_registry.register(shell_module());
+    runtime_context.module_registry.register(tmux_module());
 
     let arg = std::env::args()
         .nth(1)

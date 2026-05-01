@@ -6,11 +6,12 @@ use std::{
 
 use crate::{
     interpreter::{builtin::BuiltinFn, datatype::Callable},
-    modules::{git::create_git_module, shell::create_shell_module},
+    modules::{git::create_git_module, shell::create_shell_module, tmux::create_tmux_module},
 };
 
 pub mod git;
 pub mod shell;
+pub mod tmux;
 
 #[derive(Debug, Clone)]
 pub struct GitError {
@@ -53,6 +54,52 @@ impl GitRunner for ProcessGitRunner {
         let stdout = String::from_utf8(output.stdout).map_err(|e| GitError {
             reason: e.to_string(),
             command: format!("git {}", args.join(" ")),
+        })?;
+
+        Ok(stdout)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct TmuxError {
+    pub command: String,
+    pub reason: String,
+}
+
+impl fmt::Display for TmuxError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "tmux command '{}' failed: {}", self.command, self.reason)
+    }
+}
+
+pub trait TmuxRunner: Send + Sync {
+    fn run(&self, args: &[&str]) -> Result<String, TmuxError>;
+}
+
+pub struct ProcessTmuxRunner;
+
+impl TmuxRunner for ProcessTmuxRunner {
+    fn run(&self, args: &[&str]) -> Result<String, TmuxError> {
+        let output = Command::new("tmux")
+            .args(args)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .map_err(|error| TmuxError {
+                reason: error.to_string(),
+                command: format!("tmux {}", args.join(" ")),
+            })?;
+
+        if !output.status.success() {
+            return Err(TmuxError {
+                reason: String::from_utf8_lossy(&output.stderr).to_string(),
+                command: format!("tmux {}", args.join(" ")),
+            });
+        }
+
+        let stdout = String::from_utf8(output.stdout).map_err(|e| TmuxError {
+            reason: e.to_string(),
+            command: format!("tmux {}", args.join(" ")),
         })?;
 
         Ok(stdout)
@@ -117,4 +164,8 @@ pub fn git_module() -> Module {
 
 pub fn shell_module() -> Module {
     create_shell_module()
+}
+
+pub fn tmux_module() -> Module {
+    create_tmux_module()
 }

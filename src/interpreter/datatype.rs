@@ -1,13 +1,13 @@
 use std::{fmt, sync::Arc};
 
 use crate::{
-    RuntimeContext,
     interpreter::{
         builtin::{self, BuiltinFn, CallInfo, Executable, ExecutionError},
         dictionary::DictionaryDeclaration,
         list::ListDeclaration,
     },
     modules::Module,
+    RuntimeContext,
 };
 
 #[derive(Debug, Clone)]
@@ -141,7 +141,7 @@ impl DataType {
                     );
                 })?;
 
-                return Ok((DataType::Function(module_fn.clone())).to_shared());
+                return Ok((DataType::Function(module_fn.clone().bind(self.clone()))).to_shared());
             }
             _ => {
                 return Err(ExecutionError::new(
