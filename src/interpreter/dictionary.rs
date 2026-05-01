@@ -31,20 +31,17 @@ impl DictionaryDeclaration {
         }
     }
 
-    pub fn has(&self, key: &String) -> bool {
+    pub fn has(&self, key: &str) -> bool {
         self.entries.lock().unwrap().contains_key(key)
     }
 
-    pub fn get(&self, key: &String) -> Result<SharedDataType, ExecutionError> {
+    pub fn get(&self, key: &str) -> SharedDataType {
         let binding = self.entries.lock().unwrap();
         let value = binding.get(key);
 
         match value {
-            Some(data) => Ok(data.clone()),
-            None => Err(ExecutionError::new(
-                CallInfo::new(""),
-                format!("Dict does not have key '{}'", key).as_str(),
-            )),
+            Some(data) => data.clone(),
+            None => DataType::Undefined.to_shared(),
         }
     }
 

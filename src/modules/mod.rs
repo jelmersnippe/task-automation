@@ -6,10 +6,11 @@ use std::{
 
 use crate::{
     interpreter::{builtin::BuiltinFn, datatype::Callable},
-    modules::git::create_git_module,
+    modules::{git::create_git_module, shell::create_shell_module},
 };
 
 pub mod git;
+pub mod shell;
 
 #[derive(Debug, Clone)]
 pub struct GitError {
@@ -112,4 +113,8 @@ impl ModuleRegistry {
 
 pub fn git_module() -> Module {
     create_git_module()
+}
+
+pub fn shell_module() -> Module {
+    create_shell_module()
 }

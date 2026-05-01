@@ -1,7 +1,7 @@
 use crate::{
-    RuntimeContext,
     interpreter::{coerce::ArgumentError, datatype::SharedDataType},
     modules::GitError,
+    RuntimeContext,
 };
 use std::{fmt, sync::Arc};
 
@@ -54,6 +54,8 @@ impl From<ArgumentError> for ExecutionError {
                 ArgumentError::InvalidCount { fn_name, .. } => fn_name.as_str(),
                 ArgumentError::InvalidRange { fn_name, .. } => fn_name.as_str(),
                 ArgumentError::InvalidType { fn_name, .. } => fn_name.as_str(),
+                ArgumentError::MissingKey { fn_name, .. } => fn_name.as_str(),
+                ArgumentError::InvalidKeyType { fn_name, .. } => fn_name.as_str(),
             }),
             reason: value.to_string(),
         }

@@ -54,7 +54,9 @@ impl Interpreter {
             )?;
         }
 
+        println!("Hello!");
         for module in &context.module_registry.modules {
+            println!("Adding module {} ", &module.name);
             scope.set_variable(
                 module.name.clone(),
                 (DataType::Module(module.clone())).to_shared(),
@@ -473,7 +475,7 @@ pub fn interpret_expression(
                         interpret_expression(scope.clone(), &accessor_expression.key, context)?;
 
                     let args = Args::new("get", &vec![key]);
-                    dict.get(&args.string(0)?)
+                    Ok(dict.get(&args.string(0)?))
                 }
                 _ => Err(ExecutionError::new(
                     CallInfo::new(""),

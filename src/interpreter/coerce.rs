@@ -104,6 +104,17 @@ pub enum ArgumentError {
         expected_type: DataKind,
         found_type: DataKind,
     },
+    MissingKey {
+        fn_name: String,
+        key: String,
+        expected_type: DataKind,
+    },
+    InvalidKeyType {
+        fn_name: String,
+        key: String,
+        expected_type: DataKind,
+        found_type: DataKind,
+    },
 }
 
 impl fmt::Display for ArgumentError {
@@ -138,6 +149,39 @@ impl fmt::Display for ArgumentError {
                 "Argument type error. {} expected {:?} as argument {}, found: {:?}",
                 fn_name, expected_type, index, found_type
             ),
+            ArgumentError::MissingKey {
+                fn_name,
+                key,
+                expected_type,
+            } => write!(
+                f,
+                "Dictionary error. {} expected key \"{}\" of type {:?}, but it was not found",
+                fn_name, key, expected_type
+            ),
+            ArgumentError::InvalidKeyType {
+                fn_name,
+                key,
+                expected_type,
+                found_type,
+            } => write!(
+                f,
+                "Dictionary type error. {} expected key \"{}\" to be {:?}, found: {:?}",
+                fn_name, key, expected_type, found_type
+            ),
+        }
+    }
+}
+
+pub trait OptionalValue<T> {
+    fn optional(self) -> Result<Option<T>, ArgumentError>;
+}
+
+impl<T> OptionalValue<T> for Result<T, ArgumentError> {
+    fn optional(self) -> Result<Option<T>, ArgumentError> {
+        match self {
+            Ok(v) => Ok(Some(v)),
+            Err(ArgumentError::MissingKey { .. }) => Ok(None),
+            Err(e) => Err(e),
         }
     }
 }
@@ -305,5 +349,128 @@ impl Args {
             expected_type: DataKind::Callable,
             found_type: DataKind::Undefined,
         })
+    }
+}
+
+pub struct DictArgs<'a> {
+    fn_name: String,
+    dict: &'a DictionaryDeclaration,
+}
+
+impl<'a> DictArgs<'a> {
+    pub fn new(fn_name: &str, dict: &'a DictionaryDeclaration) -> Self {
+        Self {
+            fn_name: fn_name.to_string(),
+            dict,
+        }
+    }
+
+    fn get(&self, key: &str) -> SharedDataType {
+        self.dict.get(key)
+    }
+
+    pub fn string(&self, key: &str) -> Result<String, ArgumentError> {
+        let value = self.get(key);
+        if matches!(*value, DataType::Undefined) {
+            return Err(ArgumentError::MissingKey {
+                fn_name: self.fn_name.clone(),
+                key: key.to_string(),
+                expected_type: DataKind::String,
+            });
+        }
+        expect_string(&value).map_err(|found| ArgumentError::InvalidKeyType {
+            fn_name: self.fn_name.clone(),
+            key: key.to_string(),
+            expected_type: DataKind::String,
+            found_type: found,
+        })
+    }
+
+    pub fn int(&self, key: &str) -> Result<usize, ArgumentError> {
+        let value = self.get(key);
+        if matches!(*value, DataType::Undefined) {
+            return Err(ArgumentError::MissingKey {
+                fn_name: self.fn_name.clone(),
+                key: key.to_string(),
+                expected_type: DataKind::Int,
+            });
+        }
+        expect_int(&value).map_err(|found| ArgumentError::InvalidKeyType {
+            fn_name: self.fn_name.clone(),
+            key: key.to_string(),
+            expected_type: DataKind::Int,
+            found_type: found,
+        })
+    }
+
+    pub fn boolean(&self, key: &str) -> Result<bool, ArgumentError> {
+        let value = self.get(key);
+        if matches!(*value, DataType::Undefined) {
+            return Err(ArgumentError::MissingKey {
+                fn_name: self.fn_name.clone(),
+                key: key.to_string(),
+                expected_type: DataKind::Boolean,
+            });
+        }
+        expect_bool(&value).map_err(|found| ArgumentError::InvalidKeyType {
+            fn_name: self.fn_name.clone(),
+            key: key.to_string(),
+            expected_type: DataKind::Boolean,
+            found_type: found,
+        })
+    }
+
+    pub fn list(&self, key: &str) -> Result<SharedDataType, ArgumentError> {
+        let value = self.get(key);
+        if matches!(*value, DataType::Undefined) {
+            return Err(ArgumentError::MissingKey {
+                fn_name: self.fn_name.clone(),
+                key: key.to_string(),
+                expected_type: DataKind::List,
+            });
+        }
+        expect_list(&value).map_err(|found| ArgumentError::InvalidKeyType {
+            fn_name: self.fn_name.clone(),
+            key: key.to_string(),
+            expected_type: DataKind::List,
+            found_type: found,
+        })?;
+        Ok(value)
+    }
+
+    pub fn dictionary(&self, key: &str) -> Result<SharedDataType, ArgumentError> {
+        let value = self.get(key);
+        if matches!(*value, DataType::Undefined) {
+            return Err(ArgumentError::MissingKey {
+                fn_name: self.fn_name.clone(),
+                key: key.to_string(),
+                expected_type: DataKind::Dictionary,
+            });
+        }
+        expect_dict(&value).map_err(|found| ArgumentError::InvalidKeyType {
+            fn_name: self.fn_name.clone(),
+            key: key.to_string(),
+            expected_type: DataKind::Dictionary,
+            found_type: found,
+        })?;
+        Ok(value)
+    }
+
+    pub fn callable(&self, key: &str) -> Result<SharedDataType, ArgumentError> {
+        let value = self.get(key);
+        if matches!(*value, DataType::Undefined) {
+            return Err(ArgumentError::MissingKey {
+                fn_name: self.fn_name.clone(),
+                key: key.to_string(),
+                expected_type: DataKind::Callable,
+            });
+        }
+        expect_callable(&value).map_err(|found| ArgumentError::InvalidKeyType {
+            fn_name: self.fn_name.clone(),
+            key: key.to_string(),
+            expected_type: DataKind::Callable,
+            found_type: found,
+        })?;
+        Ok(value)
     }
 }

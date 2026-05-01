@@ -1,7 +1,7 @@
 use std::env;
 use std::sync::Arc;
 
-use crate::modules::{GitRunner, ModuleRegistry, ProcessGitRunner, git_module};
+use crate::modules::{GitRunner, ModuleRegistry, ProcessGitRunner, git_module, shell_module};
 use crate::runner::{RuntimeError, repl, run};
 use crate::task_management::TaskRegistry;
 
@@ -38,6 +38,7 @@ impl RuntimeContext {
 fn main() -> Result<(), RuntimeError> {
     let mut runtime_context = RuntimeContext::new();
     runtime_context.module_registry.register(git_module());
+    runtime_context.module_registry.register(shell_module());
 
     let arg = std::env::args()
         .nth(1)

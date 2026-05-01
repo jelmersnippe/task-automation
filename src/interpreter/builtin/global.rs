@@ -1,7 +1,4 @@
-use std::{
-    process::{Command, Stdio},
-    thread::{self, JoinHandle},
-};
+use std::thread::{self};
 
 use crate::{
     interpreter::{
@@ -14,7 +11,6 @@ use crate::{
 
 pub static BUILTINS: &[(&str, BuiltinFn)] = &[
     ("print", print),
-    ("spawn_terminal", spawn_terminal),
     ("register_task", register_task),
     ("parallel", parallel),
 ];
@@ -30,48 +26,6 @@ fn print(
     let arg = args.any(0)?;
 
     println!("{}", arg);
-
-    Ok((DataType::Undefined).to_shared())
-}
-
-// wt.exe wsl bash -c "cd ~/dev/task-automation && exec bash"
-fn spawn_terminal(
-    _: Option<SharedDataType>,
-    data: Vec<SharedDataType>,
-    _: &mut RuntimeContext,
-) -> Result<SharedDataType, ExecutionError> {
-    let args = Args::new("spawn_terminal", &data);
-
-    args.range(1, 2)?;
-    let path = args.string(0)?;
-    let cmd = args.optional_string(1)?;
-
-    let mut command: String = String::from(format!("cd {}", path));
-
-    if let Some(x) = cmd {
-        command += format!(" && {}", x).as_str();
-    }
-
-    // Retain the terminal in bash mode
-    command += " && exec bash";
-
-    println!("Running: wt.exe wsl bash -lc \"{}\"", command);
-
-    let success = Command::new("wt.exe")
-        .arg("wsl")
-        .arg("bash")
-        // Use a login shell so path is loaded
-        .arg("-lc")
-        .arg(command)
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn();
-
-    match success {
-        Err(error) => println!("{}", error),
-        _ => {}
-    }
 
     Ok((DataType::Undefined).to_shared())
 }

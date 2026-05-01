@@ -46,5 +46,5 @@ register_task("rebase_worktrees", fn() {
 })
 
 register_task("test", fn() {
-    git.push("--force")
+    shell.open({cwd: "~/dev/appdev",});
 })
