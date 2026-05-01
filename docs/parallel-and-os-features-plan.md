@@ -3,27 +3,13 @@
 ## Overview
 
 `parallel()` and the `shell` module are complete — see the readme for their APIs.
+The `tmux` module is complete — see the readme for its API.
 
-Two phases remain, both independent of each other.
-
----
-
-## Phase 1 — tmux module
-
-Full API design, philosophy, usage examples, and implementation notes are in `tmux-module-plan.md`.
-
-Implementation steps:
-
-| Step | Description | Files |
-|------|-------------|-------|
-| 1a | Create `src/modules/tmux/mod.rs` following the git module pattern | new `src/modules/tmux/mod.rs` |
-| 1b | Implement the API defined in `tmux-module-plan.md` | `src/modules/tmux/mod.rs` |
-| 1c | All functions execute `tmux <subcommand>` via `std::process::Command` | `src/modules/tmux/mod.rs` |
-| 1d | Register module in `main.rs` | `src/main.rs`, `src/modules/mod.rs` |
+One phase remains.
 
 ---
 
-## Phase 2 — macOS window management module
+## macOS window management module
 
 **Goal**: Programmatically move and resize application windows using AppleScript.
 No third-party tools required.
@@ -31,23 +17,22 @@ No third-party tools required.
 ### Design
 
 ```dsl
-windows.move("iTerm2", "top-left")
-windows.move("iTerm2", "top-right")
-windows.move("iTerm2", "center")
-windows.resize("iTerm2", 1280, 800)
-windows.set_bounds("iTerm2", 0, 0, 1280, 800)
+window.move("iTerm2", "top_left")
+window.move("iTerm2", "top_right")
+window.move("iTerm2", "center")
+window.move("iTerm2", "left_half")
+window.move("iTerm2", "right_half")
+window.move("iTerm2", "full_screen")
 ```
 
-Named positions (`"top-left"`, `"top-right"`, `"bottom-left"`, `"bottom-right"`, `"center"`)
-map to coordinate calculations based on screen resolution.
+Named positions (`top_left`, `top_right`, `bottom_left`, `bottom_right`, `center`, `left_half`, `right_half`, `full_screen`)
+map to coordinate calculations based on screen resolution detected via `system_profiler SPDisplaysDataType`.
 
 ### Steps
 
 | Step | Description | Files |
 |------|-------------|-------|
-| 2a | Create `src/modules/window_management/mod.rs` | new `src/modules/window_management/mod.rs` |
-| 2b | Implement `move(app, position)` — named positions to coordinates via AppleScript | `src/modules/window_management/mod.rs` |
-| 2c | Implement `resize(app, width, height)` | `src/modules/window_management/mod.rs` |
-| 2d | Implement `set_bounds(app, x, y, width, height)` for full manual control | `src/modules/window_management/mod.rs` |
-| 2e | Screen resolution detection via `system_profiler SPDisplaysDataType` | `src/modules/window_management/mod.rs` |
-| 2f | Register module in `main.rs` | `src/main.rs`, `src/modules/mod.rs` |
+| 1 | Create `src/modules/window/mod.rs` | new `src/modules/window/mod.rs` |
+| 2 | Implement `move(app, position)` — named positions to AppleScript `set bounds` calls | `src/modules/window/mod.rs` |
+| 3 | Screen resolution detection via `system_profiler SPDisplaysDataType` | `src/modules/window/mod.rs` |
+| 4 | Register module in `main.rs` | `src/main.rs`, `src/modules/mod.rs` |

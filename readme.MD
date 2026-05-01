@@ -1,26 +1,3 @@
-Optimizations:
-- Clean up lexer
-    - Simplify main function loop
-    - Simplify TokenKind enum and add values
-- Simplify operation parsing
-    - Recursive-descent parsing (every precedence calls next, then performs while, start from highest)
-
-## TODO:
-### Core:
-- .function calls (clear, has, delete) on dictionary
-- while loop
-- Task registry -> register_task + run
-
-### Native functionality:
-- Window positioning (track pid?)
-- MacOS support
-
-### Other
-- Symlink / alias for running
-- Daemon
-
----
-
 ## parallel
 
 `parallel(fns)` takes a list of zero-argument functions and runs them concurrently on real
@@ -100,6 +77,130 @@ while (i < worktrees.len()) {
 }
 
 parallel(actions)
+```
+
+---
+
+## tmux module
+
+The `tmux` module manages tmux sessions, windows, and panes. It uses a two-tier design:
+the top-level `tmux` module has session factory functions, and `new_session` returns a
+session module for all per-session operations. Session methods return `self` for chaining.
+
+### Session management
+
+| Function | Returns | Description |
+|---|---|---|
+| `tmux.new_session("name")` | session module | Create a detached session and return its module |
+| `tmux.kill_session("name")` | — | Kill a session by name |
+| `tmux.has_session("name")` | bool | Check whether a session exists |
+
+### Window management
+
+Called on the session module returned by `new_session`.
+
+| Method | Returns | Description |
+|---|---|---|
+| `session.new_window("name", {cwd?, cmd?})` | session | Create a window, optionally running `cmd` in `cwd` |
+| `session.kill_window("name")` | session | Kill a window by name or index |
+| `session.select_window("name")` | session | Make a window the active window |
+
+### Pane management
+
+| Method | Returns | Description |
+|---|---|---|
+| `session.split_pane("window", {cwd?, cmd?})` | session | Vertical split in `window` |
+| `session.split_pane_h("window", {cwd?, cmd?})` | session | Horizontal split in `window` |
+| `session.kill_pane("window", pane_index)` | session | Kill a pane by index |
+| `session.set_layout("window", "layout")` | session | Apply a tmux layout |
+
+Built-in layouts: `tiled`, `even-horizontal`, `even-vertical`, `main-horizontal`, `main-vertical`.
+
+### Interactive use
+
+| Method | Returns | Description |
+|---|---|---|
+| `session.send_keys("window", pane_index, "cmd")` | session | Send a command to a pane (appends Enter) |
+| `session.interrupt("window", pane_index)` | session | Send Ctrl-C to a pane |
+
+### Attaching
+
+| Method | Returns | Description |
+|---|---|---|
+| `session.attach()` | — | Attach the current terminal to the session |
+| `session.attach_cmd()` | string | Returns `"tmux attach -t <name>"` for use with `shell.open` |
+
+### Command dict
+
+`new_window`, `split_pane`, and `split_pane_h` accept `{cwd?, cmd?}`:
+
+- `cwd` — working directory; falls back to the runtime `cwd` if omitted
+- `cmd` — startup command; falls back to `exec $SHELL` if omitted
+
+`new_session` creates a default unnamed window at index `"0"`. Call `.kill_window("0")`
+after adding your named windows to clean it up.
+
+### Philosophy
+
+Commands are passed directly to panes at creation time — no `send_keys` for startup.
+Restarting a session means killing and recreating it, guaranteeing a clean state.
+`send_keys` and `interrupt` exist for ad-hoc interactive use only.
+
+### Example — watcher session with restart
+
+```dsl
+fn setup_watchers(dir) {
+    if (tmux.has_session("watchers")) {
+        tmux.kill_session("watchers")
+    }
+
+    tmux.new_session("watchers")
+        .new_window("main", {cwd: dir, cmd: "npm run build:watch"})
+        .split_pane("main", {cwd: dir, cmd: "npm run test:watch"})
+        .split_pane("main", {cwd: dir, cmd: "npm run dev"})
+        .set_layout("main", "main-vertical")
+        .kill_window("0")
+
+    shell.open({cwd: dir, cmd: "tmux attach -t watchers"})
+}
+
+register_task("setup_watchers", fn(dir) {
+    setup_watchers(dir)
+})
+```
+
+### Example — full dev setup
+
+```dsl
+fn setup(primary, secondary) {
+    if (tmux.has_session("work") == false) {
+        tmux.new_session("work")
+            .new_window("editor",   {cwd: primary, cmd: "nvim ."})
+            .new_window("shell",    {cwd: primary})
+            .new_window("opencode", {cwd: primary, cmd: "opencode ."})
+            .kill_window("0")
+    }
+
+    if (tmux.has_session("watchers") == false) {
+        tmux.new_session("watchers")
+            .new_window("main", {cwd: primary})
+            .split_pane("main", {cwd: primary})
+            .split_pane("main", {cwd: secondary})
+            .set_layout("main", "main-vertical")
+            .kill_window("0")
+    }
+
+    shell.open({cwd: primary, cmd: "tmux attach -t work"})
+    shell.open({cwd: primary, cmd: "tmux attach -t watchers"})
+}
+
+register_task("setup", fn(primary) {
+    setup(primary, primary)
+})
+
+register_task("setup_dual", fn(primary, secondary) {
+    setup(primary, secondary)
+})
 ```
 
 ---
