@@ -1,21 +1,17 @@
-fn shell_cmd(dir) {
-    return "cd " + dir + " && exec $SHELL"
-}
-
 fn setup(primary, secondary) {
     if (tmux.has_session("work") == false) {
         tmux.new_session("work")
-            .new_window("editor",   "cd " + primary + " && nvim .")
-            .new_window("shell",    shell_cmd(primary))
-            .new_window("opencode", "cd " + primary + " && opencode .")
+            .new_window("editor",   {cwd: primary, cmd: "nvim ."})
+            .new_window("shell",    {cwd: primary})
+            .new_window("opencode", {cwd: primary, cmd: "opencode ."})
             .kill_window("0")
     }
 
     if (tmux.has_session("watchers") == false) {
         tmux.new_session("watchers")
-            .new_window("main", shell_cmd(primary))
-            .split_pane("main", shell_cmd(primary))
-            .split_pane("main", shell_cmd(secondary))
+            .new_window("main", {cwd: primary})
+            .split_pane("main", {cwd: primary})
+            .split_pane("main", {cwd: secondary})
             .set_layout("main", "main-vertical")
             .kill_window("0")
     }

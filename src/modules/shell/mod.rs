@@ -1,11 +1,10 @@
 use crate::{
-    fs::get_absolute_path,
     interpreter::{
-        builtin::ExecutionError,
-        coerce::{Args, DictArgs, OptionalValue},
+        builtin::{CallInfo, ExecutionError},
+        coerce::Args,
         datatype::{DataType, SharedDataType},
     },
-    modules::Module,
+    modules::{cmd::resolve_cmd, Module},
     RuntimeContext,
 };
 
@@ -27,16 +26,9 @@ fn open(
     args.exact(1)?;
     let dict = args.dictionary(0)?;
 
-    let dict_args = DictArgs::new("open", dict);
-    let cwd = dict_args
-        .string("cwd")
-        .optional()?
-        .unwrap_or(context.cwd.clone());
-    let absolute_cwd = get_absolute_path(&cwd)?;
+    let resolved = resolve_cmd(dict, "open", &context.cwd)?;
 
-    let cmd = dict_args.string("cmd").optional()?;
-
-    spawn_open(&absolute_cwd, cmd.as_deref())
+    spawn_open(&resolved.to_open_cmd())
 }
 
 fn run(
@@ -48,31 +40,20 @@ fn run(
     args.exact(1)?;
     let dict = args.dictionary(0)?;
 
-    let dict_args = DictArgs::new("run", dict);
-    let cwd = dict_args
-        .string("cwd")
-        .optional()?
-        .unwrap_or(context.cwd.clone());
-    let absolute_cwd = get_absolute_path(&cwd)?;
+    let resolved = resolve_cmd(dict, "run", &context.cwd)?;
 
-    let cmd = dict_args.string("cmd")?;
+    let cmd_string = resolved.to_run_cmd().ok_or_else(|| {
+        ExecutionError::new(CallInfo::new("run"), "shell.run requires a 'cmd' key")
+    })?;
 
-    spawn_run(&absolute_cwd, &cmd)
+    spawn_run(&cmd_string)
 }
 
 #[cfg(target_os = "macos")]
-fn spawn_open(path: &str, cmd: Option<&str>) -> Result<SharedDataType, ExecutionError> {
+fn spawn_open(cmd_string: &str) -> Result<SharedDataType, ExecutionError> {
     use std::process::{Command, Stdio};
 
-    use crate::interpreter::builtin::CallInfo;
-
-    let mut cmd_string = format!("cd '{}'", path);
-    if let Some(cmd) = cmd {
-        cmd_string += &format!(" && {}", cmd);
-    }
-    cmd_string += " && exec $SHELL";
-
-    println!("Opening an iterm2 window with command '{}'", cmd_string);
+    println!("Opening an iTerm2 window with command '{}'", cmd_string);
 
     Command::new("osascript")
         .args(["-e", "tell application \"iTerm2\""])
@@ -96,21 +77,13 @@ fn spawn_open(path: &str, cmd: Option<&str>) -> Result<SharedDataType, Execution
 }
 
 #[cfg(target_os = "windows")]
-fn spawn_open(path: &str, cmd: Option<&str>) -> Result<SharedDataType, ExecutionError> {
+fn spawn_open(cmd_string: &str) -> Result<SharedDataType, ExecutionError> {
     use std::process::{Command, Stdio};
 
-    use crate::interpreter::builtin::CallInfo;
-
-    let mut command = format!("cd '{}'", path);
-    if let Some(cmd) = cmd {
-        command += &format!(" && {}", cmd);
-    }
-    command += " && exec bash";
-
-    println!("Opening: wt.exe wsl bash -lc \"{}\"", command);
+    println!("Opening: wt.exe wsl bash -lc \"{}\"", cmd_string);
 
     Command::new("wt.exe")
-        .args(["wsl", "bash", "-lc", &command])
+        .args(["wsl", "bash", "-lc", cmd_string])
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -125,23 +98,25 @@ fn spawn_open(path: &str, cmd: Option<&str>) -> Result<SharedDataType, Execution
     Ok(DataType::Undefined.to_shared())
 }
 
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+fn spawn_open(_cmd_string: &str) -> Result<SharedDataType, ExecutionError> {
+    Err(ExecutionError::new(
+        CallInfo::new("open"),
+        "shell module is not supported on this platform",
+    ))
+}
+
 #[cfg(target_os = "macos")]
-fn spawn_run(path: &str, cmd: &str) -> Result<SharedDataType, ExecutionError> {
+fn spawn_run(cmd_string: &str) -> Result<SharedDataType, ExecutionError> {
     use std::process::{Command, Stdio};
 
-    use crate::interpreter::builtin::CallInfo;
+    println!("Running an iTerm2 window with command '{}'", cmd_string);
 
-    // The write text command closes the window by its ID (captured at creation
-    // time) rather than "front window", so focus changes during the run don't
-    // cause the wrong window to be closed.
+    // Close the window by its ID (captured at creation time) rather than
+    // "front window", so focus changes during the run don't close the wrong window.
     let write_text = format!(
-        "write text \"cd '{}' && {}; osascript -e 'tell application \\\"iTerm2\\\" to close (first window whose id is \" & wid & \")'\"",
-        path, cmd
-    );
-
-    println!(
-        "Running an iterm2 window with command 'cd '{}' && {}'",
-        path, cmd
+        "write text \"{} ; osascript -e 'tell application \\\"iTerm2\\\" to close (first window whose id is \" & wid & \")'\"",
+        cmd_string
     );
 
     Command::new("osascript")
@@ -166,36 +141,14 @@ fn spawn_run(path: &str, cmd: &str) -> Result<SharedDataType, ExecutionError> {
     Ok(DataType::Undefined.to_shared())
 }
 
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
-fn spawn_open(_path: &str, _cmd: Option<&str>) -> Result<SharedDataType, ExecutionError> {
-    use crate::interpreter::builtin::CallInfo;
-    Err(ExecutionError::new(
-        CallInfo::new("open"),
-        "shell module is not supported on this platform",
-    ))
-}
-
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
-fn spawn_run(_path: &str, _cmd: &str) -> Result<SharedDataType, ExecutionError> {
-    use crate::interpreter::builtin::CallInfo;
-    Err(ExecutionError::new(
-        CallInfo::new("run"),
-        "shell module is not supported on this platform",
-    ))
-}
-
 #[cfg(target_os = "windows")]
-fn spawn_run(path: &str, cmd: &str) -> Result<SharedDataType, ExecutionError> {
+fn spawn_run(cmd_string: &str) -> Result<SharedDataType, ExecutionError> {
     use std::process::{Command, Stdio};
 
-    use crate::interpreter::builtin::CallInfo;
-
-    let command = format!("cd '{}' && {}", path, cmd);
-
-    println!("Running: wsl bash -lc \"{}\"", command);
+    println!("Running: wsl bash -lc \"{}\"", cmd_string);
 
     Command::new("wsl")
-        .args(["bash", "-lc", &command])
+        .args(["bash", "-lc", cmd_string])
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -208,4 +161,12 @@ fn spawn_run(path: &str, cmd: &str) -> Result<SharedDataType, ExecutionError> {
         })?;
 
     Ok(DataType::Undefined.to_shared())
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+fn spawn_run(_cmd_string: &str) -> Result<SharedDataType, ExecutionError> {
+    Err(ExecutionError::new(
+        CallInfo::new("run"),
+        "shell module is not supported on this platform",
+    ))
 }

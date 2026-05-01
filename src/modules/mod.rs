@@ -9,6 +9,7 @@ use crate::{
     modules::{git::create_git_module, shell::create_shell_module, tmux::create_tmux_module},
 };
 
+pub mod cmd;
 pub mod git;
 pub mod shell;
 pub mod tmux;

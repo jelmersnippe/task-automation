@@ -7,12 +7,14 @@ use crate::{
     RuntimeContext,
 };
 
+// The project root always exists and is a known absolute path in tests.
+const TEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
+
 // ---------------------------------------------------------------------------
 // MockTmuxRunner
 // ---------------------------------------------------------------------------
 
 struct MockTmuxRunner {
-    /// Maps "arg0 arg1 arg2 ..." to the response string, or Err if the value is None.
     responses: HashMap<String, Option<String>>,
 }
 
@@ -58,6 +60,8 @@ impl TmuxRunner for MockTmuxRunner {
 
 fn context_with_mock(mock: MockTmuxRunner) -> RuntimeContext {
     let mut context = RuntimeContext::new();
+    // Fix cwd to the project root so fallback-cwd tests are predictable.
+    context.cwd = TEST_DIR.to_string();
     context.tmux_runner = Arc::new(mock);
     context.module_registry.register(tmux_module());
     context
@@ -73,6 +77,14 @@ fn run(dsl: &str, mock: MockTmuxRunner) -> Interpreter {
 
 fn empty_mock() -> MockTmuxRunner {
     MockTmuxRunner::new()
+}
+
+/// Builds the startup command string that tmux receives for a given dir + optional cmd.
+fn startup_cmd(dir: &str, cmd: Option<&str>) -> String {
+    match cmd {
+        Some(c) => format!("cd '{}' && {}", dir, c),
+        None => format!("cd '{}' && exec $SHELL", dir),
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -188,43 +200,76 @@ fn has_session_errors_with_no_args() {
 }
 
 // ---------------------------------------------------------------------------
-// new_window (session method)
+// new_window — explicit cwd + cmd
 // ---------------------------------------------------------------------------
 
 #[test]
-fn new_window_sends_correct_command() {
+fn new_window_with_cwd_and_cmd() {
+    let expected = startup_cmd(TEST_DIR, Some("nvim ."));
     let mock = empty_mock()
         .with(&["new-session", "-d", "-s", "work"], "")
-        .with(&["new-window", "-t", "work", "-n", "editor", "nvim ."], "");
+        .with(&["new-window", "-t", "work", "-n", "editor", &expected], "");
+    let dsl = format!(
+        r#"tmux.new_session("work").new_window("editor", {{cwd: "{}", cmd: "nvim ."}})"#,
+        TEST_DIR
+    );
+    run(&dsl, mock);
+}
+
+#[test]
+fn new_window_with_cwd_only_falls_back_to_shell() {
+    let expected = startup_cmd(TEST_DIR, None);
+    let mock = empty_mock()
+        .with(&["new-session", "-d", "-s", "work"], "")
+        .with(&["new-window", "-t", "work", "-n", "shell", &expected], "");
+    let dsl = format!(
+        r#"tmux.new_session("work").new_window("shell", {{cwd: "{}"}})"#,
+        TEST_DIR
+    );
+    run(&dsl, mock);
+}
+
+#[test]
+fn new_window_without_cwd_falls_back_to_context_cwd() {
+    // No cwd key — should fall back to context.cwd = TEST_DIR
+    let expected = startup_cmd(TEST_DIR, Some("nvim ."));
+    let mock = empty_mock()
+        .with(&["new-session", "-d", "-s", "work"], "")
+        .with(&["new-window", "-t", "work", "-n", "editor", &expected], "");
     run(
-        r#"tmux.new_session("work").new_window("editor", "nvim .")"#,
+        r#"tmux.new_session("work").new_window("editor", {cmd: "nvim ."})"#,
         mock,
     );
 }
 
 #[test]
 fn new_window_returns_self_for_chaining() {
+    let cmd1 = startup_cmd(TEST_DIR, Some("nvim ."));
+    let cmd2 = startup_cmd(TEST_DIR, None);
     let mock = empty_mock()
         .with(&["new-session", "-d", "-s", "work"], "")
-        .with(&["new-window", "-t", "work", "-n", "editor", "nvim ."], "")
-        .with(&["new-window", "-t", "work", "-n", "shell", "bash"], "");
-    // chaining two new_window calls — would fail if receiver is not returned
-    run(
-        r#"tmux.new_session("work").new_window("editor", "nvim .").new_window("shell", "bash")"#,
-        mock,
+        .with(&["new-window", "-t", "work", "-n", "editor", &cmd1], "")
+        .with(&["new-window", "-t", "work", "-n", "shell", &cmd2], "");
+    let dsl = format!(
+        r#"tmux.new_session("work")
+            .new_window("editor", {{cwd: "{dir}", cmd: "nvim ."}})
+            .new_window("shell",  {{cwd: "{dir}"}})"#,
+        dir = TEST_DIR
     );
+    run(&dsl, mock);
 }
 
 #[test]
 fn new_window_errors_when_tmux_fails() {
+    let expected = startup_cmd(TEST_DIR, Some("nvim ."));
     let mock = empty_mock()
         .with(&["new-session", "-d", "-s", "work"], "")
-        .with_failure(&["new-window", "-t", "work", "-n", "editor", "nvim ."]);
-    let result = try_run(
-        r#"tmux.new_session("work").new_window("editor", "nvim .")"#,
-        mock,
+        .with_failure(&["new-window", "-t", "work", "-n", "editor", &expected]);
+    let dsl = format!(
+        r#"tmux.new_session("work").new_window("editor", {{cwd: "{}", cmd: "nvim ."}})"#,
+        TEST_DIR
     );
-    assert!(result.is_err());
+    assert!(try_run(&dsl, mock).is_err());
 }
 
 #[test]
@@ -235,7 +280,7 @@ fn new_window_errors_with_wrong_arg_count() {
 }
 
 // ---------------------------------------------------------------------------
-// kill_window
+// kill_window / select_window
 // ---------------------------------------------------------------------------
 
 #[test]
@@ -255,10 +300,6 @@ fn kill_window_errors_when_tmux_fails() {
     assert!(result.is_err());
 }
 
-// ---------------------------------------------------------------------------
-// select_window
-// ---------------------------------------------------------------------------
-
 #[test]
 fn select_window_sends_correct_command() {
     let mock = empty_mock()
@@ -272,44 +313,58 @@ fn select_window_sends_correct_command() {
 // ---------------------------------------------------------------------------
 
 #[test]
-fn split_pane_sends_correct_command() {
+fn split_pane_with_cwd_and_cmd() {
+    let expected = startup_cmd(TEST_DIR, Some("npm test"));
     let mock = empty_mock()
         .with(&["new-session", "-d", "-s", "work"], "")
-        .with(&["split-window", "-t", "work:editor", "-d", "npm test"], "");
-    run(
-        r#"tmux.new_session("work").split_pane("editor", "npm test")"#,
-        mock,
+        .with(&["split-window", "-t", "work:editor", "-d", &expected], "");
+    let dsl = format!(
+        r#"tmux.new_session("work").split_pane("editor", {{cwd: "{}", cmd: "npm test"}})"#,
+        TEST_DIR
     );
+    run(&dsl, mock);
 }
 
 #[test]
-fn split_pane_h_sends_correct_command() {
+fn split_pane_without_cwd_falls_back_to_context_cwd() {
+    let expected = startup_cmd(TEST_DIR, None);
+    let mock = empty_mock()
+        .with(&["new-session", "-d", "-s", "work"], "")
+        .with(&["split-window", "-t", "work:editor", "-d", &expected], "");
+    run(r#"tmux.new_session("work").split_pane("editor", {})"#, mock);
+}
+
+#[test]
+fn split_pane_h_with_cwd_and_cmd() {
+    let expected = startup_cmd(TEST_DIR, Some("npm test"));
     let mock = empty_mock()
         .with(&["new-session", "-d", "-s", "work"], "")
         .with(
-            &["split-window", "-h", "-t", "work:editor", "-d", "npm test"],
+            &["split-window", "-h", "-t", "work:editor", "-d", &expected],
             "",
         );
-    run(
-        r#"tmux.new_session("work").split_pane_h("editor", "npm test")"#,
-        mock,
+    let dsl = format!(
+        r#"tmux.new_session("work").split_pane_h("editor", {{cwd: "{}", cmd: "npm test"}})"#,
+        TEST_DIR
     );
+    run(&dsl, mock);
 }
 
 #[test]
 fn split_pane_errors_when_tmux_fails() {
+    let expected = startup_cmd(TEST_DIR, Some("npm test"));
     let mock = empty_mock()
         .with(&["new-session", "-d", "-s", "work"], "")
-        .with_failure(&["split-window", "-t", "work:editor", "-d", "npm test"]);
-    let result = try_run(
-        r#"tmux.new_session("work").split_pane("editor", "npm test")"#,
-        mock,
+        .with_failure(&["split-window", "-t", "work:editor", "-d", &expected]);
+    let dsl = format!(
+        r#"tmux.new_session("work").split_pane("editor", {{cwd: "{}", cmd: "npm test"}})"#,
+        TEST_DIR
     );
-    assert!(result.is_err());
+    assert!(try_run(&dsl, mock).is_err());
 }
 
 // ---------------------------------------------------------------------------
-// kill_pane
+// kill_pane / set_layout
 // ---------------------------------------------------------------------------
 
 #[test]
@@ -319,10 +374,6 @@ fn kill_pane_sends_correct_command() {
         .with(&["kill-pane", "-t", "work:editor.1"], "");
     run(r#"tmux.new_session("work").kill_pane("editor", 1)"#, mock);
 }
-
-// ---------------------------------------------------------------------------
-// set_layout
-// ---------------------------------------------------------------------------
 
 #[test]
 fn set_layout_sends_correct_command() {
@@ -348,7 +399,7 @@ fn set_layout_errors_when_tmux_fails() {
 }
 
 // ---------------------------------------------------------------------------
-// send_keys
+// send_keys / interrupt
 // ---------------------------------------------------------------------------
 
 #[test]
@@ -364,10 +415,6 @@ fn send_keys_sends_correct_command() {
         mock,
     );
 }
-
-// ---------------------------------------------------------------------------
-// interrupt
-// ---------------------------------------------------------------------------
 
 #[test]
 fn interrupt_sends_correct_command() {
@@ -410,37 +457,33 @@ fn attach_cmd_errors_with_extra_arg() {
 
 #[test]
 fn chained_session_setup_sends_all_commands() {
+    let build_cmd = startup_cmd(TEST_DIR, Some("npm run build:watch"));
+    let test_cmd = startup_cmd(TEST_DIR, Some("npm run test:watch"));
+    let shell_cmd = startup_cmd(TEST_DIR, None);
+    let dsl = format!(
+        r#"
+var session = tmux.new_session("watchers")
+    .new_window("watches", {{cwd: "{dir}", cmd: "npm run build:watch"}})
+    .split_pane("watches", {{cwd: "{dir}", cmd: "npm run test:watch"}})
+    .split_pane("watches", {{cwd: "{dir}"}})
+    .set_layout("watches", "tiled")
+        "#,
+        dir = TEST_DIR
+    );
     let mock = empty_mock()
         .with(&["new-session", "-d", "-s", "watchers"], "")
         .with(
-            &[
-                "new-window",
-                "-t",
-                "watchers",
-                "-n",
-                "watches",
-                "npm run build:watch",
-            ],
+            &["new-window", "-t", "watchers", "-n", "watches", &build_cmd],
             "",
         )
         .with(
-            &[
-                "split-window",
-                "-t",
-                "watchers:watches",
-                "-d",
-                "npm run test:watch",
-            ],
+            &["split-window", "-t", "watchers:watches", "-d", &test_cmd],
+            "",
+        )
+        .with(
+            &["split-window", "-t", "watchers:watches", "-d", &shell_cmd],
             "",
         )
         .with(&["select-layout", "-t", "watchers:watches", "tiled"], "");
-    run(
-        r#"
-var session = tmux.new_session("watchers")
-    .new_window("watches", "npm run build:watch")
-    .split_pane("watches", "npm run test:watch")
-    .set_layout("watches", "tiled")
-        "#,
-        mock,
-    );
+    run(&dsl, mock);
 }

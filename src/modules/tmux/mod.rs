@@ -4,7 +4,7 @@ use crate::{
         coerce::Args,
         datatype::{DataType, SharedDataType},
     },
-    modules::{Module, TmuxError},
+    modules::{cmd::resolve_cmd, Module, TmuxError},
     RuntimeContext,
 };
 
@@ -120,7 +120,8 @@ fn new_window(
     let args = Args::new("new_window", &args);
     args.exact(2)?;
     let name = args.string(0)?;
-    let cmd = args.string(1)?;
+    let dict = args.dictionary(1)?;
+    let cmd = resolve_cmd(dict, "new_window", &context.cwd)?.to_startup_cmd();
 
     context
         .tmux_runner
@@ -177,7 +178,8 @@ fn split_pane(
     let args = Args::new("split_pane", &args);
     args.exact(2)?;
     let window = args.string(0)?;
-    let cmd = args.string(1)?;
+    let dict = args.dictionary(1)?;
+    let cmd = resolve_cmd(dict, "split_pane", &context.cwd)?.to_startup_cmd();
     let target = format!("{}:{}", session, window);
 
     context
@@ -197,7 +199,8 @@ fn split_pane_h(
     let args = Args::new("split_pane_h", &args);
     args.exact(2)?;
     let window = args.string(0)?;
-    let cmd = args.string(1)?;
+    let dict = args.dictionary(1)?;
+    let cmd = resolve_cmd(dict, "split_pane_h", &context.cwd)?.to_startup_cmd();
     let target = format!("{}:{}", session, window);
 
     context
