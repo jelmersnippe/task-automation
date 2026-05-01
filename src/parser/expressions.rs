@@ -288,7 +288,7 @@ impl Parser {
                     });
                 }
                 TokenKind::LeftParenthesis => {
-                    let parameters = self.parse_comma_separated_list(TokenKind::RightParenthesis);
+                    let parameters = self.parse_comma_separated_list(TokenKind::RightParenthesis, false);
 
                     expression = ExpressionType::FunctionCall(CallExpression {
                         value: Box::new(expression),
@@ -345,7 +345,7 @@ impl Parser {
                 TokenKind::Identifier => self.parse_identifier_expression(token),
                 TokenKind::Fn => self.parse_function_expression(token),
                 TokenKind::LeftBracket => ExpressionType::List(ListExpression {
-                    values: self.parse_comma_separated_list(TokenKind::RightBracket),
+                    values: self.parse_comma_separated_list(TokenKind::RightBracket, true),
                 }),
                 TokenKind::LeftCurly => self.parse_dictionary_expression(),
                 x => panic!("Invalid token for simple expression parsing: {:?}", x),
@@ -392,7 +392,7 @@ impl Parser {
 
         ExpressionType::FunctionCall(CallExpression {
             value: Box::new(self.parse_identifier_expression(identifier_token)),
-            parameters: self.parse_comma_separated_list(TokenKind::RightParenthesis),
+            parameters: self.parse_comma_separated_list(TokenKind::RightParenthesis, false),
         })
     }
 
@@ -427,6 +427,7 @@ impl Parser {
     pub(crate) fn parse_comma_separated_list(
         &mut self,
         delimiter: TokenKind,
+        trailing_comma: bool,
     ) -> Vec<ExpressionType> {
         let mut arguments: Vec<ExpressionType> = vec![];
 
@@ -434,6 +435,11 @@ impl Parser {
             arguments.push(self.parse_expression());
 
             while self.r#match(TokenKind::Comma) {
+                if trailing_comma
+                    && self.peek().map(|t| t.kind == delimiter).unwrap_or(false)
+                {
+                    break;
+                }
                 arguments.push(self.parse_expression());
             }
 
@@ -467,6 +473,10 @@ impl Parser {
             let value = self.parse_expression();
             values.push(value);
 
+            if self.peek().map(|t| t.kind == TokenKind::RightCurly).unwrap_or(false) {
+                self.r#match(TokenKind::RightCurly);
+                break;
+            }
             self.expect(TokenKind::Comma);
         }
 

@@ -186,11 +186,11 @@ fn worktrees_returns_list_of_dicts() {
         let first = list.get((DataType::Number(0.0)).to_shared()).unwrap();
         if let DataType::Dictionary(dict) = first.as_ref() {
             assert_eq!(
-                dict.get(&"directory".to_string()).unwrap(),
+                dict.get(&"directory".to_string()),
                 (DataType::String("/home/user/repo".to_string())).to_shared()
             );
             assert_eq!(
-                dict.get(&"branch".to_string()).unwrap(),
+                dict.get(&"branch".to_string()),
                 (DataType::String("main".to_string())).to_shared()
             );
         } else {
@@ -200,11 +200,11 @@ fn worktrees_returns_list_of_dicts() {
         let second = list.get((DataType::Number(1.0)).to_shared()).unwrap();
         if let DataType::Dictionary(dict) = second.as_ref() {
             assert_eq!(
-                dict.get(&"directory".to_string()).unwrap(),
+                dict.get(&"directory".to_string()),
                 (DataType::String("/home/user/repo-feat".to_string())).to_shared()
             );
             assert_eq!(
-                dict.get(&"branch".to_string()).unwrap(),
+                dict.get(&"branch".to_string()),
                 (DataType::String("feat/bar".to_string())).to_shared()
             );
         } else {

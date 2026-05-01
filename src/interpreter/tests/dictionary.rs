@@ -11,15 +11,24 @@ use crate::{
     },
 };
 
-#[should_panic]
 #[test]
-fn panics_on_accessing_undefined_key() {
+fn interprets_accessing_undefined_key() {
     let dsl = "
     var x = {
     }
-    x[\"a\"]
+    var a = x[\"a\"]
     ";
-    run(dsl);
+    let interpreter = run(dsl);
+
+    assert_eq!(
+        interpreter
+            .scope
+            .lock()
+            .unwrap()
+            .get_variable(&String::from("a"))
+            .unwrap(),
+        (DataType::Undefined).to_shared(),
+    );
 }
 
 #[test]
@@ -80,7 +89,7 @@ fn interprets_dictionary_builtins() {
     let dsl = "
     var x = {
         a: 1,
-        b: undefined,
+        b: undefined
     }
 
     var a = x.has(\"a\")
@@ -167,7 +176,7 @@ fn interprets_dictionary_builtins() {
 fn interprets_dictionary_assignment() {
     let dsl = "
     var x = {
-        a: 1,
+        a: 1
     }
     x[\"b\"] = 3
     ";
@@ -193,7 +202,7 @@ fn interprets_dictionary_accessor() {
     let dsl = "
     var x = {
         a: 1,
-        b: 3,
+        b: 3
     }
     var y = x[\"a\"]
 
@@ -233,7 +242,7 @@ fn interprets_dictionary_declaration() {
         d: [1, 2, 3],
         e: {},
         f: foo(),
-        g: foo,
+        g: foo
     }
     ";
     let interpreter = run(dsl);
