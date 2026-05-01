@@ -1,20 +1,9 @@
-# OS-Specific Features Plan
-
-## Overview
-
-`parallel()` and the `shell` module are complete — see the readme for their APIs.
-The `tmux` module is complete — see the readme for its API.
-
-One phase remains.
-
----
-
-## macOS window management module
+# macOS Window Management Module
 
 **Goal**: Programmatically move and resize application windows using AppleScript.
 No third-party tools required.
 
-### Design
+## Design
 
 ```dsl
 window.move("iTerm2", "top_left")
@@ -28,7 +17,7 @@ window.move("iTerm2", "full_screen")
 Named positions (`top_left`, `top_right`, `bottom_left`, `bottom_right`, `center`, `left_half`, `right_half`, `full_screen`)
 map to coordinate calculations based on screen resolution detected via `system_profiler SPDisplaysDataType`.
 
-### Steps
+## Steps
 
 | Step | Description | Files |
 |------|-------------|-------|

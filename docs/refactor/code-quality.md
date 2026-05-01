@@ -27,25 +27,8 @@ Changing these also removes the need to construct `String` values just for `Hash
 **Explicit `return` at end of functions** *(Medium)*
 Rust uses the last expression as the implicit return value. Explicit `return` at the end of a function is not idiomatic and is flagged by Clippy. Affects nearly every function in `lexer/mod.rs`, `parser/`, `interpreter/builtin/`, `interpreter/coerce.rs`. Early-exit `return`s mid-function are correct and should stay.
 
-**Unit enum variants written as tuple variants** *(Medium)*
-`DataType::Undefined()` and `StatementResult::Void()` are zero-field tuple variants. They should be unit variants without parentheses:
-```rust
-// Current
-enum DataType { Undefined(), ... }
-// Idiomatic
-enum DataType { Undefined, ... }
-```
-The compiler will flag every construction and match site after the change.
-
 **`TokenKind` should derive `Copy`** *(Medium)*
 Every `TokenKind` variant is a unit variant — no heap data. Deriving `Copy` eliminates `.clone()` calls when passing `TokenKind` by value (e.g. `delimiter.clone()` in `parse_comma_separated_list`).
-
-**Type aliases for shared reference types** *(Medium)*
-Compound reference types written out in full at every signature make code hard to scan and refactor. Define aliases centrally:
-```rust
-pub type SharedScope = Rc<Scope>;
-```
-If the underlying type ever changes (e.g. `Rc` → `Arc`), one line updates instead of every signature.
 
 **Unnecessary `.clone()` on owned data** *(Medium)*
 Distinct from `Rc::clone` (which is cheap and correct). Actual smell locations:
@@ -94,7 +77,7 @@ Every void builtin ends with this. A small helper reduces noise:
 ```rust
 fn undefined() -> SharedDataType { DataType::Undefined.to_shared() }
 ```
-Once `DataType::Undefined` is a unit variant (see above), a `OnceLock` shared constant could avoid re-allocating per call.
+A `OnceLock` shared constant could avoid re-allocating per call.
 
 **Dict key resolution reimplemented inline**
 `interpreter/mod.rs` — `interpret_dictionary_expression` resolves a dict key by re-implementing the same match that `expect_string` already does. Call the existing helper instead.

@@ -1,3 +1,32 @@
+## while loop
+
+`while (condition) { ... }` runs its block repeatedly as long as the condition is true.
+The condition must evaluate to a boolean. `break` exits the loop early; `continue` skips
+to the next iteration.
+
+```dsl
+var i = 0
+while (i < 5) {
+    print(i)
+    i = i + 1
+}
+```
+
+The DSL has no `for` loop yet, so `while` with a counter is the standard way to iterate
+over a list:
+
+```dsl
+var items = ["a", "b", "c"]
+var i = 0
+
+while (i < items.len()) {
+    print(items[i])
+    i = i + 1
+}
+```
+
+---
+
 ## parallel
 
 `parallel(fns)` takes a list of zero-argument functions and runs them concurrently on real

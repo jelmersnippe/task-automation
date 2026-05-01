@@ -2,21 +2,7 @@
 
 ## Current Issues
 
-### 4. ~~`builtin.rs` Will Become a Monolith~~ (Resolved)
-
-The `builtins/` split has been completed. The module now lives at `interpreter/builtin/` with the following layout:
-
-```
-interpreter/builtin/
-    mod.rs          ← BuiltinFn type, ExecutionError, Args validation, BUILTINS registry
-    global.rs       ← print, len, run, register_task, spawn_terminal
-    list.rs         ← list methods: clear, push, pop
-    dictionary.rs   ← dict methods: has, delete, clear
-```
-
----
-
-### 5. No Integration Test Layer (Medium Priority)
+### No Integration Test Layer (Medium Priority)
 
 All tests currently live inside their modules as `#[cfg(test)]` blocks. This is correct for unit tests, but there is no test that exercises the full pipeline: DSL string → tokens → AST → runtime output. These end-to-end tests belong in a `tests/` directory at the crate root, which is Rust's built-in location for integration tests (they compile as a separate crate with access only to the public API).
 
@@ -79,6 +65,4 @@ tests/                          ← crate-level integration tests (full pipeline
 
 ## Suggested Order of Changes
 
-The issues above are not independent — some must come before others to avoid doing work twice.
-
-5. **Add integration tests** — validates that refactors haven't broken anything, gives confidence for the steps below
+1. **Add integration tests** — validates that refactors haven't broken anything, gives confidence for the steps below
