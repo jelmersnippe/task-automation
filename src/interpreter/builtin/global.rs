@@ -27,7 +27,7 @@ fn print(
     let args = Args::new("print", &data);
 
     args.exact(1)?;
-    let arg = args.string(0)?;
+    let arg = args.any(0)?;
 
     println!("{}", arg);
 
@@ -102,35 +102,35 @@ fn parallel(
     args.exact(1)?;
     let list = args.list(0)?;
 
-    let callables = list
-        .values
-        .lock()
-        .unwrap()
+    let locked = list.values.lock().unwrap();
+    let callables = locked
         .iter()
         .enumerate()
         .map(|(i, x)| {
-            expect_callable(x).map_err(|e| ArgumentError::InvalidType {
-                fn_name: String::from("parallel"),
-                index: i,
-                expected_type: DataKind::Callable,
-                found_type: e,
-            })
+            expect_callable(x)
+                .map(|x| x.clone())
+                .map_err(|e| ArgumentError::InvalidType {
+                    fn_name: String::from("parallel"),
+                    index: i,
+                    expected_type: DataKind::Callable,
+                    found_type: e,
+                })
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    let handles: Vec<JoinHandle<Result<(), ExecutionError>>> = callables
-        .iter()
+    let handles: Vec<JoinHandle<Result<SharedDataType, ExecutionError>>> = callables
+        .into_iter()
         .map(|x| {
-            let cloned_context = context.clone();
-            thread::spawn(x.execute(vec![], cloned_context))
+            let mut cloned_context = context.clone();
+            thread::spawn(move || x.execute(vec![], &mut cloned_context))
         })
         .collect();
 
     for handle in handles {
         match handle.join() {
-            Ok(Err(_)) => todo!(),
-            Ok(Ok(_)) => todo!(),
-            Err(_) => todo!(),
+            Err(_) => eprintln!("[parallel] a task panicked"),
+            Ok(Err(e)) => eprintln!("[parallel] task failed: {}", e),
+            Ok(Ok(res)) => eprintln!("[parallel] task succeeded: {}", res),
         }
     }
 

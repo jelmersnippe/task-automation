@@ -94,7 +94,13 @@ pub fn run(args: &[String], runtime_context: &mut RuntimeContext) -> Result<(), 
 
     match task_result {
         Err(err) => println!("Error: {}", err),
-        Ok(task) => _ = task.execute(task_args, runtime_context),
+        Ok(task) => match task.execute(task_args, runtime_context) {
+            Ok(res) => println!(
+                "Task '{}' succeeded with return value '{}'",
+                &run_args.task_name, res
+            ),
+            Err(error) => println!("Task '{}' failed: {}", &run_args.task_name, error),
+        },
     };
 
     Ok(())

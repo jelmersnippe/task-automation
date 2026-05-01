@@ -23,7 +23,7 @@ impl fmt::Display for GitError {
     }
 }
 
-pub trait GitRunner {
+pub trait GitRunner: Send + Sync {
     fn run(&self, args: &[&str], cwd: &str) -> Result<String, GitError>;
 }
 

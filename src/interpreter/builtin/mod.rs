@@ -76,8 +76,10 @@ pub type BuiltinFn = fn(
 ) -> Result<SharedDataType, ExecutionError>;
 pub type Executable = Arc<
     dyn Fn(
-        Option<SharedDataType>,
-        Vec<SharedDataType>,
-        &mut RuntimeContext,
-    ) -> Result<SharedDataType, ExecutionError>,
+            Option<SharedDataType>,
+            Vec<SharedDataType>,
+            &mut RuntimeContext,
+        ) -> Result<SharedDataType, ExecutionError>
+        + Send
+        + Sync,
 >;

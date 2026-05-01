@@ -1,20 +1,27 @@
 fn foreach_worktree(function) {
+    print("fetching")
     git.fetch()
 
+    print("getting worktrees")
     var worktrees = git.worktrees()
 
     var actions = []
     
+    print("worktree count")
     var i = 0
-    while (i < worktrees.len()) {
+    var length = worktrees.len()
+    while (i < length) {
         var worktree = worktrees[i]
 
         print(worktree)
 
-        actions.push(function(worktree["directory"]))
+        actions.push(fn() {function(worktree["directory"])})
 
         i = i + 1
     }
+
+    print("actions")
+    print(actions)
 
     parallel(actions)
 }
