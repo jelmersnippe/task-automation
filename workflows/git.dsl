@@ -4,7 +4,7 @@ fn foreach_worktree(function) {
     var worktrees = git.worktrees()
 
     var i = 0
-    while (i < len(worktrees)) {
+    while (i < worktrees.len()) {
         var worktree = worktrees[i]
 
         print(worktree)

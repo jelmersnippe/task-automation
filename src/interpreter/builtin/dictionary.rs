@@ -1,12 +1,12 @@
 use std::rc::Rc;
 
 use crate::{
+    RuntimeContext,
     interpreter::{
         builtin::{CallInfo, ExecutionError},
         coerce::{self, Args, DataKind},
         datatype::DataType,
     },
-    RuntimeContext,
 };
 
 pub(crate) fn has(
@@ -74,7 +74,7 @@ pub(crate) fn clear(
     let args = Args::new("clear", &data);
     args.exact(0)?;
 
-    let x = receiver.expect("has can only be called on a dictionary");
+    let x = receiver.expect("clear can only be called on a dictionary");
 
     let receiver_dict = coerce::expect_dict(x.as_ref());
 
@@ -85,6 +85,32 @@ pub(crate) fn clear(
         }
         Err(err) => Err(ExecutionError::new(
             CallInfo::new("clear"),
+            format!(
+                "Expected to be called on {:?}, instead found: {:?}",
+                DataKind::Dictionary,
+                err
+            )
+            .as_str(),
+        )),
+    }
+}
+
+pub(crate) fn len(
+    receiver: Option<Rc<DataType>>,
+    data: Vec<Rc<DataType>>,
+    _: &mut RuntimeContext,
+) -> Result<Rc<DataType>, ExecutionError> {
+    let args = Args::new("len", &data);
+    args.exact(0)?;
+
+    let x = receiver.expect("len can only be called on a dictionary");
+
+    let receiver_dict = coerce::expect_dict(x.as_ref());
+
+    match receiver_dict {
+        Ok(dict) => Ok(dict.length()),
+        Err(err) => Err(ExecutionError::new(
+            CallInfo::new("len"),
             format!(
                 "Expected to be called on {:?}, instead found: {:?}",
                 DataKind::Dictionary,

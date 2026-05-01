@@ -90,7 +90,7 @@ fn interprets_dictionary_builtins() {
 
     var d = x.has(\"a\")
     var e = x.has(\"b\")
-    var f = len(x)
+    var f = x.len()
     ";
     let interpreter = run(dsl);
 

@@ -1,12 +1,12 @@
 use std::rc::Rc;
 
 use crate::{
+    RuntimeContext,
     interpreter::{
         builtin::{CallInfo, ExecutionError},
         coerce::{self, Args, DataKind},
         datatype::DataType,
     },
-    RuntimeContext,
 };
 
 pub(crate) fn clear(
@@ -90,6 +90,32 @@ pub(crate) fn pop(
         }
         Err(err) => Err(ExecutionError::new(
             CallInfo::new("pop"),
+            format!(
+                "Expected to be called on {:?}, instead found: {:?}",
+                DataKind::List,
+                err
+            )
+            .as_str(),
+        )),
+    }
+}
+
+pub(crate) fn len(
+    receiver: Option<Rc<DataType>>,
+    data: Vec<Rc<DataType>>,
+    _: &mut RuntimeContext,
+) -> Result<Rc<DataType>, ExecutionError> {
+    let args = Args::new("len", &data);
+    args.exact(0)?;
+
+    let x = receiver.expect("len can only be called on a list");
+
+    let list_receiver = coerce::expect_list(x.as_ref());
+
+    match list_receiver {
+        Ok(list) => Ok(list.length()),
+        Err(err) => Err(ExecutionError::new(
+            CallInfo::new("len"),
             format!(
                 "Expected to be called on {:?}, instead found: {:?}",
                 DataKind::List,

@@ -101,6 +101,7 @@ const DICTIONARY_METHODS: (&str, &[(&str, BuiltinFn)]) = (
         ("has", builtin::dictionary::has),
         ("delete", builtin::dictionary::delete),
         ("clear", builtin::dictionary::clear),
+        ("len", builtin::dictionary::len),
     ],
 );
 
@@ -110,6 +111,7 @@ const LIST_METHODS: (&str, &[(&str, BuiltinFn)]) = (
         ("pop", builtin::list::pop),
         ("push", builtin::list::push),
         ("clear", builtin::list::clear),
+        ("len", builtin::list::len),
     ],
 );
 

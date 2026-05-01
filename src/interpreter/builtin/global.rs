@@ -4,42 +4,20 @@ use std::{
 };
 
 use crate::{
+    RuntimeContext,
     interpreter::{
         builtin::{BuiltinFn, CallInfo, ExecutionError},
         coerce::Args,
         datatype::DataType,
     },
-    RuntimeContext,
 };
 
 pub static BUILTINS: &[(&str, BuiltinFn)] = &[
     ("print", print),
-    ("len", len),
     ("spawn_terminal", spawn_terminal),
     ("register_task", register_task),
     ("run", run),
 ];
-
-fn len(
-    _: Option<Rc<DataType>>,
-    data: Vec<Rc<DataType>>,
-    _: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
-    // TODO: Make methods on data types
-    let [arg] = data.as_slice() else {
-        return Err(ExecutionError::new(
-            CallInfo::new("len"),
-            "Invalid argument count",
-        ));
-    };
-
-    Ok(match arg.as_ref() {
-        DataType::String(string) => Rc::new(DataType::Number(string.len() as f32)),
-        DataType::List(list_declaration) => list_declaration.length(),
-        DataType::Dictionary(dict) => dict.length(),
-        _ => panic!("Can't get length for '{}'", arg),
-    })
-}
 
 fn print(
     _: Option<Rc<DataType>>,

@@ -186,10 +186,15 @@ fn interpret_statement(
                             _ => {}
                         }
                     }
-                    _ => panic!(
-                        "Condition '{:?}' of if statement does not result in a boolean",
-                        &statement.condition
-                    ),
+                    _ => {
+                        return Err(ExecutionError::new(
+                            CallInfo::new(""),
+                            &format!(
+                                "Condition '{:?}' of if statement does not result in a boolean",
+                                &statement.condition
+                            ),
+                        ));
+                    }
                 }
             }
 
@@ -224,10 +229,16 @@ fn interpret_assignment(
                         interpret_expression(scope.clone(), &accessor_expression.key, context)?;
                     dict.set(key, value)
                 }
-                _ => panic!("Invalid use of accessor"),
+                _ => Err(ExecutionError::new(
+                    CallInfo::new(""),
+                    &format!("Invalid use of accessor"),
+                )),
             }
         }
-        _ => panic!("Expression is not assignable"),
+        _ => Err(ExecutionError::new(
+            CallInfo::new(""),
+            &format!("Expression is not assignable"),
+        )),
     }
 }
 
@@ -239,9 +250,9 @@ fn interpret_binary_expression(
     let left = interpret_expression(scope.clone(), &expression.left, context)?;
     let right = interpret_expression(scope.clone(), &expression.right, context)?;
 
-    match left.as_ref() {
+    let result = match left.as_ref() {
         DataType::Number(l) => match right.as_ref() {
-            DataType::Number(r) => Ok(match expression.operator {
+            DataType::Number(r) => match expression.operator {
                 BinaryOperator::Add => DataType::Number(l + r),
                 BinaryOperator::Subtract => DataType::Number(l - r),
                 BinaryOperator::Divide => DataType::Number(l / r),
@@ -252,27 +263,42 @@ fn interpret_binary_expression(
                 BinaryOperator::LessThan => DataType::Boolean(l < r),
                 BinaryOperator::GreaterOrEqual => DataType::Boolean(l >= r),
                 BinaryOperator::LessOrEqual => DataType::Boolean(l <= r),
-                _ => panic!(
-                    "Invalid operation for number binary operation: {} {:?} {}",
-                    l, expression.operator, r
-                ),
-            }),
+                _ => {
+                    return Err(ExecutionError::new(
+                        CallInfo::new(""),
+                        &format!(
+                            "Invalid operation for number binary operation: {} {:?} {}",
+                            l, expression.operator, r
+                        ),
+                    ));
+                }
+            },
             DataType::String(r) => {
                 return match expression.operator {
                     BinaryOperator::Add => Ok(DataType::String(format!("{}{}", l, r))),
-                    _ => panic!(
-                        "Invalid operation for number and string binary operation: {} {:?} {}",
-                        &l, expression.operator, &r
-                    ),
+                    _ => {
+                        return Err(ExecutionError::new(
+                            CallInfo::new(""),
+                            &format!(
+                                "Invalid operation for number and string binary operation: {} {:?} {}",
+                                l, expression.operator, r,
+                            ),
+                        ));
+                    }
                 };
             }
-            _ => panic!(
-                "Left and right types of binary expression '{:?}' don't match",
-                expression
-            ),
+            _ => {
+                return Err(ExecutionError::new(
+                    CallInfo::new(""),
+                    &format!(
+                        "Left and right types of binary expression '{:?}' don't match",
+                        expression
+                    ),
+                ));
+            }
         },
         DataType::String(l) => match right.as_ref() {
-            DataType::String(r) => Ok(match expression.operator {
+            DataType::String(r) => match expression.operator {
                 BinaryOperator::Add => DataType::String(format!("{}{}", l, r)),
                 BinaryOperator::Equal => DataType::Boolean(l == r),
                 BinaryOperator::NotEqual => DataType::Boolean(l != r),
@@ -280,45 +306,78 @@ fn interpret_binary_expression(
                 BinaryOperator::LessThan => DataType::Boolean(l < r),
                 BinaryOperator::GreaterOrEqual => DataType::Boolean(l >= r),
                 BinaryOperator::LessOrEqual => DataType::Boolean(l <= r),
-                _ => panic!(
-                    "Invalid operation for string binary operation: {} {:?} {}",
-                    &l, expression.operator, &r
-                ),
-            }),
-            DataType::Number(r) => Ok(match expression.operator {
+
+                _ => {
+                    return Err(ExecutionError::new(
+                        CallInfo::new(""),
+                        &format!(
+                            "Invalid operation for string binary operation: {} {:?} {}",
+                            &l, expression.operator, &r
+                        ),
+                    ));
+                }
+            },
+            DataType::Number(r) => match expression.operator {
                 BinaryOperator::Add => DataType::String(format!("{}{}", l, r)),
-                _ => panic!(
-                    "Invalid operation for string and number binary operation: {} {:?} {}",
-                    &l, expression.operator, &r
-                ),
-            }),
-            _ => panic!(
-                "Left and right of binary expression '{:?}' don't match",
-                expression
-            ),
+                _ => {
+                    return Err(ExecutionError::new(
+                        CallInfo::new(""),
+                        &format!(
+                            "Invalid operation for number and string binary operation: {} {:?} {}",
+                            l, expression.operator, r
+                        ),
+                    ));
+                }
+            },
+            _ => {
+                return Err(ExecutionError::new(
+                    CallInfo::new(""),
+                    &format!(
+                        "Left and right types of binary expression '{:?}' don't match",
+                        expression
+                    ),
+                ));
+            }
         },
         DataType::Boolean(left_value) => match right.as_ref() {
             DataType::Boolean(right_value) => {
                 let l = *left_value;
                 let r = *right_value;
-                Ok(match expression.operator {
+                match expression.operator {
                     BinaryOperator::Equal => DataType::Boolean(l == r),
                     BinaryOperator::NotEqual => DataType::Boolean(l != r),
                     BinaryOperator::And => DataType::Boolean(l && r),
                     BinaryOperator::Or => DataType::Boolean(l || r),
-                    _ => panic!(
-                        "Invalid operation for boolean binary operation: {} {:?} {}",
-                        l, expression.operator, r
-                    ),
-                })
+                    _ => {
+                        return Err(ExecutionError::new(
+                            CallInfo::new(""),
+                            &format!(
+                                "Invalid operation for boolean binary operation: {} {:?} {}",
+                                l, expression.operator, r,
+                            ),
+                        ));
+                    }
+                }
             }
-            _ => panic!(
-                "Left and right of binary expression '{:?}' don't match",
-                expression
-            ),
+            _ => {
+                return Err(ExecutionError::new(
+                    CallInfo::new(""),
+                    &format!(
+                        "Left and right types of binary expression '{:?}' don't match",
+                        expression
+                    ),
+                ));
+            }
         },
-        _ => panic!("Invalid DataType used for binary expression"),
-    }
+        _ => {
+            return Err(ExecutionError::new(
+                CallInfo::new(""),
+                "Invalid DataType used for binary expression",
+            ));
+        }
+    };
+
+    Ok(result)
 }
 
 fn execute_function(
@@ -403,7 +462,10 @@ pub fn interpret_expression(
                     let args = Args::new("get", &vec![key]);
                     dict.get(&args.string(0)?)
                 }
-                _ => panic!("Can't use accessor on {}", value),
+                _ => Err(ExecutionError::new(
+                    CallInfo::new(""),
+                    &format!("Can't use accessor on {}", value),
+                )),
             }
         }
         ExpressionType::Property(property_expression) => {
@@ -429,7 +491,12 @@ fn interpret_dictionary_expression(
             DataType::Number(x) => keys.push(x.to_string()),
             DataType::String(x) => keys.push(x.clone()),
             DataType::Boolean(x) => keys.push(x.to_string()),
-            _ => panic!("Can only use literals or functions returning literals as dictionary keys"),
+            _ => {
+                return Err(ExecutionError::new(
+                    CallInfo::new(""),
+                    "Can only use literals or functions returning literals as dictionary keys",
+                ));
+            }
         }
     }
 
