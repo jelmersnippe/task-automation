@@ -118,19 +118,22 @@ fn parallel(
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    let handles: Vec<JoinHandle<Result<SharedDataType, ExecutionError>>> = callables
-        .into_iter()
-        .map(|x| {
-            let mut cloned_context = context.clone();
-            thread::spawn(move || x.execute(vec![], &mut cloned_context))
-        })
-        .collect();
+    let (sender, receiver) = std::sync::mpsc::channel();
 
-    for handle in handles {
-        match handle.join() {
-            Err(_) => eprintln!("[parallel] a task panicked"),
-            Ok(Err(e)) => eprintln!("[parallel] task failed: {}", e),
-            Ok(Ok(res)) => eprintln!("[parallel] task succeeded: {}", res),
+    for (i, callable) in callables.into_iter().enumerate() {
+        let mut cloned_context = context.clone();
+        let tx = sender.clone();
+        thread::spawn(move || {
+            let result = callable.execute(vec![], &mut cloned_context);
+            tx.send((i, result)).unwrap();
+        });
+    }
+    drop(sender);
+
+    for (i, result) in receiver {
+        match result {
+            Err(e) => eprintln!("[parallel-{}] task failed: {}", i, e),
+            Ok(res) => println!("[parallel-{}] task succeeded: {}", i, res),
         }
     }
 
