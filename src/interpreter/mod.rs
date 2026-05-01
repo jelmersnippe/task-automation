@@ -54,9 +54,7 @@ impl Interpreter {
             )?;
         }
 
-        println!("Hello!");
         for module in &context.module_registry.modules {
-            println!("Adding module {} ", &module.name);
             scope.set_variable(
                 module.name.clone(),
                 (DataType::Module(module.clone())).to_shared(),

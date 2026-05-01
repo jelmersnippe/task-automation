@@ -1,12 +1,12 @@
 use std::thread::{self};
 
 use crate::{
+    RuntimeContext,
     interpreter::{
         builtin::{BuiltinFn, ExecutionError},
-        coerce::{expect_callable, Args, ArgumentError, DataKind},
+        coerce::{Args, ArgumentError, DataKind, expect_callable},
         datatype::{DataType, SharedDataType},
     },
-    RuntimeContext,
 };
 
 pub static BUILTINS: &[(&str, BuiltinFn)] = &[
@@ -56,9 +56,6 @@ fn parallel(
     args.exact(1)?;
     let list = args.list(0)?;
 
-    std::panic::set_hook(Box::new(|info| {
-        println!("Thread panicked: {}", info);
-    }));
     let locked = list.values.lock().unwrap();
     let callables = locked
         .iter()
