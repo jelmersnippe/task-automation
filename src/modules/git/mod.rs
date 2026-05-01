@@ -5,7 +5,7 @@ use crate::{
     fs::get_absolute_path,
     interpreter::{
         builtin::{CallInfo, ExecutionError},
-        coerce::Args,
+        coerce::{Args, OptionalValue},
         datatype::{DataType, SharedDataType},
         dictionary::DictionaryDeclaration,
         list::ListDeclaration,
@@ -205,7 +205,7 @@ fn push(
 
     let mut git_args = vec!["push"];
 
-    match args.optional_string(0)? {
+    match args.string(0).optional()? {
         // TODO: String literal helper
         Some(arg) => {
             if arg == "--force" {

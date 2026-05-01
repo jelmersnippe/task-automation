@@ -104,6 +104,11 @@ pub enum ArgumentError {
         expected_type: DataKind,
         found_type: DataKind,
     },
+    MissingArgument {
+        fn_name: String,
+        index: usize,
+        expected_type: DataKind,
+    },
     MissingKey {
         fn_name: String,
         key: String,
@@ -149,6 +154,15 @@ impl fmt::Display for ArgumentError {
                 "Argument type error. {} expected {:?} as argument {}, found: {:?}",
                 fn_name, expected_type, index, found_type
             ),
+            ArgumentError::MissingArgument {
+                fn_name,
+                index,
+                expected_type,
+            } => write!(
+                f,
+                "Argument error. {} expected {:?} as argument {}, but it was not provided",
+                fn_name, expected_type, index
+            ),
             ArgumentError::MissingKey {
                 fn_name,
                 key,
@@ -180,6 +194,7 @@ impl<T> OptionalValue<T> for Result<T, ArgumentError> {
     fn optional(self) -> Result<Option<T>, ArgumentError> {
         match self {
             Ok(v) => Ok(Some(v)),
+            Err(ArgumentError::MissingArgument { .. }) => Ok(None),
             Err(ArgumentError::MissingKey { .. }) => Ok(None),
             Err(e) => Err(e),
         }
@@ -225,29 +240,14 @@ impl Args {
         Ok(())
     }
 
-    pub fn optional_string(&self, index: usize) -> Result<Option<String>, ArgumentError> {
-        self.arguments
-            .get(index)
-            .map(|data| {
-                expect_string(data).map_err(|found| ArgumentError::InvalidType {
-                    fn_name: self.fn_name.clone(),
-                    index,
-                    expected_type: DataKind::String,
-                    found_type: found,
-                })
-            })
-            .transpose()
-    }
-
     pub fn string(&self, index: usize) -> Result<String, ArgumentError> {
         let value = self
             .arguments
             .get(index)
-            .ok_or(ArgumentError::InvalidType {
+            .ok_or(ArgumentError::MissingArgument {
                 fn_name: self.fn_name.clone(),
                 index,
                 expected_type: DataKind::String,
-                found_type: DataKind::Undefined,
             })?;
         expect_string(value).map_err(|found| ArgumentError::InvalidType {
             fn_name: self.fn_name.clone(),
@@ -260,11 +260,10 @@ impl Args {
         let value = self
             .arguments
             .get(index)
-            .ok_or(ArgumentError::InvalidType {
+            .ok_or(ArgumentError::MissingArgument {
                 fn_name: self.fn_name.clone(),
                 index,
                 expected_type: DataKind::Int,
-                found_type: DataKind::Undefined,
             })?;
         expect_int(value).map_err(|found| ArgumentError::InvalidType {
             fn_name: self.fn_name.clone(),
@@ -277,11 +276,10 @@ impl Args {
         let value = self
             .arguments
             .get(index)
-            .ok_or(ArgumentError::InvalidType {
+            .ok_or(ArgumentError::MissingArgument {
                 fn_name: self.fn_name.clone(),
                 index,
                 expected_type: DataKind::Boolean,
-                found_type: DataKind::Undefined,
             })?;
         expect_bool(value).map_err(|found| ArgumentError::InvalidType {
             fn_name: self.fn_name.clone(),
@@ -294,11 +292,10 @@ impl Args {
         let value = self
             .arguments
             .get(index)
-            .ok_or(ArgumentError::InvalidType {
+            .ok_or(ArgumentError::MissingArgument {
                 fn_name: self.fn_name.clone(),
                 index,
                 expected_type: DataKind::List,
-                found_type: DataKind::Undefined,
             })?;
         expect_list(value).map_err(|found| ArgumentError::InvalidType {
             fn_name: self.fn_name.clone(),
@@ -311,11 +308,10 @@ impl Args {
         let value = self
             .arguments
             .get(index)
-            .ok_or(ArgumentError::InvalidType {
+            .ok_or(ArgumentError::MissingArgument {
                 fn_name: self.fn_name.clone(),
                 index,
                 expected_type: DataKind::Dictionary,
-                found_type: DataKind::Undefined,
             })?;
         expect_dict(value).map_err(|found| ArgumentError::InvalidType {
             fn_name: self.fn_name.clone(),
@@ -328,11 +324,10 @@ impl Args {
         let value = self
             .arguments
             .get(index)
-            .ok_or(ArgumentError::InvalidType {
+            .ok_or(ArgumentError::MissingArgument {
                 fn_name: self.fn_name.clone(),
                 index,
                 expected_type: DataKind::Callable,
-                found_type: DataKind::Undefined,
             })?;
         expect_callable(value).map_err(|found| ArgumentError::InvalidType {
             fn_name: self.fn_name.clone(),
@@ -342,13 +337,14 @@ impl Args {
         })
     }
     pub fn any(&self, index: usize) -> Result<&SharedDataType, ArgumentError> {
-        self.arguments.get(index).ok_or(ArgumentError::InvalidType {
-            // TODO: Fix proper error type here. Index accessor gone wrong
-            fn_name: self.fn_name.clone(),
-            index,
-            expected_type: DataKind::Callable,
-            found_type: DataKind::Undefined,
-        })
+        self.arguments
+            .get(index)
+            .ok_or(ArgumentError::MissingArgument {
+                // TODO: Fix proper error type here. Index accessor gone wrong
+                fn_name: self.fn_name.clone(),
+                index,
+                expected_type: DataKind::Callable,
+            })
     }
 }
 
