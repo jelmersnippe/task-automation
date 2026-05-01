@@ -1,13 +1,13 @@
 use std::{fmt, rc::Rc, sync::Arc};
 
 use crate::{
+    RuntimeContext,
     interpreter::{
-        builtin::{self, BuiltinFn, Executable, ExecutionError},
+        builtin::{self, BuiltinFn, CallInfo, Executable, ExecutionError},
         dictionary::DictionaryDeclaration,
         list::ListDeclaration,
     },
     modules::Module,
-    RuntimeContext,
 };
 
 #[derive(Debug, Clone)]
@@ -95,43 +95,66 @@ impl PartialEq for DataType {
     }
 }
 
-impl DataType {
-    pub(crate) fn get_method(self: &Rc<DataType>, name: &str) -> Rc<DataType> {
-        Rc::new(DataType::Function(match self.as_ref() {
-            DataType::Dictionary(_) => match name {
-                "has" => Callable::new(Some(String::from("has")), builtin::dictionary::has)
-                    .bind(self.clone()),
-                "delete" => {
-                    Callable::new(Some(String::from("delete")), builtin::dictionary::delete)
-                        .bind(self.clone())
-                }
-                "clear" => Callable::new(Some(String::from("clear")), builtin::dictionary::clear)
-                    .bind(self.clone()),
-                _ => panic!("Function with name '{}' not found on dict", name),
-            },
-            DataType::List(_) => match name {
-                "pop" => {
-                    Callable::new(Some(String::from("pop")), builtin::list::pop).bind(self.clone())
-                }
-                "push" => Callable::new(Some(String::from("push")), builtin::list::push)
-                    .bind(self.clone()),
-                "clear" => Callable::new(Some(String::from("clear")), builtin::list::clear)
-                    .bind(self.clone()),
-                _ => panic!("Function with name '{}' not found on list", name),
-            },
-            DataType::Module(module) => {
-                let module_fn = module.functions.get(name);
+const DICTIONARY_METHODS: (&str, &[(&str, BuiltinFn)]) = (
+    "Dictionary",
+    &[
+        ("has", builtin::dictionary::has),
+        ("delete", builtin::dictionary::delete),
+        ("clear", builtin::dictionary::clear),
+    ],
+);
 
-                match module_fn {
-                    Some(function) => function.clone(),
-                    _ => panic!(
-                        "Function with name '{}' not found on module {}",
-                        name, module.name
-                    ),
-                }
+const LIST_METHODS: (&str, &[(&str, BuiltinFn)]) = (
+    "List",
+    &[
+        ("pop", builtin::list::pop),
+        ("push", builtin::list::push),
+        ("clear", builtin::list::clear),
+    ],
+);
+
+impl DataType {
+    pub(crate) fn get_method(
+        self: &Rc<DataType>,
+        name: &str,
+    ) -> Result<Rc<DataType>, ExecutionError> {
+        let call_info = CallInfo::new(name);
+
+        let (type_name, methods) = match &self.as_ref() {
+            DataType::List(_) => LIST_METHODS,
+            DataType::Dictionary(_) => DICTIONARY_METHODS,
+            DataType::Module(module) => {
+                let module_fn = module.functions.get(name).ok_or_else(|| {
+                    return ExecutionError::new(
+                        call_info,
+                        &format!("Method '{}' not found for module '{}'", &name, &module.name),
+                    );
+                })?;
+
+                return Ok(Rc::new(DataType::Function(module_fn.clone())));
             }
-            _ => panic!("No methods available on {}", self),
-        }))
+            _ => {
+                return Err(ExecutionError::new(
+                    call_info,
+                    &format!("No methods found for '{}'", &self),
+                ));
+            }
+        };
+
+        let function = methods
+            .iter()
+            .find(|(method_name, _)| *method_name == name)
+            .map(|(_, function)| {
+                Callable::new(Some(name.to_string()), *function).bind(self.clone())
+            })
+            .ok_or_else(|| {
+                return ExecutionError::new(
+                    call_info,
+                    &format!("Method '{}' not found on '{}'", name, type_name),
+                );
+            })?;
+
+        Ok(Rc::new(DataType::Function(function)))
     }
 }
 

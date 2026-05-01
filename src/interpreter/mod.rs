@@ -9,8 +9,9 @@ pub(crate) mod scope;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
+    RuntimeContext,
     interpreter::{
-        builtin::{global::BUILTINS, CallInfo, ExecutionError},
+        builtin::{CallInfo, ExecutionError, global::BUILTINS},
         coerce::Args,
         datatype::{Callable, DataType},
         dictionary::DictionaryDeclaration,
@@ -25,7 +26,6 @@ use crate::{
         },
         statements::{AssignmentStatement, ExpressionStatement, StatementType},
     },
-    RuntimeContext,
 };
 
 #[cfg(test)]
@@ -127,7 +127,7 @@ fn interpret_statement(
             let condition_result =
                 interpret_expression(scope.clone(), &statement.condition, context)?;
 
-            match *condition_result {
+            match condition_result.as_ref() {
                 // TODO: is_truthy helper instead of strict boolean check
                 DataType::Boolean(should_execute) => {
                     if !should_execute {
@@ -141,10 +141,13 @@ fn interpret_statement(
                         context,
                     )
                 }
-                _ => panic!(
-                    "Condition '{:?}' of if statement does not result in a boolean",
-                    &statement.condition
-                ),
+                _ => Err(ExecutionError::new(
+                    CallInfo::new(""),
+                    &format!(
+                        "Condition '{:?}' of if statement does not result in a boolean",
+                        &statement.condition
+                    ),
+                )),
             }
         }
         StatementType::Expression(statement) => match statement {
@@ -407,7 +410,7 @@ pub fn interpret_expression(
             let value = interpret_expression(scope, &property_expression.value, context)?;
             let property = property_expression.key.name.clone();
 
-            Ok(value.get_method(&property))
+            value.get_method(&property)
         }
     }
 }
@@ -466,10 +469,8 @@ fn execute_statements(
     statements: Vec<&StatementType>,
     context: &mut RuntimeContext,
 ) -> Result<StatementResult, ExecutionError> {
-    let mut executed_statements: Vec<StatementType> = vec![];
     for x in statements {
         let statement_result = interpret_statement(scope.clone(), x, context)?;
-        executed_statements.push(x.clone());
 
         match statement_result {
             StatementResult::Return(_) => {

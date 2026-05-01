@@ -47,6 +47,9 @@ fn main() -> Result<(), RuntimeError> {
             &std::env::args().collect::<Vec<String>>()[2..],
             &mut runtime_context,
         ),
-        _ => panic!("Invalid argument supplied: '{}'. Expect repl or run", arg),
+        _ => Err(RuntimeError::new(&format!(
+            "Invalid argument supplied: '{}'. Expect repl or run",
+            arg
+        ))),
     }
 }

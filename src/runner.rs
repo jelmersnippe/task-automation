@@ -17,6 +17,14 @@ pub struct RuntimeError {
     reason: String,
 }
 
+impl RuntimeError {
+    pub fn new(reason: &str) -> Self {
+        Self {
+            reason: reason.to_string(),
+        }
+    }
+}
+
 impl From<ExecutionError> for RuntimeError {
     fn from(value: ExecutionError) -> Self {
         Self {
