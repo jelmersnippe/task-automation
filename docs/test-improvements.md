@@ -146,6 +146,17 @@ var y = x
 // expect y == 5
 ```
 
+**Comparisons involving method call results — known broken**
+Using a method call return value as an operand in a binary comparison does not work correctly. Confirmed broken: `i < array.len()`. This likely affects any expression where one side of a comparison is a method call rather than a plain variable or literal. Needs investigation and a full test sweep across all comparison operators and operand combinations:
+```dsl
+var arr = [1, 2, 3]
+var i = 0
+var result = i < arr.len()   // expect true — known broken
+var result = arr.len() == 3  // expect true
+var result = arr.len() > 1   // expect true
+var result = 3 == arr.len()  // expect true (method call on right side)
+```
+
 **String comparisons**
 The interpreter handles `==`, `!=`, `>`, `<`, `>=`, `<=` for strings but none are tested:
 ```dsl
