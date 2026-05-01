@@ -12,11 +12,9 @@
 
 - [ ] Replace `f32` with `f64` for number storage to reduce precision loss, or introduce separate `Int` and `Float` variants in `DataType` for more principled numeric handling.
 - [x] Replace `panic!` in the interpreter core with `Result<T, E>` — `ExecutionError`, `ArgumentError`, and `RuntimeError` types are defined with `From` conversions enabling `?` propagation throughout the interpreter and runner layers.
-- [ ] Convert `receiver.expect()` calls in `interpreter/builtin/list.rs` (lines 20, 50, 79, 111) and `interpreter/builtin/dictionary.rs` (lines 20, 47, 77, 106) to return `ExecutionError` instead of panicking.
 - [ ] Convert user-defined function arity mismatch in `interpreter/function.rs:75` from `panic!` to `ExecutionError` — builtins already return `Err` for wrong argument count via `Args::exact()`, this should match.
 - [ ] Propagate task execution errors in `runner.rs` — `_ = task.execute(...)` at line 94 silently discards the `Result`; task errors are never surfaced to the caller.
 - [ ] Extend `Result` handling to the parser layer — `Parser::parse()` still returns `Vec<StatementType>` with all syntax errors as `panic!`. Introduce a `ParseError` type and change the return to `Result<Vec<StatementType>, ParseError>`. Parse errors should collect multiple issues before reporting and include source location.
-- [ ] Extend `Result` handling to the git module — `run_git_command` returns `Result<String, GitError>` but every call site calls `.unwrap()`. Add `From<GitError> for ExecutionError` and replace all `.unwrap()` calls with `?` propagation.
 - [x] Return an error instead of `DataType::Undefined()` from `scope.get_variable` when a variable doesn't exist — silent undefined values cause confusing panics far from the actual mistake.
 - [ ] Remove dead code in `lexer/mod.rs` — the string-accumulation guard at the top of the main loop makes a second identical check further down unreachable.
 - [ ] Document or rewrite `insert_new_right` in `parser/expressions.rs` — the custom iterative precedence algorithm is undocumented and hard to reason about; inline comments explaining the algorithm are the minimum, a rewrite to Pratt parsing is preferred (see Architecture section).
@@ -27,7 +25,6 @@
 - [x] **[High]** Move `Parameters::resolve()` out of `parser/expressions.rs` and into the interpreter — the parser currently imports and calls `interpret_expression`, which is a circular dependency and a layering violation. The parser should produce unevaluated AST nodes only; argument evaluation belongs in the interpreter when a call expression is executed.
 - [x] **[High]** Fix closure semantics in `interpreter/function.rs` — functions currently receive the call-site scope instead of the definition-time scope, meaning they don't truly close over their defining environment. Capture the defining scope in `FunctionDeclaration` as an `Rc<RefCell<Scope>>` and use it as the parent when creating the execution scope.
 - [ ] Add source location (`line`, `column`) to `Token` in `lexer/mod.rs` and thread it through to error messages — do this early, retrofitting it later is significantly harder.
-- [ ] Change `DataType::get_method` return type from a panic to `Result<Rc<DataType>, ExecutionError>` — panicking on non-Dictionary types will become increasingly problematic as more types are added.
 - [ ] Rewrite binary expression parsing in `parser/expressions.rs` as a Pratt parser — the current `insert_new_right` approach is non-standard and difficult to extend. A Pratt parser uses a single recursive `parse_expression(min_precedence)` function and is the conventional approach for recursive-descent parsers.
 - [ ] Separate parse errors from runtime errors — parse errors should ideally collect multiple issues before reporting; runtime errors should include source location and allow the REPL to continue.
 
@@ -43,12 +40,6 @@
 
 - [ ] Allow `print` to accept multiple arguments — currently limited to one, forcing string concatenation for multi-value output.
 - [ ] Add a `typeof(x)` builtin returning the type name as a string — enables defensive scripting and type checking in DSL code.
-
-## Task Registry (Core Goal)
-
-- [x] Design and implement a `register_task(name, fn)` builtin that stores named tasks.
-- [x] Implement a `run(name)` builtin that executes a registered task by name.
-- [ ] Consider task metadata support (description, dependencies) as a follow-up.
 
 ## Platform / Environment
 

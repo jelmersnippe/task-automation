@@ -81,6 +81,8 @@ Source spans are added to `Token` in the lexer, then embedded into AST nodes as 
 
 ## Phase 4 — `ExecutionError`: Add Optional `SourceSpan`
 
+> **Prerequisite:** This phase depends on `improving-execution-error.md` being completed first. Adding `span` to a stringly-typed struct is possible but wasted effort — wait until `ExecutionError` is a proper enum before doing this.
+
 **Goal:** Interpreter errors carry source location when available.
 
 - Add `span: Option<SourceSpan>` to `ExecutionError`
