@@ -9,63 +9,24 @@ Three phases remain, all independent of each other.
 
 ---
 
-## Phase 1 — macOS / iTerm2 terminal spawning
+## Phase 1 — Shell module
 
-**Goal**: Replace the hardcoded `wt.exe` (Windows Terminal/WSL) logic in `spawn_terminal`
-with cross-platform support. macOS target is iTerm2 via `osascript`.
+Full design and implementation steps are in `shell-module-plan.md`.
 
-### Design
-
-```dsl
-spawn_terminal("/path/to/project")
-spawn_terminal("/path/to/project", "cargo build && nvim .")
-```
-
-macOS spawns an iTerm2 window using AppleScript:
-
-```applescript
-tell application "iTerm2"
-  create window with default profile
-  tell current session of current window
-    write text "cd /path && cmd"
-  end tell
-end tell
-```
-
-### Steps
-
-| Step | Description | Files |
-|------|-------------|-------|
-| 1a | Extract terminal spawning into `src/modules/terminal/mod.rs` with an OS-specific backend enum | new `src/modules/terminal/mod.rs` |
-| 1b | macOS backend: build AppleScript string, run via `osascript -e "..."` | `src/modules/terminal/mod.rs` |
-| 1c | Windows backend: existing `wt.exe wsl bash` logic moved here | `src/modules/terminal/mod.rs` |
-| 1d | OS detection via `std::env::consts::OS` at runtime | `src/modules/terminal/mod.rs` |
-| 1e | Update `spawn_terminal` in `global.rs` to delegate to the terminal module | `src/interpreter/builtin/global.rs` |
+This replaces the global `spawn_terminal` builtin with a `shell` module exposing `shell.open(path, cmd?)` and `shell.run(path, cmd)`, with macOS (iTerm2 via `osascript`) and Windows (`wt.exe wsl bash`) backends.
 
 ---
 
 ## Phase 2 — tmux module
 
-**Goal**: A `tmux` DSL module for programmatic terminal session/window/pane layout.
+Full API design, philosophy, usage examples, and implementation notes are in `tmux-module-plan.md`.
 
-### Design
-
-```dsl
-tmux.new_session("work")
-tmux.new_window("editor")
-tmux.split_pane("horizontal")
-tmux.send_keys("nvim .")
-tmux.select_pane(0)
-tmux.set_layout("even-horizontal")
-tmux.attach()
-```
-
-### Steps
+Implementation steps:
 
 | Step | Description | Files |
 |------|-------------|-------|
 | 2a | Create `src/modules/tmux/mod.rs` following the git module pattern | new `src/modules/tmux/mod.rs` |
-| 2b | Implement functions: `new_session`, `new_window`, `split_pane(direction)`, `send_keys(text)`, `select_pane(index)`, `set_layout(layout)`, `attach` | `src/modules/tmux/mod.rs` |
+| 2b | Implement the API defined in `tmux-module-plan.md` | `src/modules/tmux/mod.rs` |
 | 2c | All functions execute `tmux <subcommand>` via `std::process::Command` | `src/modules/tmux/mod.rs` |
 | 2d | Register module in `main.rs` | `src/main.rs`, `src/modules/mod.rs` |
 
