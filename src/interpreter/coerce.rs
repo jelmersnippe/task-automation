@@ -1,7 +1,7 @@
-use std::{fmt, rc::Rc};
+use std::fmt;
 
 use crate::interpreter::{
-    datatype::{Callable, DataType},
+    datatype::{Callable, DataType, SharedDataType},
     dictionary::DictionaryDeclaration,
     list::ListDeclaration,
 };
@@ -144,11 +144,11 @@ impl fmt::Display for ArgumentError {
 
 pub struct Args {
     fn_name: String,
-    pub arguments: Vec<Rc<DataType>>,
+    pub arguments: Vec<SharedDataType>,
 }
 
 impl Args {
-    pub fn new(fn_name: &str, arguments: &Vec<Rc<DataType>>) -> Self {
+    pub fn new(fn_name: &str, arguments: &Vec<SharedDataType>) -> Self {
         Self {
             fn_name: fn_name.to_string(),
             arguments: arguments.iter().cloned().collect(),
@@ -297,7 +297,7 @@ impl Args {
             found_type: found,
         })
     }
-    pub fn any(&self, index: usize) -> Result<&Rc<DataType>, ArgumentError> {
+    pub fn any(&self, index: usize) -> Result<&SharedDataType, ArgumentError> {
         self.arguments.get(index).ok_or(ArgumentError::InvalidType {
             // TODO: Fix proper error type here. Index accessor gone wrong
             fn_name: self.fn_name.clone(),

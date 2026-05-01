@@ -1,14 +1,20 @@
-use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
+use std::{
+    collections::HashMap,
+    fmt,
+    sync::{Arc, Mutex},
+};
 
 use crate::interpreter::{
     builtin::{CallInfo, ExecutionError},
-    datatype::DataType,
+    datatype::SharedDataType,
 };
 
-#[derive(Debug, PartialEq)]
+pub type SharedScope = Arc<Mutex<Scope>>;
+
+#[derive(Debug)]
 pub struct Scope {
-    parent: Option<Rc<RefCell<Scope>>>,
-    variables: HashMap<String, Rc<DataType>>,
+    parent: Option<SharedScope>,
+    variables: HashMap<String, SharedDataType>,
 }
 
 impl fmt::Display for Scope {
@@ -23,20 +29,20 @@ impl fmt::Display for Scope {
 }
 
 impl Scope {
-    pub fn new(parent: Option<Rc<RefCell<Scope>>>) -> Self {
+    pub fn new(parent: Option<SharedScope>) -> Self {
         Self {
             parent: parent,
             variables: Default::default(),
         }
     }
 
-    pub fn get_variable(&self, identifier: &String) -> Result<Rc<DataType>, ExecutionError> {
+    pub fn get_variable(&self, identifier: &String) -> Result<SharedDataType, ExecutionError> {
         if let Some(var) = self.variables.get(identifier) {
             return Ok(var.clone());
         }
 
         match &self.parent {
-            Some(parent) => parent.borrow().get_variable(identifier),
+            Some(parent) => parent.lock().unwrap().get_variable(identifier),
             None => Err(ExecutionError::new(
                 CallInfo::new(""),
                 format!("Variable '{}' is not declared", identifier).as_str(),
@@ -47,7 +53,7 @@ impl Scope {
     pub fn set_variable(
         &mut self,
         identifier: String,
-        data: Rc<DataType>,
+        data: SharedDataType,
     ) -> Result<(), ExecutionError> {
         if self.variables.contains_key(&identifier) {
             return Err(ExecutionError::new(
@@ -63,11 +69,11 @@ impl Scope {
     pub fn update_variable(
         &mut self,
         identifier: &String,
-        data: Rc<DataType>,
+        data: SharedDataType,
     ) -> Result<(), ExecutionError> {
         if !self.variables.contains_key(identifier) {
             match &self.parent {
-                Some(parent) => parent.borrow_mut().update_variable(identifier, data)?,
+                Some(parent) => parent.lock().unwrap().update_variable(identifier, data)?,
                 None => {
                     return Err(ExecutionError::new(
                         CallInfo::new(""),

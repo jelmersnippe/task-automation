@@ -2,10 +2,9 @@ mod dictionary;
 mod list;
 mod r#while;
 
-use std::rc::Rc;
-
 use crate::{
-    interpreter::{datatype::DataType, function::FunctionDeclaration, Interpreter},
+    RuntimeContext,
+    interpreter::{Interpreter, datatype::DataType, function::FunctionDeclaration},
     parser::{
         expressions::{
             BinaryOperationExpression, BinaryOperator, ExpressionType, IdentifierExpression,
@@ -13,7 +12,6 @@ use crate::{
         statements::StatementType,
     },
     runner::interpret,
-    RuntimeContext,
 };
 
 pub fn run(dsl: &'static str) -> Interpreter {
@@ -59,10 +57,11 @@ fn interprets_scoped_variable_rebinding() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::Number(2.0))
+        (DataType::Number(2.0)).to_shared()
     );
 }
 
@@ -81,18 +80,20 @@ fn interprets_variable_rebinding() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::Number(3.0))
+        (DataType::Number(3.0)).to_shared()
     );
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("y"))
             .unwrap(),
-        Rc::new(DataType::Number(5.0))
+        (DataType::Number(5.0)).to_shared()
     );
 }
 
@@ -212,10 +213,11 @@ fn interprets_if_scoped_variables() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::String(String::from("outer")))
+        (DataType::String(String::from("outer"))).to_shared()
     );
 }
 
@@ -228,10 +230,11 @@ fn interprets_function_call_inline() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::Number(3.0))
+        (DataType::Number(3.0)).to_shared()
     );
 }
 
@@ -253,18 +256,20 @@ fn interprets_function_call_with_return_inside_if() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::Number(1.0))
+        (DataType::Number(1.0)).to_shared()
     );
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("y"))
             .unwrap(),
-        Rc::new(DataType::Number(0.0))
+        (DataType::Number(0.0)).to_shared()
     );
 }
 
@@ -280,10 +285,11 @@ fn interprets_function_call_with_arguments() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::Number(1.0))
+        (DataType::Number(1.0)).to_shared()
     );
 }
 
@@ -299,10 +305,11 @@ fn interprets_function_call() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::Number(3.0))
+        (DataType::Number(3.0)).to_shared()
     );
 }
 
@@ -315,10 +322,11 @@ fn interprets_function_declaration_with_return() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("foo"))
             .unwrap(),
-        Rc::new(DataType::Function(
+        (DataType::Function(
             FunctionDeclaration::new(
                 Some(String::from("foo")),
                 vec![String::from("bar"), String::from("baz")],
@@ -337,6 +345,7 @@ fn interprets_function_declaration_with_return() {
             )
             .into_callable()
         ))
+        .to_shared()
     );
 }
 
@@ -347,10 +356,11 @@ fn interprets_function_declaration_with_arguments() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("foo"))
             .unwrap(),
-        Rc::new(DataType::Function(
+        (DataType::Function(
             FunctionDeclaration::new(
                 Some(String::from("foo")),
                 vec![String::from("bar"), String::from("baz")],
@@ -359,6 +369,7 @@ fn interprets_function_declaration_with_arguments() {
             )
             .into_callable()
         ))
+        .to_shared()
     );
 }
 
@@ -369,13 +380,15 @@ fn interprets_function_declaration_as_variable() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("foo"))
             .unwrap(),
-        Rc::new(DataType::Function(
+        (DataType::Function(
             FunctionDeclaration::new(None, vec![], vec![], interpreter.scope.clone())
                 .into_callable()
         ))
+        .to_shared()
     );
 }
 
@@ -386,10 +399,11 @@ fn interprets_function_declaration() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("foo"))
             .unwrap(),
-        Rc::new(DataType::Function(
+        (DataType::Function(
             FunctionDeclaration::new(
                 Some(String::from("foo")),
                 vec![],
@@ -398,6 +412,7 @@ fn interprets_function_declaration() {
             )
             .into_callable()
         ))
+        .to_shared()
     );
 }
 
@@ -411,13 +426,15 @@ fn interprets_variable_assignment_function() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::Function(
+        (DataType::Function(
             FunctionDeclaration::new(None, vec![], vec![], interpreter.scope.clone())
                 .into_callable()
         ))
+        .to_shared()
     );
 }
 
@@ -431,10 +448,11 @@ fn interprets_variable_assignment() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::Number(5.0))
+        (DataType::Number(5.0)).to_shared()
     );
 }
 
@@ -445,10 +463,11 @@ fn interprets_variable_declaration_number() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::Number(3.0))
+        (DataType::Number(3.0)).to_shared()
     );
 }
 
@@ -459,10 +478,11 @@ fn interprets_variable_declaration_string() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::String(String::from("Hello")))
+        (DataType::String(String::from("Hello"))).to_shared()
     );
 }
 
@@ -473,10 +493,11 @@ fn interprets_variable_declaration_bool() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::Boolean(true))
+        (DataType::Boolean(true)).to_shared()
     );
 }
 
@@ -494,10 +515,11 @@ fn interprets_variable_declaration_scoped_2() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::Boolean(true))
+        (DataType::Boolean(true)).to_shared()
     );
 }
 
@@ -515,10 +537,11 @@ fn interprets_variable_declaration_scoped() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::Boolean(true))
+        (DataType::Boolean(true)).to_shared()
     );
 }
 

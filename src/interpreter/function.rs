@@ -1,15 +1,18 @@
-use std::{cell::RefCell, fmt, rc::Rc, sync::Arc};
+use std::{
+    fmt,
+    sync::{Arc, Mutex},
+};
 
 use crate::{
+    RuntimeContext,
     interpreter::{
-        builtin::{CallInfo, ExecutionError},
-        datatype::{Callable, DataType},
-        execute_statements,
-        scope::Scope,
         StatementResult,
+        builtin::{CallInfo, ExecutionError},
+        datatype::{Callable, DataType, SharedDataType},
+        execute_statements,
+        scope::{Scope, SharedScope},
     },
     parser::statements::StatementType,
-    RuntimeContext,
 };
 
 #[derive(Debug, Clone)]
@@ -17,7 +20,7 @@ pub struct FunctionDeclaration {
     name: Option<String>,
     arguments: Vec<String>,
     body: Vec<StatementType>,
-    scope: Rc<RefCell<Scope>>,
+    scope: SharedScope,
 }
 
 impl PartialEq for FunctionDeclaration {
@@ -53,7 +56,7 @@ impl FunctionDeclaration {
         name: Option<String>,
         arguments: Vec<String>,
         body: Vec<StatementType>,
-        scope: Rc<RefCell<Scope>>,
+        scope: SharedScope,
     ) -> Self {
         Self {
             name,
@@ -65,9 +68,9 @@ impl FunctionDeclaration {
 
     pub fn execute(
         &self,
-        parameters: Vec<Rc<DataType>>,
+        parameters: Vec<SharedDataType>,
         context: &mut RuntimeContext,
-    ) -> Result<Rc<DataType>, ExecutionError> {
+    ) -> Result<SharedDataType, ExecutionError> {
         let expected_arguments = self.arguments.len();
         let received_arguments = parameters.len();
 
@@ -78,12 +81,13 @@ impl FunctionDeclaration {
             );
         }
 
-        let function_scope = Rc::new(RefCell::new(Scope::new(Some(self.scope.clone()))));
+        let function_scope = Arc::new(Mutex::new(Scope::new(Some(self.scope.clone()))));
 
         // Set arguments as available variables
         for (identifier, value) in self.arguments.iter().zip(parameters) {
             function_scope
-                .borrow_mut()
+                .lock()
+                .unwrap()
                 .set_variable(identifier.clone(), value)?;
         }
 
@@ -92,7 +96,7 @@ impl FunctionDeclaration {
 
         match return_value {
             StatementResult::Return(data_type) => Ok(data_type),
-            StatementResult::Void => Ok(Rc::new(DataType::Undefined)),
+            StatementResult::Void => Ok((DataType::Undefined).to_shared()),
             // Break and Continue are disallowed in Parser. This is just safety
             StatementResult::Break => Err(ExecutionError::new(
                 CallInfo::new(if let Some(name) = &self.name {

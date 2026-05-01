@@ -1,12 +1,12 @@
 use regex::Regex;
-use std::{collections::HashMap, fs::canonicalize, path::PathBuf, rc::Rc, sync::LazyLock};
+use std::{collections::HashMap, fs::canonicalize, path::PathBuf, sync::LazyLock};
 
 use crate::{
     RuntimeContext,
     interpreter::{
         builtin::{CallInfo, ExecutionError},
         coerce::Args,
-        datatype::DataType,
+        datatype::{DataType, SharedDataType},
         dictionary::DictionaryDeclaration,
         list::ListDeclaration,
     },
@@ -32,10 +32,10 @@ pub fn create_git_module() -> Module {
 }
 
 fn in_directory(
-    _: Option<Rc<DataType>>,
-    args: Vec<Rc<DataType>>,
+    _: Option<SharedDataType>,
+    args: Vec<SharedDataType>,
     context: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("in_directory", &args);
     args.exact(1)?;
 
@@ -66,14 +66,14 @@ fn in_directory(
 
     context.cwd = absolute_path;
 
-    Ok(Rc::new(DataType::Module(create_git_module())))
+    Ok((DataType::Module(create_git_module())).to_shared())
 }
 
 fn current_branch(
-    _: Option<Rc<DataType>>,
-    args: Vec<Rc<DataType>>,
+    _: Option<SharedDataType>,
+    args: Vec<SharedDataType>,
     context: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("current_branch", &args);
     args.exact(0)?;
 
@@ -81,14 +81,14 @@ fn current_branch(
         .git_runner
         .run(&["rev-parse", "--abbrev-ref", "HEAD"], &context.cwd)?;
 
-    Ok(Rc::new(DataType::String(String::from(branch.trim()))))
+    Ok((DataType::String(String::from(branch.trim()))).to_shared())
 }
 
 fn rebase(
-    _: Option<Rc<DataType>>,
-    args: Vec<Rc<DataType>>,
+    _: Option<SharedDataType>,
+    args: Vec<SharedDataType>,
     context: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("rebase", &args);
     args.exact(0)?;
 
@@ -96,18 +96,18 @@ fn rebase(
         .git_runner
         .run(&["rebase", "origin/master"], &context.cwd)?;
 
-    Ok(Rc::new(DataType::Undefined))
+    Ok((DataType::Undefined).to_shared())
 }
 
 fn local_branches(
-    _: Option<Rc<DataType>>,
-    args: Vec<Rc<DataType>>,
+    _: Option<SharedDataType>,
+    args: Vec<SharedDataType>,
     context: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("local_branches", &args);
     args.exact(0)?;
 
-    let branches: Vec<Rc<DataType>> = context
+    let branches: Vec<SharedDataType> = context
         .git_runner
         .run(
             &["for-each-ref", "--format=%(refname:short)", "refs/heads/"],
@@ -115,36 +115,36 @@ fn local_branches(
         )?
         .split("\n")
         .filter(|x| !x.is_empty())
-        .map(|x| Rc::new(DataType::String(x.trim().to_string())))
+        .map(|x| (DataType::String(x.trim().to_string())).to_shared())
         .collect();
 
-    Ok(Rc::new(DataType::List(ListDeclaration::new(branches))))
+    Ok((DataType::List(ListDeclaration::new(branches))).to_shared())
 }
 
 fn remote_branches(
-    _: Option<Rc<DataType>>,
-    args: Vec<Rc<DataType>>,
+    _: Option<SharedDataType>,
+    args: Vec<SharedDataType>,
     context: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("remote_branches", &args);
     args.exact(0)?;
 
-    let branches: Vec<Rc<DataType>> = context
+    let branches: Vec<SharedDataType> = context
         .git_runner
         .run(&["branch", "--remote"], &context.cwd)?
         .split("\n")
         .filter(|x| !x.is_empty())
-        .map(|x| Rc::new(DataType::String(x.trim().to_string())))
+        .map(|x| (DataType::String(x.trim().to_string())).to_shared())
         .collect();
 
-    Ok(Rc::new(DataType::List(ListDeclaration::new(branches))))
+    Ok((DataType::List(ListDeclaration::new(branches))).to_shared())
 }
 
 fn worktrees(
-    _: Option<Rc<DataType>>,
-    args: Vec<Rc<DataType>>,
+    _: Option<SharedDataType>,
+    args: Vec<SharedDataType>,
     context: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("worktrees", &args);
     args.exact(0)?;
 
@@ -156,32 +156,31 @@ fn worktrees(
         .map(|x| parse_worktree_line(x))
         .collect::<Result<Vec<_>, _>>()?;
 
-    let result: Vec<Rc<DataType>> = worktree_info
+    let result: Vec<SharedDataType> = worktree_info
         .iter()
         .map(|x| {
-            Rc::new(DataType::Dictionary(DictionaryDeclaration::new(
-                HashMap::from([
-                    (
-                        String::from("directory"),
-                        Rc::new(DataType::String(x.directory.clone())),
-                    ),
-                    (
-                        String::from("branch"),
-                        Rc::new(DataType::String(x.branch.clone())),
-                    ),
-                ]),
-            )))
+            DataType::Dictionary(DictionaryDeclaration::new(HashMap::from([
+                (
+                    String::from("directory"),
+                    (DataType::String(x.directory.clone())).to_shared(),
+                ),
+                (
+                    String::from("branch"),
+                    (DataType::String(x.branch.clone())).to_shared(),
+                ),
+            ])))
+            .to_shared()
         })
         .collect();
 
-    Ok(Rc::new(DataType::List(ListDeclaration::new(result))))
+    Ok((DataType::List(ListDeclaration::new(result))).to_shared())
 }
 
 fn delete_branch(
-    _: Option<Rc<DataType>>,
-    args: Vec<Rc<DataType>>,
+    _: Option<SharedDataType>,
+    args: Vec<SharedDataType>,
     context: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("delete_branch", &args);
     args.exact(1)?;
     let branch = args.string(0)?;
@@ -190,40 +189,40 @@ fn delete_branch(
         .git_runner
         .run(&["branch", "-D", &branch], &context.cwd)?;
 
-    Ok(Rc::new(DataType::Undefined))
+    Ok((DataType::Undefined).to_shared())
 }
 
 fn fetch(
-    _: Option<Rc<DataType>>,
-    args: Vec<Rc<DataType>>,
+    _: Option<SharedDataType>,
+    args: Vec<SharedDataType>,
     context: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("fetch", &args);
     args.exact(0)?;
 
     context.git_runner.run(&["fetch"], &context.cwd)?;
 
-    Ok(Rc::new(DataType::Undefined))
+    Ok((DataType::Undefined).to_shared())
 }
 
 fn prune(
-    _: Option<Rc<DataType>>,
-    args: Vec<Rc<DataType>>,
+    _: Option<SharedDataType>,
+    args: Vec<SharedDataType>,
     context: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("prune", &args);
     args.exact(0)?;
 
     context.git_runner.run(&["gc"], &context.cwd)?;
 
-    Ok(Rc::new(DataType::Undefined))
+    Ok((DataType::Undefined).to_shared())
 }
 
 fn push(
-    _: Option<Rc<DataType>>,
-    args: Vec<Rc<DataType>>,
+    _: Option<SharedDataType>,
+    args: Vec<SharedDataType>,
     context: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("push", &args);
     args.range(0, 1)?;
 
@@ -258,20 +257,20 @@ fn push(
 
     context.git_runner.run(&git_args, &context.cwd)?;
 
-    Ok(Rc::new(DataType::Undefined))
+    Ok((DataType::Undefined).to_shared())
 }
 
 fn pull(
-    _: Option<Rc<DataType>>,
-    args: Vec<Rc<DataType>>,
+    _: Option<SharedDataType>,
+    args: Vec<SharedDataType>,
     context: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("pull", &args);
     args.exact(0)?;
 
     context.git_runner.run(&["pull"], &context.cwd)?;
 
-    Ok(Rc::new(DataType::Undefined))
+    Ok((DataType::Undefined).to_shared())
 }
 
 pub(crate) struct WorktreeInfo {

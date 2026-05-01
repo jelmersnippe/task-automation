@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 use crate::{
     interpreter::{
@@ -49,26 +49,29 @@ fn interprets_property_scopes() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("bar"))
             .unwrap(),
-        Rc::new(DataType::Boolean(true)),
+        (DataType::Boolean(true)).to_shared(),
     );
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("baz"))
             .unwrap(),
-        Rc::new(DataType::Number(10.0)),
+        (DataType::Number(10.0)).to_shared(),
     );
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("a"))
             .unwrap(),
-        Rc::new(DataType::Boolean(true)),
+        (DataType::Boolean(true)).to_shared(),
     );
 }
 
@@ -97,61 +100,66 @@ fn interprets_dictionary_builtins() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("a"))
             .unwrap(),
-        Rc::new(DataType::Boolean(true)),
+        (DataType::Boolean(true)).to_shared(),
     );
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("b"))
             .unwrap(),
-        Rc::new(DataType::Boolean(true)),
+        (DataType::Boolean(true)).to_shared(),
     );
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("c"))
             .unwrap(),
-        Rc::new(DataType::Boolean(false)),
+        (DataType::Boolean(false)).to_shared(),
     );
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("d"))
             .unwrap(),
-        Rc::new(DataType::Boolean(false)),
+        (DataType::Boolean(false)).to_shared(),
     );
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("e"))
             .unwrap(),
-        Rc::new(DataType::Boolean(false)),
+        (DataType::Boolean(false)).to_shared(),
     );
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("f"))
             .unwrap(),
-        Rc::new(DataType::Number(0.0)),
+        (DataType::Number(0.0)).to_shared(),
     );
 
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::Dictionary(DictionaryDeclaration::new(
-            HashMap::new()
-        )))
+        (DataType::Dictionary(DictionaryDeclaration::new(HashMap::new()))).to_shared()
     );
 }
 
@@ -168,15 +176,15 @@ fn interprets_dictionary_assignment() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::Dictionary(DictionaryDeclaration::new(
-            HashMap::from([
-                (String::from("a"), Rc::new(DataType::Number(1.0))),
-                (String::from("b"), Rc::new(DataType::Number(3.0))),
-            ])
-        )))
+        (DataType::Dictionary(DictionaryDeclaration::new(HashMap::from([
+            (String::from("a"), (DataType::Number(1.0)).to_shared()),
+            (String::from("b"), (DataType::Number(3.0)).to_shared()),
+        ]))))
+        .to_shared()
     );
 }
 
@@ -197,18 +205,20 @@ fn interprets_dictionary_accessor() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("y"))
             .unwrap(),
-        Rc::new(DataType::Number(1.0)),
+        (DataType::Number(1.0)).to_shared(),
     );
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("bar"))
             .unwrap(),
-        Rc::new(DataType::Number(3.0)),
+        (DataType::Number(3.0)).to_shared(),
     );
 }
 
@@ -231,47 +241,47 @@ fn interprets_dictionary_declaration() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::Dictionary(DictionaryDeclaration::new(
-            HashMap::from([
-                (String::from("a"), Rc::new(DataType::Number(1.0))),
-                (
-                    String::from("b"),
-                    Rc::new(DataType::String(String::from("Hello")))
-                ),
-                (String::from("c"), Rc::new(DataType::Boolean(true))),
-                (
-                    String::from("d"),
-                    Rc::new(DataType::List(ListDeclaration::new(vec![
-                        Rc::new(DataType::Number(1.0)),
-                        Rc::new(DataType::Number(2.0)),
-                        Rc::new(DataType::Number(3.0)),
-                    ])))
-                ),
-                (
-                    String::from("e"),
-                    Rc::new(DataType::Dictionary(DictionaryDeclaration::new(
-                        HashMap::new()
-                    )))
-                ),
-                (String::from("f"), Rc::new(DataType::Number(3.0))),
-                (
-                    String::from("g"),
-                    Rc::new(DataType::Function(
-                        FunctionDeclaration::new(
-                            Some(String::from("foo")),
-                            vec![],
-                            vec![StatementType::Return(ExpressionType::Literal(
-                                LiteralType::Number(3.0)
-                            ))],
-                            interpreter.scope.clone()
-                        )
-                        .into_callable()
-                    ))
-                ),
-            ])
-        )))
+        (DataType::Dictionary(DictionaryDeclaration::new(HashMap::from([
+            (String::from("a"), (DataType::Number(1.0)).to_shared()),
+            (
+                String::from("b"),
+                (DataType::String(String::from("Hello"))).to_shared()
+            ),
+            (String::from("c"), (DataType::Boolean(true)).to_shared()),
+            (
+                String::from("d"),
+                (DataType::List(ListDeclaration::new(vec![
+                    (DataType::Number(1.0)).to_shared(),
+                    (DataType::Number(2.0)).to_shared(),
+                    (DataType::Number(3.0)).to_shared(),
+                ])))
+                .to_shared()
+            ),
+            (
+                String::from("e"),
+                (DataType::Dictionary(DictionaryDeclaration::new(HashMap::new()))).to_shared()
+            ),
+            (String::from("f"), (DataType::Number(3.0)).to_shared()),
+            (
+                String::from("g"),
+                (DataType::Function(
+                    FunctionDeclaration::new(
+                        Some(String::from("foo")),
+                        vec![],
+                        vec![StatementType::Return(ExpressionType::Literal(
+                            LiteralType::Number(3.0)
+                        ))],
+                        interpreter.scope.clone()
+                    )
+                    .into_callable()
+                ))
+                .to_shared()
+            ),
+        ]))))
+        .to_shared()
     );
 }

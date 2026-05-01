@@ -1,30 +1,42 @@
-use std::{cell::RefCell, fmt, rc::Rc};
+use std::{
+    fmt,
+    sync::{Arc, Mutex},
+};
 
 use crate::interpreter::{
     builtin::{CallInfo, ExecutionError},
     coerce::{Args, DataKind},
-    datatype::DataType,
+    datatype::{DataType, SharedDataType},
 };
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct ListDeclaration {
-    pub values: Rc<RefCell<Vec<Rc<DataType>>>>,
+    pub values: Arc<Mutex<Vec<SharedDataType>>>,
+}
+
+impl PartialEq for ListDeclaration {
+    fn eq(&self, other: &Self) -> bool {
+        if Arc::ptr_eq(&self.values, &other.values) {
+            return true;
+        }
+        *self.values.lock().unwrap() == *other.values.lock().unwrap()
+    }
 }
 
 impl ListDeclaration {
-    pub fn new(values: Vec<Rc<DataType>>) -> Self {
+    pub fn new(values: Vec<SharedDataType>) -> Self {
         Self {
-            values: Rc::new(RefCell::new(values)),
+            values: Arc::new(Mutex::new(values)),
         }
     }
 
-    pub fn get(&self, index: Rc<DataType>) -> Result<Rc<DataType>, ExecutionError> {
+    pub fn get(&self, index: SharedDataType) -> Result<SharedDataType, ExecutionError> {
         let args = Args::new("get", &vec![index]);
         let i = args.int(0)?;
 
-        let values = self.values.borrow();
+        let values = self.values.lock().unwrap();
         match i < values.len() {
-            true => Ok(Rc::clone(&values[i])),
+            true => Ok(values[i].clone()),
             false => Err(ExecutionError::new(
                 CallInfo::new("get"),
                 "Index out of bounds",
@@ -32,11 +44,11 @@ impl ListDeclaration {
         }
     }
 
-    pub fn set(&self, index: Rc<DataType>, value: Rc<DataType>) -> Result<(), ExecutionError> {
+    pub fn set(&self, index: SharedDataType, value: SharedDataType) -> Result<(), ExecutionError> {
         let args = Args::new("get", &vec![index]);
         let i = args.int(0)?;
 
-        let mut values = self.values.borrow_mut();
+        let mut values = self.values.lock().unwrap();
         match i < values.len() {
             true => {
                 values[i] = value;
@@ -51,25 +63,26 @@ impl ListDeclaration {
 
     pub fn all(&self, kind: DataKind) -> bool {
         self.values
-            .borrow()
+            .lock()
+            .unwrap()
             .iter()
             .all(|value| DataKind::from(&**value) == kind)
     }
 
-    pub fn length(&self) -> Rc<DataType> {
-        Rc::new(DataType::Number(self.values.borrow().len() as f32))
+    pub fn length(&self) -> SharedDataType {
+        (DataType::Number(self.values.lock().unwrap().len() as f32)).to_shared()
     }
 
     pub fn clear(&self) {
-        self.values.borrow_mut().clear();
+        self.values.lock().unwrap().clear();
     }
 
-    pub fn pop(&self) -> Option<Rc<DataType>> {
-        self.values.borrow_mut().pop()
+    pub fn pop(&self) -> Option<SharedDataType> {
+        self.values.lock().unwrap().pop()
     }
 
-    pub fn push(&self, value: Rc<DataType>) {
-        self.values.borrow_mut().push(value);
+    pub fn push(&self, value: SharedDataType) {
+        self.values.lock().unwrap().push(value);
     }
 }
 
@@ -77,7 +90,7 @@ impl fmt::Display for ListDeclaration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;
 
-        for (i, value) in self.values.borrow().iter().enumerate() {
+        for (i, value) in self.values.lock().unwrap().iter().enumerate() {
             if i > 0 {
                 write!(f, ", ")?;
             }

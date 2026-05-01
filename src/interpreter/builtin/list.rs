@@ -1,19 +1,17 @@
-use std::rc::Rc;
-
 use crate::{
     RuntimeContext,
     interpreter::{
         builtin::{CallInfo, ExecutionError},
         coerce::{self, Args, DataKind},
-        datatype::DataType,
+        datatype::{DataType, SharedDataType},
     },
 };
 
 pub(crate) fn clear(
-    receiver: Option<Rc<DataType>>,
-    data: Vec<Rc<DataType>>,
+    receiver: Option<SharedDataType>,
+    data: Vec<SharedDataType>,
     _: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("clear", &data);
     args.exact(0)?;
 
@@ -24,7 +22,7 @@ pub(crate) fn clear(
     match list_receiver {
         Ok(list) => {
             list.clear();
-            Ok(Rc::new(DataType::Undefined))
+            Ok((DataType::Undefined).to_shared())
         }
         Err(err) => Err(ExecutionError::new(
             CallInfo::new("clear"),
@@ -39,10 +37,10 @@ pub(crate) fn clear(
 }
 
 pub(crate) fn push(
-    receiver: Option<Rc<DataType>>,
-    data: Vec<Rc<DataType>>,
+    receiver: Option<SharedDataType>,
+    data: Vec<SharedDataType>,
     _: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("push", &data);
     args.exact(1)?;
     let data = args.any(0)?;
@@ -54,7 +52,7 @@ pub(crate) fn push(
     match list_receiver {
         Ok(list) => {
             list.push(data.clone());
-            Ok(Rc::new(DataType::Undefined))
+            Ok((DataType::Undefined).to_shared())
         }
         Err(err) => Err(ExecutionError::new(
             CallInfo::new("push"),
@@ -69,10 +67,10 @@ pub(crate) fn push(
 }
 
 pub(crate) fn pop(
-    receiver: Option<Rc<DataType>>,
-    data: Vec<Rc<DataType>>,
+    receiver: Option<SharedDataType>,
+    data: Vec<SharedDataType>,
     _: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("clear", &data);
     args.exact(0)?;
 
@@ -85,7 +83,7 @@ pub(crate) fn pop(
             let result = list.pop();
             match result {
                 Some(data) => Ok(data),
-                None => Ok(Rc::new(DataType::Undefined)),
+                None => Ok((DataType::Undefined).to_shared()),
             }
         }
         Err(err) => Err(ExecutionError::new(
@@ -101,10 +99,10 @@ pub(crate) fn pop(
 }
 
 pub(crate) fn len(
-    receiver: Option<Rc<DataType>>,
-    data: Vec<Rc<DataType>>,
+    receiver: Option<SharedDataType>,
+    data: Vec<SharedDataType>,
     _: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("len", &data);
     args.exact(0)?;
 

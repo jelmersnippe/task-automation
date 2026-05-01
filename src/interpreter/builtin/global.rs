@@ -1,15 +1,14 @@
 use std::{
     process::{Command, Stdio},
-    rc::Rc,
     thread::{self, JoinHandle},
 };
 
 use crate::{
     RuntimeContext,
     interpreter::{
-        builtin::{BuiltinFn, CallInfo, ExecutionError},
+        builtin::{BuiltinFn, ExecutionError},
         coerce::{Args, ArgumentError, DataKind, expect_callable},
-        datatype::DataType,
+        datatype::{DataType, SharedDataType},
     },
 };
 
@@ -21,10 +20,10 @@ pub static BUILTINS: &[(&str, BuiltinFn)] = &[
 ];
 
 fn print(
-    _: Option<Rc<DataType>>,
-    data: Vec<Rc<DataType>>,
+    _: Option<SharedDataType>,
+    data: Vec<SharedDataType>,
     _: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("print", &data);
 
     args.exact(1)?;
@@ -32,15 +31,15 @@ fn print(
 
     println!("{}", arg);
 
-    Ok(Rc::new(DataType::Undefined))
+    Ok((DataType::Undefined).to_shared())
 }
 
 // wt.exe wsl bash -c "cd ~/dev/task-automation && exec bash"
 fn spawn_terminal(
-    _: Option<Rc<DataType>>,
-    data: Vec<Rc<DataType>>,
+    _: Option<SharedDataType>,
+    data: Vec<SharedDataType>,
     _: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("spawn_terminal", &data);
 
     args.range(1, 2)?;
@@ -74,14 +73,14 @@ fn spawn_terminal(
         _ => {}
     }
 
-    Ok(Rc::new(DataType::Undefined))
+    Ok((DataType::Undefined).to_shared())
 }
 
 fn register_task(
-    _: Option<Rc<DataType>>,
-    data: Vec<Rc<DataType>>,
+    _: Option<SharedDataType>,
+    data: Vec<SharedDataType>,
     context: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("register_task", &data);
     args.exact(2)?;
     let task_name = args.string(0)?;
@@ -91,21 +90,22 @@ fn register_task(
         .task_registry
         .register(task_name, task_block.clone());
 
-    Ok(Rc::new(DataType::Undefined))
+    Ok((DataType::Undefined).to_shared())
 }
 
 fn parallel(
-    _: Option<Rc<DataType>>,
-    data: Vec<Rc<DataType>>,
+    _: Option<SharedDataType>,
+    data: Vec<SharedDataType>,
     context: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("parallel", &data);
     args.exact(1)?;
     let list = args.list(0)?;
 
     let callables = list
         .values
-        .borrow()
+        .lock()
+        .unwrap()
         .iter()
         .enumerate()
         .map(|(i, x)| {
@@ -134,5 +134,5 @@ fn parallel(
         }
     }
 
-    Ok(Rc::new(DataType::Undefined))
+    Ok((DataType::Undefined).to_shared())
 }

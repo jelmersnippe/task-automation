@@ -1,19 +1,17 @@
-use std::rc::Rc;
-
 use crate::{
     RuntimeContext,
     interpreter::{
         builtin::{CallInfo, ExecutionError},
         coerce::{self, Args, DataKind},
-        datatype::DataType,
+        datatype::{DataType, SharedDataType},
     },
 };
 
 pub(crate) fn has(
-    receiver: Option<Rc<DataType>>,
-    data: Vec<Rc<DataType>>,
+    receiver: Option<SharedDataType>,
+    data: Vec<SharedDataType>,
     _: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("has", &data);
     args.exact(1)?;
 
@@ -23,7 +21,7 @@ pub(crate) fn has(
     let receiver_dict = coerce::expect_dict(x.as_ref());
 
     match receiver_dict {
-        Ok(dict) => Ok(Rc::new(DataType::Boolean(dict.has(&key)))),
+        Ok(dict) => Ok((DataType::Boolean(dict.has(&key))).to_shared()),
         Err(err) => Err(ExecutionError::new(
             CallInfo::new("has"),
             format!(
@@ -37,10 +35,10 @@ pub(crate) fn has(
 }
 
 pub(crate) fn delete(
-    receiver: Option<Rc<DataType>>,
-    data: Vec<Rc<DataType>>,
+    receiver: Option<SharedDataType>,
+    data: Vec<SharedDataType>,
     _: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("delete", &data);
     args.exact(1)?;
 
@@ -52,7 +50,7 @@ pub(crate) fn delete(
     match receiver_dict {
         Ok(dict) => {
             dict.delete(&key);
-            Ok(Rc::new(DataType::Undefined))
+            Ok((DataType::Undefined).to_shared())
         }
         Err(err) => Err(ExecutionError::new(
             CallInfo::new("delete"),
@@ -67,10 +65,10 @@ pub(crate) fn delete(
 }
 
 pub(crate) fn clear(
-    receiver: Option<Rc<DataType>>,
-    data: Vec<Rc<DataType>>,
+    receiver: Option<SharedDataType>,
+    data: Vec<SharedDataType>,
     _: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("clear", &data);
     args.exact(0)?;
 
@@ -81,7 +79,7 @@ pub(crate) fn clear(
     match receiver_dict {
         Ok(dict) => {
             dict.clear();
-            Ok(Rc::new(DataType::Undefined))
+            Ok((DataType::Undefined).to_shared())
         }
         Err(err) => Err(ExecutionError::new(
             CallInfo::new("clear"),
@@ -96,10 +94,10 @@ pub(crate) fn clear(
 }
 
 pub(crate) fn len(
-    receiver: Option<Rc<DataType>>,
-    data: Vec<Rc<DataType>>,
+    receiver: Option<SharedDataType>,
+    data: Vec<SharedDataType>,
     _: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let args = Args::new("len", &data);
     args.exact(0)?;
 

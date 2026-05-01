@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crate::{
     interpreter::{
         datatype::DataType, function::FunctionDeclaration, list::ListDeclaration, tests::run,
@@ -21,10 +19,11 @@ fn interprets_clear() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::List(ListDeclaration::new(vec![])))
+        (DataType::List(ListDeclaration::new(vec![]))).to_shared()
     );
 }
 
@@ -39,18 +38,20 @@ fn interprets_pop() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::List(ListDeclaration::new(vec![])))
+        (DataType::List(ListDeclaration::new(vec![]))).to_shared()
     );
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("y"))
             .unwrap(),
-        Rc::new(DataType::Number(1.0)),
+        (DataType::Number(1.0)).to_shared(),
     );
 }
 
@@ -65,13 +66,15 @@ fn interprets_push() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::List(ListDeclaration::new(vec![
-            Rc::new(DataType::Number(1.0)),
-            Rc::new(DataType::Number(2.0))
+        (DataType::List(ListDeclaration::new(vec![
+            (DataType::Number(1.0)).to_shared(),
+            (DataType::Number(2.0)).to_shared()
         ])))
+        .to_shared()
     );
 }
 
@@ -89,26 +92,30 @@ fn interprets_array_reference_overwrite() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::List(ListDeclaration::new(vec![
-            Rc::new(DataType::Number(1.0)),
-            Rc::new(DataType::Number(2.0)),
-            Rc::new(DataType::Number(3.0)),
+        (DataType::List(ListDeclaration::new(vec![
+            (DataType::Number(1.0)).to_shared(),
+            (DataType::Number(2.0)).to_shared(),
+            (DataType::Number(3.0)).to_shared(),
         ])))
+        .to_shared()
     );
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("y"))
             .unwrap(),
-        Rc::new(DataType::List(ListDeclaration::new(vec![
-            Rc::new(DataType::Number(9.0)),
-            Rc::new(DataType::Number(9.0)),
-            Rc::new(DataType::Number(9.0)),
+        (DataType::List(ListDeclaration::new(vec![
+            (DataType::Number(9.0)).to_shared(),
+            (DataType::Number(9.0)).to_shared(),
+            (DataType::Number(9.0)).to_shared(),
         ])))
+        .to_shared()
     );
 }
 
@@ -126,26 +133,30 @@ fn interprets_array_reference_assignment() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::List(ListDeclaration::new(vec![
-            Rc::new(DataType::Number(5.0)),
-            Rc::new(DataType::Number(2.0)),
-            Rc::new(DataType::Number(3.0)),
+        (DataType::List(ListDeclaration::new(vec![
+            (DataType::Number(5.0)).to_shared(),
+            (DataType::Number(2.0)).to_shared(),
+            (DataType::Number(3.0)).to_shared(),
         ])))
+        .to_shared()
     );
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("y"))
             .unwrap(),
-        Rc::new(DataType::List(ListDeclaration::new(vec![
-            Rc::new(DataType::Number(5.0)),
-            Rc::new(DataType::Number(2.0)),
-            Rc::new(DataType::Number(3.0)),
+        (DataType::List(ListDeclaration::new(vec![
+            (DataType::Number(5.0)).to_shared(),
+            (DataType::Number(2.0)).to_shared(),
+            (DataType::Number(3.0)).to_shared(),
         ])))
+        .to_shared()
     );
 }
 
@@ -164,10 +175,11 @@ fn interpret_accessor_function_call() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("y"))
             .unwrap(),
-        Rc::new(DataType::Number(1.0))
+        (DataType::Number(1.0)).to_shared()
     );
 }
 
@@ -187,12 +199,14 @@ fn interpret_function_call_accessor_assignment() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::List(ListDeclaration::new(vec![Rc::new(
-            DataType::Number(2.0)
-        )])))
+        (DataType::List(ListDeclaration::new(vec![
+            (DataType::Number(2.0)).to_shared()
+        ])))
+        .to_shared()
     );
 }
 
@@ -207,12 +221,17 @@ fn interpret_list_assignment_nested() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::List(ListDeclaration::new(vec![Rc::new(
-            DataType::List(ListDeclaration::new(vec![Rc::new(DataType::Number(2.0))]))
-        )])))
+        (DataType::List(ListDeclaration::new(vec![
+            (DataType::List(ListDeclaration::new(vec![
+                (DataType::Number(2.0)).to_shared()
+            ])))
+            .to_shared()
+        ])))
+        .to_shared()
     );
 }
 
@@ -227,12 +246,14 @@ fn interpret_list_assignment() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::List(ListDeclaration::new(vec![Rc::new(
-            DataType::Number(2.0)
-        )])))
+        (DataType::List(ListDeclaration::new(vec![
+            (DataType::Number(2.0)).to_shared()
+        ])))
+        .to_shared()
     );
 }
 
@@ -247,20 +268,26 @@ fn interpret_list_accessor_nested() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::List(ListDeclaration::new(vec![Rc::new(
-            DataType::List(ListDeclaration::new(vec![Rc::new(DataType::Number(1.0))]))
-        )])))
+        (DataType::List(ListDeclaration::new(vec![
+            (DataType::List(ListDeclaration::new(vec![
+                (DataType::Number(1.0)).to_shared()
+            ])))
+            .to_shared()
+        ])))
+        .to_shared()
     );
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("y"))
             .unwrap(),
-        Rc::new(DataType::Number(1.0))
+        (DataType::Number(1.0)).to_shared()
     );
 }
 
@@ -275,20 +302,23 @@ fn interpret_list_accessor() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::List(ListDeclaration::new(vec![Rc::new(
-            DataType::Number(1.0)
-        )])))
+        (DataType::List(ListDeclaration::new(vec![
+            (DataType::Number(1.0)).to_shared()
+        ])))
+        .to_shared()
     );
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("y"))
             .unwrap(),
-        Rc::new(DataType::Number(1.0))
+        (DataType::Number(1.0)).to_shared()
     );
 }
 
@@ -307,21 +337,23 @@ fn interpret_list_declaration() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::List(ListDeclaration::new(vec![
-            Rc::new(DataType::Number(1.0)),
-            Rc::new(DataType::String(String::from("Hello"))),
-            Rc::new(DataType::Boolean(true)),
-            Rc::new(DataType::List(ListDeclaration::new(vec![
-                Rc::new(DataType::Number(1.0)),
-                Rc::new(DataType::Number(2.0)),
-                Rc::new(DataType::Number(3.0)),
-            ]))),
-            Rc::new(DataType::Number(2.0)),
-            Rc::new(DataType::Number(3.0)),
-            Rc::new(DataType::Function(
+        (DataType::List(ListDeclaration::new(vec![
+            (DataType::Number(1.0)).to_shared(),
+            (DataType::String(String::from("Hello"))).to_shared(),
+            (DataType::Boolean(true)).to_shared(),
+            (DataType::List(ListDeclaration::new(vec![
+                (DataType::Number(1.0)).to_shared(),
+                (DataType::Number(2.0)).to_shared(),
+                (DataType::Number(3.0)).to_shared(),
+            ])))
+            .to_shared(),
+            (DataType::Number(2.0)).to_shared(),
+            (DataType::Number(3.0)).to_shared(),
+            (DataType::Function(
                 FunctionDeclaration::new(
                     Some(String::from("foo")),
                     vec![],
@@ -331,8 +363,10 @@ fn interpret_list_declaration() {
                     interpreter.scope.clone()
                 )
                 .into_callable()
-            )),
+            ))
+            .to_shared(),
         ])))
+        .to_shared()
     );
 }
 
@@ -346,9 +380,10 @@ fn interpret_list_declaration_empty() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::List(ListDeclaration::new(vec![])))
+        (DataType::List(ListDeclaration::new(vec![]))).to_shared()
     );
 }

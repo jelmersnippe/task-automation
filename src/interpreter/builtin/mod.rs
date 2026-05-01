@@ -1,9 +1,9 @@
 use crate::{
     RuntimeContext,
-    interpreter::{coerce::ArgumentError, datatype::DataType},
+    interpreter::{coerce::ArgumentError, datatype::SharedDataType},
     modules::GitError,
 };
-use std::{fmt, rc::Rc, sync::Arc};
+use std::{fmt, sync::Arc};
 
 pub(crate) mod dictionary;
 pub(crate) mod global;
@@ -70,14 +70,14 @@ impl ExecutionError {
 }
 
 pub type BuiltinFn = fn(
-    Option<Rc<DataType>>,
-    Vec<Rc<DataType>>,
+    Option<SharedDataType>,
+    Vec<SharedDataType>,
     &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError>;
+) -> Result<SharedDataType, ExecutionError>;
 pub type Executable = Arc<
     dyn Fn(
-        Option<Rc<DataType>>,
-        Vec<Rc<DataType>>,
+        Option<SharedDataType>,
+        Vec<SharedDataType>,
         &mut RuntimeContext,
-    ) -> Result<Rc<DataType>, ExecutionError>,
+    ) -> Result<SharedDataType, ExecutionError>,
 >;

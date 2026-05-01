@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, sync::Arc};
 
 use crate::{
     RuntimeContext,
@@ -50,7 +50,7 @@ impl GitRunner for MockGitRunner {
 
 fn try_run_with_mock(dsl: &str, mock: MockGitRunner) -> Result<Interpreter, ExecutionError> {
     let mut context = RuntimeContext::new();
-    context.git_runner = Box::new(mock);
+    context.git_runner = Arc::new(mock);
     context.module_registry.register(git_module());
     interpret(dsl.to_string(), &mut context)
 }
@@ -106,10 +106,11 @@ fn current_branch_returns_branch_name() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&"b".to_string())
             .unwrap(),
-        Rc::new(DataType::String("main".to_string()))
+        (DataType::String("main".to_string())).to_shared()
     );
 }
 
@@ -122,18 +123,19 @@ fn local_branches_returns_list() {
     let interpreter = run_with_mock("var b = git.local_branches()", mock);
     let value = interpreter
         .scope
-        .borrow()
+        .lock()
+        .unwrap()
         .get_variable(&"b".to_string())
         .unwrap();
     if let DataType::List(list) = value.as_ref() {
-        assert_eq!(list.length(), Rc::new(DataType::Number(2.0)));
+        assert_eq!(list.length(), (DataType::Number(2.0)).to_shared());
         assert_eq!(
-            list.get(Rc::new(DataType::Number(0.0))).unwrap(),
-            Rc::new(DataType::String("main".to_string()))
+            list.get((DataType::Number(0.0)).to_shared()).unwrap(),
+            (DataType::String("main".to_string())).to_shared()
         );
         assert_eq!(
-            list.get(Rc::new(DataType::Number(1.0))).unwrap(),
-            Rc::new(DataType::String("feat/foo".to_string()))
+            list.get((DataType::Number(1.0)).to_shared()).unwrap(),
+            (DataType::String("feat/foo".to_string())).to_shared()
         );
     } else {
         panic!("Expected a List");
@@ -146,18 +148,19 @@ fn remote_branches_returns_list() {
     let interpreter = run_with_mock("var b = git.remote_branches()", mock);
     let value = interpreter
         .scope
-        .borrow()
+        .lock()
+        .unwrap()
         .get_variable(&"b".to_string())
         .unwrap();
     if let DataType::List(list) = value.as_ref() {
-        assert_eq!(list.length(), Rc::new(DataType::Number(2.0)));
+        assert_eq!(list.length(), (DataType::Number(2.0)).to_shared());
         assert_eq!(
-            list.get(Rc::new(DataType::Number(0.0))).unwrap(),
-            Rc::new(DataType::String("origin/main".to_string()))
+            list.get((DataType::Number(0.0)).to_shared()).unwrap(),
+            (DataType::String("origin/main".to_string())).to_shared()
         );
         assert_eq!(
-            list.get(Rc::new(DataType::Number(1.0))).unwrap(),
-            Rc::new(DataType::String("origin/dev".to_string()))
+            list.get((DataType::Number(1.0)).to_shared()).unwrap(),
+            (DataType::String("origin/dev".to_string())).to_shared()
         );
     } else {
         panic!("Expected a List");
@@ -173,35 +176,36 @@ fn worktrees_returns_list_of_dicts() {
     let interpreter = run_with_mock("var w = git.worktrees()", mock);
     let value = interpreter
         .scope
-        .borrow()
+        .lock()
+        .unwrap()
         .get_variable(&"w".to_string())
         .unwrap();
     if let DataType::List(list) = value.as_ref() {
-        assert_eq!(list.length(), Rc::new(DataType::Number(2.0)));
+        assert_eq!(list.length(), (DataType::Number(2.0)).to_shared());
 
-        let first = list.get(Rc::new(DataType::Number(0.0))).unwrap();
+        let first = list.get((DataType::Number(0.0)).to_shared()).unwrap();
         if let DataType::Dictionary(dict) = first.as_ref() {
             assert_eq!(
                 dict.get(&"directory".to_string()).unwrap(),
-                Rc::new(DataType::String("/home/user/repo".to_string()))
+                (DataType::String("/home/user/repo".to_string())).to_shared()
             );
             assert_eq!(
                 dict.get(&"branch".to_string()).unwrap(),
-                Rc::new(DataType::String("main".to_string()))
+                (DataType::String("main".to_string())).to_shared()
             );
         } else {
             panic!("Expected first item to be a Dictionary");
         }
 
-        let second = list.get(Rc::new(DataType::Number(1.0))).unwrap();
+        let second = list.get((DataType::Number(1.0)).to_shared()).unwrap();
         if let DataType::Dictionary(dict) = second.as_ref() {
             assert_eq!(
                 dict.get(&"directory".to_string()).unwrap(),
-                Rc::new(DataType::String("/home/user/repo-feat".to_string()))
+                (DataType::String("/home/user/repo-feat".to_string())).to_shared()
             );
             assert_eq!(
                 dict.get(&"branch".to_string()).unwrap(),
-                Rc::new(DataType::String("feat/bar".to_string()))
+                (DataType::String("feat/bar".to_string())).to_shared()
             );
         } else {
             panic!("Expected second item to be a Dictionary");
@@ -263,7 +267,8 @@ fn in_directory_valid_path_returns_module() {
     let interpreter = run_with_mock(r#"var g = git.in_directory(".")"#, mock);
     let value = interpreter
         .scope
-        .borrow()
+        .lock()
+        .unwrap()
         .get_variable(&"g".to_string())
         .unwrap();
     assert!(matches!(value.as_ref(), DataType::Module(_)));

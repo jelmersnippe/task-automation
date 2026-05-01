@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crate::interpreter::{datatype::DataType, list::ListDeclaration, tests::run};
 
 #[test]
@@ -16,10 +14,11 @@ fn interprets_while_with_condition() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::Number(3.0))
+        (DataType::Number(3.0)).to_shared()
     );
 }
 
@@ -41,10 +40,11 @@ fn interprets_while_with_false() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::Number(0.0))
+        (DataType::Number(0.0)).to_shared()
     );
 }
 
@@ -67,18 +67,20 @@ fn interprets_while_with_continue() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::Number(1.0))
+        (DataType::Number(1.0)).to_shared()
     );
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("y"))
             .unwrap(),
-        Rc::new(DataType::Number(0.0))
+        (DataType::Number(0.0)).to_shared()
     );
 }
 
@@ -101,18 +103,20 @@ fn interprets_while_with_break() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::Number(1.0))
+        (DataType::Number(1.0)).to_shared()
     );
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("y"))
             .unwrap(),
-        Rc::new(DataType::Number(0.0))
+        (DataType::Number(0.0)).to_shared()
     );
 }
 
@@ -137,23 +141,26 @@ fn interprets_while_with_nested_continue() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::Number(5.0))
+        (DataType::Number(5.0)).to_shared()
     );
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("y"))
             .unwrap(),
-        Rc::new(DataType::List(ListDeclaration::new(vec![
-            Rc::new(DataType::Number(2.0)),
-            Rc::new(DataType::Number(3.0)),
-            Rc::new(DataType::Number(4.0)),
-            Rc::new(DataType::Number(5.0)),
+        (DataType::List(ListDeclaration::new(vec![
+            (DataType::Number(2.0)).to_shared(),
+            (DataType::Number(3.0)).to_shared(),
+            (DataType::Number(4.0)).to_shared(),
+            (DataType::Number(5.0)).to_shared(),
         ])))
+        .to_shared()
     );
 }
 
@@ -175,9 +182,10 @@ fn interprets_while_with_nested_break() {
     assert_eq!(
         interpreter
             .scope
-            .borrow()
+            .lock()
+            .unwrap()
             .get_variable(&String::from("x"))
             .unwrap(),
-        Rc::new(DataType::Number(5.0))
+        (DataType::Number(5.0)).to_shared()
     );
 }

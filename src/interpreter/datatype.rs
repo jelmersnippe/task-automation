@@ -1,4 +1,4 @@
-use std::{fmt, rc::Rc, sync::Arc};
+use std::{fmt, sync::Arc};
 
 use crate::{
     RuntimeContext,
@@ -22,12 +22,20 @@ pub enum DataType {
     Undefined,
 }
 
+impl DataType {
+    pub fn to_shared(self) -> SharedDataType {
+        Arc::new(self)
+    }
+}
+
 #[derive(Clone)]
 pub struct Callable {
     name: Option<String>,
     function: Executable,
-    receiver: Option<Rc<DataType>>,
+    receiver: Option<SharedDataType>,
 }
+
+pub type SharedDataType = Arc<DataType>;
 
 impl fmt::Debug for Callable {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -64,7 +72,7 @@ impl Callable {
             receiver: None,
         }
     }
-    pub fn bind(self, receiver: Rc<DataType>) -> Self {
+    pub fn bind(self, receiver: SharedDataType) -> Self {
         Self {
             name: self.name,
             function: self.function.clone(),
@@ -73,9 +81,9 @@ impl Callable {
     }
     pub fn execute(
         &self,
-        parameters: Vec<Rc<DataType>>,
+        parameters: Vec<SharedDataType>,
         context: &mut RuntimeContext,
-    ) -> Result<Rc<DataType>, ExecutionError> {
+    ) -> Result<SharedDataType, ExecutionError> {
         (self.function)(self.receiver.clone(), parameters, context)
     }
 }
@@ -117,9 +125,9 @@ const LIST_METHODS: (&str, &[(&str, BuiltinFn)]) = (
 
 impl DataType {
     pub(crate) fn get_method(
-        self: &Rc<DataType>,
+        self: &SharedDataType,
         name: &str,
-    ) -> Result<Rc<DataType>, ExecutionError> {
+    ) -> Result<SharedDataType, ExecutionError> {
         let call_info = CallInfo::new(name);
 
         let (type_name, methods) = match &self.as_ref() {
@@ -133,7 +141,7 @@ impl DataType {
                     );
                 })?;
 
-                return Ok(Rc::new(DataType::Function(module_fn.clone())));
+                return Ok((DataType::Function(module_fn.clone())).to_shared());
             }
             _ => {
                 return Err(ExecutionError::new(
@@ -156,7 +164,7 @@ impl DataType {
                 );
             })?;
 
-        Ok(Rc::new(DataType::Function(function)))
+        Ok((DataType::Function(function)).to_shared())
     }
 }
 

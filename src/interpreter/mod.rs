@@ -6,18 +6,21 @@ pub(crate) mod function;
 pub(crate) mod list;
 pub(crate) mod scope;
 
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
 use crate::{
     RuntimeContext,
     interpreter::{
         builtin::{CallInfo, ExecutionError, global::BUILTINS},
         coerce::Args,
-        datatype::{Callable, DataType},
+        datatype::{Callable, DataType, SharedDataType},
         dictionary::DictionaryDeclaration,
         function::FunctionDeclaration,
         list::ListDeclaration,
-        scope::Scope,
+        scope::{Scope, SharedScope},
     },
     parser::{
         expressions::{
@@ -32,7 +35,7 @@ use crate::{
 mod tests;
 
 pub struct Interpreter {
-    pub(crate) scope: Rc<RefCell<Scope>>,
+    pub(crate) scope: SharedScope,
     statements: Vec<StatementType>,
     pos: usize,
 }
@@ -47,19 +50,19 @@ impl Interpreter {
         for (k, v) in BUILTINS {
             scope.set_variable(
                 k.to_string(),
-                Rc::new(DataType::Function(Callable::new(Some(k.to_string()), *v))),
+                (DataType::Function(Callable::new(Some(k.to_string()), *v))).to_shared(),
             )?;
         }
 
         for module in &context.module_registry.modules {
             scope.set_variable(
                 module.name.clone(),
-                Rc::new(DataType::Module(module.clone())),
+                (DataType::Module(module.clone())).to_shared(),
             )?;
         }
 
         Ok(Self {
-            scope: Rc::new(RefCell::new(scope)),
+            scope: Arc::new(Mutex::new(scope)),
             statements,
             pos: 0,
         })
@@ -81,11 +84,11 @@ pub enum StatementResult {
     Void,
     Break,
     Continue,
-    Return(Rc<DataType>),
+    Return(SharedDataType),
 }
 
 fn interpret_statement(
-    scope: Rc<RefCell<Scope>>,
+    scope: SharedScope,
     statement: &StatementType,
     context: &mut RuntimeContext,
 ) -> Result<StatementResult, ExecutionError> {
@@ -95,7 +98,7 @@ fn interpret_statement(
             let value = statement.value.clone();
             let expression = interpret_expression(scope.clone(), &value, context)?;
 
-            scope.borrow_mut().set_variable(identifier, expression)?;
+            scope.lock().unwrap().set_variable(identifier, expression)?;
             Ok(StatementResult::Void)
         }
         StatementType::FunctionDeclaration(statement) => {
@@ -103,9 +106,9 @@ fn interpret_statement(
             let arguments = statement.arguments.iter().map(|x| x.name.clone()).collect();
             let statements = statement.body.statements.clone();
 
-            scope.borrow_mut().set_variable(
+            scope.lock().unwrap().set_variable(
                 identifier.clone(),
-                Rc::new(DataType::Function(
+                (DataType::Function(
                     FunctionDeclaration::new(
                         Some(identifier.clone()),
                         arguments,
@@ -113,7 +116,8 @@ fn interpret_statement(
                         scope.clone(),
                     )
                     .into_callable(),
-                )),
+                ))
+                .to_shared(),
             )?;
 
             Ok(StatementResult::Void)
@@ -134,7 +138,7 @@ fn interpret_statement(
                         return Ok(StatementResult::Void);
                     }
 
-                    let block_scope = Rc::new(RefCell::new(Scope::new(Some(scope.clone()))));
+                    let block_scope = Arc::new(Mutex::new(Scope::new(Some(scope.clone()))));
                     execute_statements(
                         block_scope,
                         statement.body.statements.iter().collect(),
@@ -171,7 +175,7 @@ fn interpret_statement(
                             break;
                         }
 
-                        let block_scope = Rc::new(RefCell::new(Scope::new(Some(scope.clone()))));
+                        let block_scope = Arc::new(Mutex::new(Scope::new(Some(scope.clone()))));
                         let return_value = execute_statements(
                             block_scope,
                             statement.body.statements.iter().collect(),
@@ -206,14 +210,15 @@ fn interpret_statement(
 }
 
 fn interpret_assignment(
-    scope: Rc<RefCell<Scope>>,
+    scope: SharedScope,
     assignment: &AssignmentStatement,
     context: &mut RuntimeContext,
 ) -> Result<(), ExecutionError> {
     let value = interpret_expression(scope.clone(), &assignment.value, context)?;
     match &assignment.identifier {
         ExpressionType::Identifier(identifier_expression) => scope
-            .borrow_mut()
+            .lock()
+            .unwrap()
             .update_variable(&identifier_expression.name, value),
         ExpressionType::Accessor(accessor_expression) => {
             let storage = interpret_expression(scope.clone(), &accessor_expression.value, context)?;
@@ -243,7 +248,7 @@ fn interpret_assignment(
 }
 
 fn interpret_binary_expression(
-    scope: Rc<RefCell<Scope>>,
+    scope: SharedScope,
     expression: &BinaryOperationExpression,
     context: &mut RuntimeContext,
 ) -> Result<DataType, ExecutionError> {
@@ -381,10 +386,10 @@ fn interpret_binary_expression(
 }
 
 fn execute_function(
-    scope: Rc<RefCell<Scope>>,
+    scope: SharedScope,
     statement: &CallExpression,
     context: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     let value = interpret_expression(scope.clone(), &statement.value, context)?;
 
     if let DataType::Function(callable) = value.as_ref() {
@@ -403,20 +408,21 @@ fn execute_function(
 }
 
 pub fn interpret_expression(
-    scope: Rc<RefCell<Scope>>,
+    scope: SharedScope,
     expression: &ExpressionType,
     context: &mut RuntimeContext,
-) -> Result<Rc<DataType>, ExecutionError> {
+) -> Result<SharedDataType, ExecutionError> {
     match expression {
         ExpressionType::Literal(literal_type) => Ok(match literal_type {
-            LiteralType::String(x) => Rc::new(DataType::String(x.clone())),
-            LiteralType::Number(x) => Rc::new(DataType::Number(x.clone())),
-            LiteralType::Boolean(x) => Rc::new(DataType::Boolean(x.clone())),
-            LiteralType::Undefined => Rc::new(DataType::Undefined),
+            LiteralType::String(x) => (DataType::String(x.clone())).to_shared(),
+            LiteralType::Number(x) => (DataType::Number(x.clone())).to_shared(),
+            LiteralType::Boolean(x) => (DataType::Boolean(x.clone())).to_shared(),
+            LiteralType::Undefined => (DataType::Undefined).to_shared(),
         }),
-        ExpressionType::Identifier(identifier_expression) => {
-            scope.borrow().get_variable(&identifier_expression.name)
-        }
+        ExpressionType::Identifier(identifier_expression) => scope
+            .lock()
+            .unwrap()
+            .get_variable(&identifier_expression.name),
         ExpressionType::FunctionCall(function_call_expression) => {
             execute_function(scope, function_call_expression, context)
         }
@@ -428,23 +434,30 @@ pub fn interpret_expression(
                 .collect();
             let statements = function_declaration_expression.body.statements.clone();
 
-            Ok(Rc::new(DataType::Function(
+            Ok((DataType::Function(
                 FunctionDeclaration::new(None, arguments, statements, scope.clone())
                     .into_callable(),
-            )))
+            ))
+            .to_shared())
         }
-        ExpressionType::BinaryOperation(binary_operation_expression) => Ok(Rc::new(
-            interpret_binary_expression(scope.clone(), binary_operation_expression, context)?,
-        )),
-        ExpressionType::UnaryOperation(unary_operation_expression) => Ok(Rc::new(
-            interpret_unary_expression(scope.clone(), unary_operation_expression, context)?,
-        )),
-        ExpressionType::List(list_expression) => Ok(Rc::new(DataType::List(
-            interpret_list_expression(scope.clone(), list_expression, context)?,
-        ))),
-        ExpressionType::Dictionary(dictionary_expression) => Ok(Rc::new(DataType::Dictionary(
+        ExpressionType::BinaryOperation(binary_operation_expression) => Ok(
+            interpret_binary_expression(scope.clone(), binary_operation_expression, context)?
+                .to_shared(),
+        ),
+        ExpressionType::UnaryOperation(unary_operation_expression) => Ok(
+            interpret_unary_expression(scope.clone(), unary_operation_expression, context)?
+                .to_shared(),
+        ),
+        ExpressionType::List(list_expression) => Ok((DataType::List(interpret_list_expression(
+            scope.clone(),
+            list_expression,
+            context,
+        )?))
+        .to_shared()),
+        ExpressionType::Dictionary(dictionary_expression) => Ok((DataType::Dictionary(
             interpret_dictionary_expression(scope.clone(), dictionary_expression, context)?,
-        ))),
+        ))
+        .to_shared()),
         ExpressionType::Accessor(accessor_expression) => {
             let value = interpret_expression(scope.clone(), &accessor_expression.value, context)?;
 
@@ -478,7 +491,7 @@ pub fn interpret_expression(
 }
 
 fn interpret_dictionary_expression(
-    scope: Rc<RefCell<Scope>>,
+    scope: SharedScope,
     dictionary_expression: &crate::parser::expressions::DictionaryExpression,
     context: &mut RuntimeContext,
 ) -> Result<DictionaryDeclaration, ExecutionError> {
@@ -500,13 +513,13 @@ fn interpret_dictionary_expression(
         }
     }
 
-    let values: Vec<Rc<DataType>> = dictionary_expression
+    let values: Vec<SharedDataType> = dictionary_expression
         .values
         .iter()
         .map(|x| interpret_expression(scope.clone(), x, context))
         .collect::<Result<Vec<_>, _>>()?;
 
-    let entries: Vec<(String, Rc<DataType>)> = keys.into_iter().zip(values).collect();
+    let entries: Vec<(String, SharedDataType)> = keys.into_iter().zip(values).collect();
 
     let mut map = HashMap::new();
 
@@ -518,7 +531,7 @@ fn interpret_dictionary_expression(
 }
 
 fn interpret_list_expression(
-    scope: Rc<RefCell<Scope>>,
+    scope: SharedScope,
     list_expression: &ListExpression,
     context: &mut RuntimeContext,
 ) -> Result<ListDeclaration, ExecutionError> {
@@ -532,7 +545,7 @@ fn interpret_list_expression(
 }
 
 fn execute_statements(
-    scope: Rc<RefCell<Scope>>,
+    scope: SharedScope,
     statements: Vec<&StatementType>,
     context: &mut RuntimeContext,
 ) -> Result<StatementResult, ExecutionError> {
@@ -553,7 +566,7 @@ fn execute_statements(
 }
 
 fn interpret_unary_expression(
-    scope: Rc<RefCell<Scope>>,
+    scope: SharedScope,
     expression: &UnaryOperationExpression,
     context: &mut RuntimeContext,
 ) -> Result<DataType, ExecutionError> {

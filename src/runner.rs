@@ -2,12 +2,15 @@ use std::{
     env, fmt, fs,
     io::{self, Write},
     path::{Path, PathBuf},
-    rc::Rc,
 };
 
 use crate::{
     RuntimeContext,
-    interpreter::{Interpreter, builtin::ExecutionError, datatype::DataType},
+    interpreter::{
+        Interpreter,
+        builtin::ExecutionError,
+        datatype::{DataType, SharedDataType},
+    },
     lexer::Lexer,
     parser::Parser,
 };
@@ -81,10 +84,10 @@ pub fn run(args: &[String], runtime_context: &mut RuntimeContext) -> Result<(), 
     }
 
     // TODO: Use interpreter to parse arguments?
-    let task_args: Vec<Rc<DataType>> = run_args
+    let task_args: Vec<SharedDataType> = run_args
         .task_args
         .iter()
-        .map(|x| Rc::new(DataType::String(x.clone())))
+        .map(|x| (DataType::String(x.clone())).to_shared())
         .collect();
 
     let task_result = runtime_context.task_registry.get(&run_args.task_name);
