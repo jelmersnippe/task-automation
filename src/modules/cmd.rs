@@ -13,15 +13,6 @@ pub struct ResolvedCmd {
 }
 
 impl ResolvedCmd {
-    /// Produces `cd '<cwd>' && <cmd>` or `cd '<cwd>' && exec $SHELL` when no
-    /// command is given. Used by tmux pane/window startup commands.
-    pub fn to_startup_cmd(&self) -> String {
-        match &self.cmd {
-            Some(cmd) => format!("cd '{}' && {}", self.cwd, cmd),
-            None => format!("cd '{}' && exec $SHELL", self.cwd),
-        }
-    }
-
     /// Produces `cd '<cwd>'[ && <cmd>] && exec $SHELL`. Used by shell.open so
     /// the terminal stays alive after an optional one-off command finishes.
     pub fn to_open_cmd(&self) -> String {

@@ -121,12 +121,30 @@ fn new_window(
     args.exact(2)?;
     let name = args.string(0)?;
     let dict = args.dictionary(1)?;
-    let cmd = resolve_cmd(dict, "new_window", &context.cwd)?.to_startup_cmd();
+    let resolved = resolve_cmd(dict, "new_window", &context.cwd)?;
 
-    context
-        .tmux_runner
-        .run(&["new-window", "-t", &session, "-n", &name, &cmd])
-        .map_err(|e| tmux_error_to_execution_error(e, "new_window"))?;
+    let result = match &resolved.cmd {
+        Some(cmd) => context.tmux_runner.run(&[
+            "new-window",
+            "-t",
+            &session,
+            "-n",
+            &name,
+            "-c",
+            &resolved.cwd,
+            cmd,
+        ]),
+        None => context.tmux_runner.run(&[
+            "new-window",
+            "-t",
+            &session,
+            "-n",
+            &name,
+            "-c",
+            &resolved.cwd,
+        ]),
+    };
+    result.map_err(|e| tmux_error_to_execution_error(e, "new_window"))?;
 
     Ok(receiver.unwrap())
 }
@@ -179,13 +197,26 @@ fn split_pane(
     args.exact(2)?;
     let window = args.string(0)?;
     let dict = args.dictionary(1)?;
-    let cmd = resolve_cmd(dict, "split_pane", &context.cwd)?.to_startup_cmd();
+    let resolved = resolve_cmd(dict, "split_pane", &context.cwd)?;
     let target = format!("{}:{}", session, window);
 
-    context
-        .tmux_runner
-        .run(&["split-window", "-t", &target, "-d", &cmd])
-        .map_err(|e| tmux_error_to_execution_error(e, "split_pane"))?;
+    let result = match &resolved.cmd {
+        Some(cmd) => context.tmux_runner.run(&[
+            "split-window",
+            "-t",
+            &target,
+            "-d",
+            "-c",
+            &resolved.cwd,
+            cmd,
+        ]),
+        None => {
+            context
+                .tmux_runner
+                .run(&["split-window", "-t", &target, "-d", "-c", &resolved.cwd])
+        }
+    };
+    result.map_err(|e| tmux_error_to_execution_error(e, "split_pane"))?;
 
     Ok(receiver.unwrap())
 }
@@ -200,13 +231,31 @@ fn split_pane_h(
     args.exact(2)?;
     let window = args.string(0)?;
     let dict = args.dictionary(1)?;
-    let cmd = resolve_cmd(dict, "split_pane_h", &context.cwd)?.to_startup_cmd();
+    let resolved = resolve_cmd(dict, "split_pane_h", &context.cwd)?;
     let target = format!("{}:{}", session, window);
 
-    context
-        .tmux_runner
-        .run(&["split-window", "-h", "-t", &target, "-d", &cmd])
-        .map_err(|e| tmux_error_to_execution_error(e, "split_pane_h"))?;
+    let result = match &resolved.cmd {
+        Some(cmd) => context.tmux_runner.run(&[
+            "split-window",
+            "-h",
+            "-t",
+            &target,
+            "-d",
+            "-c",
+            &resolved.cwd,
+            cmd,
+        ]),
+        None => context.tmux_runner.run(&[
+            "split-window",
+            "-h",
+            "-t",
+            &target,
+            "-d",
+            "-c",
+            &resolved.cwd,
+        ]),
+    };
+    result.map_err(|e| tmux_error_to_execution_error(e, "split_pane_h"))?;
 
     Ok(receiver.unwrap())
 }
