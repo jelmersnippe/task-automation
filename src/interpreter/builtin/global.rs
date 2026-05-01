@@ -4,12 +4,12 @@ use std::{
 };
 
 use crate::{
-    RuntimeContext,
     interpreter::{
         builtin::{BuiltinFn, ExecutionError},
-        coerce::{Args, ArgumentError, DataKind, expect_callable},
+        coerce::{expect_callable, Args, ArgumentError, DataKind},
         datatype::{DataType, SharedDataType},
     },
+    RuntimeContext,
 };
 
 pub static BUILTINS: &[(&str, BuiltinFn)] = &[
@@ -102,6 +102,9 @@ fn parallel(
     args.exact(1)?;
     let list = args.list(0)?;
 
+    std::panic::set_hook(Box::new(|info| {
+        println!("Thread panicked: {}", info);
+    }));
     let locked = list.values.lock().unwrap();
     let callables = locked
         .iter()
@@ -132,8 +135,12 @@ fn parallel(
 
     for (i, result) in receiver {
         match result {
-            Err(e) => eprintln!("[parallel-{}] task failed: {}", i, e),
-            Ok(res) => println!("[parallel-{}] task succeeded: {}", i, res),
+            Err(e) => eprintln!(
+                "[parallel-{}] task failed: {}",
+                i,
+                e.to_string().replace('\r', "\n")
+            ),
+            Ok(_) => {}
         }
     }
 
